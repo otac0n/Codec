@@ -10,13 +10,13 @@ namespace Codec.MGS.Files
     using System.Runtime.InteropServices;
     using Codec;
     using Codec.Archives;
+    using Codec.Files;
     using Codec.Imaging;
     using Codec.Services;
     using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Logging.Abstractions;
-    using Size = (int Width, int Height);
 
     internal class TriFile
     {
@@ -103,274 +103,6 @@ namespace Codec.MGS.Files
             }
         }
 
-        private static int[] block32 =
-        [
-            00, 01, 04, 05, 16, 17, 20, 21,
-            02, 03, 06, 07, 18, 19, 22, 23,
-            08, 09, 12, 13, 24, 25, 28, 29,
-            10, 11, 14, 15, 26, 27, 30, 31,
-        ];
-
-        private static int[] columnWord32 =
-        [
-            00, 01, 04, 05, 08, 09, 12, 13,
-            02, 03, 06, 07, 10, 11, 14, 15,
-        ];
-
-        private static int[] block8 =
-        [
-            00, 01, 04, 05, 16, 17, 20, 21,
-            02, 03, 06, 07, 18, 19, 22, 23,
-            08, 09, 12, 13, 24, 25, 28, 29,
-            10, 11, 14, 15, 26, 27, 30, 31,
-        ];
-
-        private static int[] block4 =
-        [
-            00, 02, 08, 10,
-            01, 03, 09, 11,
-            04, 06, 12, 14,
-            05, 07, 13, 15,
-            16, 18, 24, 26,
-            17, 19, 25, 27,
-            20, 22, 28, 30,
-            21, 23, 29, 31,
-        ];
-
-        private static int[][] columnWord8 =
-        [
-            [
-                00, 01, 04, 05, 08, 09, 12, 13, 00, 01, 04, 05, 08, 09, 12, 13,
-                02, 03, 06, 07, 10, 11, 14, 15, 02, 03, 06, 07, 10, 11, 14, 15,
-
-                08, 09, 12, 13, 00, 01, 04, 05,  08, 09, 12, 13, 00, 01, 04, 05,
-                10, 11, 14, 15, 02, 03, 06, 07,  10, 11, 14, 15, 02, 03, 06, 07,
-            ],
-            [
-                08, 09, 12, 13, 00, 01, 04, 05,  08, 09, 12, 13, 00, 01, 04, 05,
-                10, 11, 14, 15, 02, 03, 06, 07,  10, 11, 14, 15, 02, 03, 06, 07,
-
-                00, 01, 04, 05, 08, 09, 12, 13, 00, 01, 04, 05, 08, 09, 12, 13,
-                02, 03, 06, 07, 10, 11, 14, 15, 02, 03, 06, 07, 10, 11, 14, 15,
-            ],
-        ];
-
-        private static int[] columnByte8 =
-        [
-            0, 0, 0, 0, 0, 0, 0, 0,  2, 2, 2, 2, 2, 2, 2, 2,
-            0, 0, 0, 0, 0, 0, 0, 0,  2, 2, 2, 2, 2, 2, 2, 2,
-
-            1, 1, 1, 1, 1, 1, 1, 1,  3, 3, 3, 3, 3, 3, 3, 3,
-            1, 1, 1, 1, 1, 1, 1, 1,  3, 3, 3, 3, 3, 3, 3, 3,
-        ];
-
-        private static int[][] columnWord4 =
-        [
-            [
-                 0,  1,  4,  5,  8,  9, 12, 13,   0,  1,  4,  5,  8,  9, 12, 13,   0,  1,  4,  5,  8,  9, 12, 13,   0,  1,  4,  5,  8,  9, 12, 13,
-                 2,  3,  6,  7, 10, 11, 14, 15,   2,  3,  6,  7, 10, 11, 14, 15,   2,  3,  6,  7, 10, 11, 14, 15,   2,  3,  6,  7, 10, 11, 14, 15,
-
-                 8,  9, 12, 13,  0,  1,  4,  5,   8,  9, 12, 13,  0,  1,  4,  5,   8,  9, 12, 13,  0,  1,  4,  5,   8,  9, 12, 13,  0,  1,  4,  5,
-                10, 11, 14, 15,  2,  3,  6,  7,  10, 11, 14, 15,  2,  3,  6,  7,  10, 11, 14, 15,  2,  3,  6,  7,  10, 11, 14, 15,  2,  3,  6,  7
-            ],
-            [
-                 8,  9, 12, 13,  0,  1,  4,  5,   8,  9, 12, 13,  0,  1,  4,  5,   8,  9, 12, 13,  0,  1,  4,  5,   8,  9, 12, 13,  0,  1,  4,  5,
-                10, 11, 14, 15,  2,  3,  6,  7,  10, 11, 14, 15,  2,  3,  6,  7,  10, 11, 14, 15,  2,  3,  6,  7,  10, 11, 14, 15,  2,  3,  6,  7,
-
-                 0,  1,  4,  5,  8,  9, 12, 13,   0,  1,  4,  5,  8,  9, 12, 13,   0,  1,  4,  5,  8,  9, 12, 13,   0,  1,  4,  5,  8,  9, 12, 13,
-                 2,  3,  6,  7, 10, 11, 14, 15,   2,  3,  6,  7, 10, 11, 14, 15,   2,  3,  6,  7, 10, 11, 14, 15,   2,  3,  6,  7, 10, 11, 14, 15
-            ]
-        ];
-
-        private static int[] columnByte4 =
-        [
-            0, 0, 0, 0, 0, 0, 0, 0,  2, 2, 2, 2, 2, 2, 2, 2,  4, 4, 4, 4, 4, 4, 4, 4,  6, 6, 6, 6, 6, 6, 6, 6,
-            0, 0, 0, 0, 0, 0, 0, 0,  2, 2, 2, 2, 2, 2, 2, 2,  4, 4, 4, 4, 4, 4, 4, 4,  6, 6, 6, 6, 6, 6, 6, 6,
-
-            1, 1, 1, 1, 1, 1, 1, 1,  3, 3, 3, 3, 3, 3, 3, 3,  5, 5, 5, 5, 5, 5, 5, 5,  7, 7, 7, 7, 7, 7, 7, 7,
-            1, 1, 1, 1, 1, 1, 1, 1,  3, 3, 3, 3, 3, 3, 3, 3,  5, 5, 5, 5, 5, 5, 5, 5,  7, 7, 7, 7, 7, 7, 7, 7
-        ];
-
-        private static void writeTexPSMCT32(int dbp, int dbw, int dsax, int dsay, int rrw, int rrh, Span<byte> data, uint[] gsmem)
-        {
-            var src = MemoryMarshal.Cast<byte, uint>(data);
-            var startBlockPos = dbp * 64;
-
-            var i = 0;
-            for (var y = dsay; y < dsay + rrh; y++)
-            {
-                for (var x = dsax; x < dsax + rrw; x++)
-                {
-                    var pageX = x / 64;
-                    var pageY = y / 32;
-                    var page = pageX + pageY * dbw;
-
-                    var px = x - (pageX * 64);
-                    var py = y - (pageY * 32);
-
-                    var blockX = px / 8;
-                    var blockY = py / 8;
-                    var block = block32[blockX + blockY * 8];
-
-                    var bx = px - blockX * 8;
-                    var by = py - blockY * 8;
-
-                    var column = by / 2;
-
-                    var cx = bx;
-                    var cy = by - column * 2;
-                    var cw = columnWord32[cx + cy * 8];
-
-                    gsmem[startBlockPos + page * 2048 + block * 64 + column * 16 + cw] = src[i];
-                    i++;
-                }
-            }
-        }
-
-        private static void readTexPSMCT32(int dbp, int dbw, int dsax, int dsay, int rrw, int rrh, Span<byte> data, uint[] gsmem)
-        {
-            var src = MemoryMarshal.Cast<byte, uint>(data);
-            var startBlockPos = dbp * 64;
-
-            var i = 0;
-            for (var y = dsay; y < dsay + rrh; y++)
-            {
-                for (var x = dsax; x < dsax + rrw; x++)
-                {
-                    var pageX = x / 64;
-                    var pageY = y / 32;
-                    var page = pageX + pageY * dbw;
-
-                    var px = x - (pageX * 64);
-                    var py = y - (pageY * 32);
-
-                    var blockX = px / 8;
-                    var blockY = py / 8;
-                    var block = block32[blockX + blockY * 8];
-
-                    var bx = px - blockX * 8;
-                    var by = py - blockY * 8;
-
-                    var column = by / 2;
-
-                    var cx = bx;
-                    var cy = by - column * 2;
-                    var cw = columnWord32[cx + cy * 8];
-
-                    src[i] = gsmem[startBlockPos + page * 2048 + block * 64 + column * 16 + cw];
-                    i++;
-                }
-            }
-        }
-
-        private static void readTexPSMT8(int dbp, int dbw, int dsax, int dsay, int rrw, int rrh, Span<byte> data, uint[] gsmem)
-        {
-            dbw >>= 1;
-            var src = data;
-            var startBlockPos = dbp * 64;
-
-            var i = 0;
-            for (var y = dsay; y < dsay + rrh; y++)
-            {
-                for (var x = dsax; x < dsax + rrw; x++)
-                {
-                    var pageX = x / 128;
-                    var pageY = y / 64;
-                    var page = pageX + pageY * dbw;
-
-                    var px = x - (pageX * 128);
-                    var py = y - (pageY * 64);
-
-                    var blockX = px / 16;
-                    var blockY = py / 16;
-                    var block = block8[blockX + blockY * 8];
-
-                    var bx = px - blockX * 16;
-                    var by = py - blockY * 16;
-
-                    var column = by / 4;
-
-                    var cx = bx;
-                    var cy = by - column * 4;
-                    var cw = columnWord8[column & 1][cx + cy * 16];
-                    var cb = columnByte8[cx + cy * 16];
-
-                    var dst = MemoryMarshal.Cast<uint, byte>(gsmem.AsSpan()[(startBlockPos + page * 2048 + block * 64 + column * 16 + cw)..]);
-                    src[i] = dst[cb];
-                    i++;
-                }
-            }
-        }
-
-        private static void readTexPSMT4(int dbp, int dbw, int dsax, int dsay, int rrw, int rrh, Span<byte> data, uint[] gsmem)
-        {
-            dbw >>= 1;
-            var src = data;
-            var startBlockPos = dbp * 64;
-
-            var odd = false;
-
-            var i = 0;
-            for (var y = dsay; y < dsay + rrh; y++)
-            {
-                for (var x = dsax; x < dsax + rrw; x++)
-                {
-                    var pageX = x / 128;
-                    var pageY = y / 128;
-                    var page = pageX + pageY * dbw;
-
-                    var px = x - (pageX * 128);
-                    var py = y - (pageY * 128);
-
-                    var blockX = px / 32;
-                    var blockY = py / 16;
-                    var block = block4[blockX + blockY * 4];
-
-                    var bx = px - blockX * 32;
-                    var by = py - blockY * 16;
-
-                    var column = by / 4;
-
-                    var cx = bx;
-                    var cy = by - column * 4;
-                    var cw = columnWord4[column & 1][cx + cy * 32];
-                    var cb = columnByte4[cx + cy * 32];
-
-                    var dst = MemoryMarshal.Cast<uint, byte>(gsmem.AsSpan()[(startBlockPos + page * 2048 + block * 64 + column * 16 + cw)..]);
-
-                    if ((cb & 1) != 0)
-                    {
-                        if (!odd)
-                        {
-                            src[i] = (byte)((src[i] & 0x0f) | (dst[cb >> 1] & 0xf0));
-                        }
-                        else
-                        {
-                            src[i] = (byte)((src[i] & 0xf0) | ((dst[cb >> 1] >> 4) & 0x0f));
-                        }
-                    }
-                    else
-                    {
-                        if (!odd)
-                        {
-                            src[i] = (byte)((src[i] & 0x0f) | ((dst[cb >> 1] << 4) & 0xf0));
-                        }
-                        else
-                        {
-                            src[i] = (byte)((src[i] & 0xf0) | (dst[cb >> 1] & 0x0f));
-                        }
-                    }
-
-                    if (odd)
-                    {
-                        i++;
-                    }
-
-                    odd = !odd;
-                }
-            }
-        }
-
         private static void unswizzleClut(Span<byte> clutBuffer)
         {
             var temp = new byte[32];
@@ -434,8 +166,10 @@ namespace Codec.MGS.Files
             var info = textureDefinitions[t];
             var gsmemTexture = new uint[1024 * 1024];
             var gsmemPalette = new uint[1024 * 1024];
-            writeTexPSMCT32(0, 1, 0, 0, 64, header.Height, span[header.ImageOffset..], gsmemTexture);
-            writeTexPSMCT32(0, 1, 0, 0, 64, header.ClutHeight, span[header.ClutOffset..], gsmemPalette);
+            var texture = new GsViewUInt32(GsSwizzle.PSMCT32, gsmemTexture);
+            var palette = new GsViewUInt32(GsSwizzle.PSMCT32, gsmemPalette);
+            texture.BulkWrite(0, 1, 0, 0, 64, header.Height, MemoryMarshal.Cast<byte, uint>(span[header.ImageOffset..]));
+            palette.BulkWrite(0, 1, 0, 0, 64, header.ClutHeight, MemoryMarshal.Cast<byte, uint>(span[header.ClutOffset..]));
 
             var bitDepth = info.RegisterInfo2.PSM switch
             {
@@ -475,7 +209,7 @@ namespace Codec.MGS.Files
             };
 
             var clutBuffer = new byte[1024 * 1024 * 4];
-            readTexPSMCT32(info.RegisterInfo2.CBP, 1, (int)(info.RegisterInfo2.CSAX * 8), (int)(info.RegisterInfo2.CSAY * 2), w, h, clutBuffer.AsSpan(), gsmemPalette);
+            palette.BulkRead(info.RegisterInfo2.CBP, 1, (int)(info.RegisterInfo2.CSAX * 8), (int)(info.RegisterInfo2.CSAY * 2), w, h, MemoryMarshal.Cast<byte, uint>(clutBuffer.AsSpan()));
             var paletteData = MemoryMarshal.Cast<byte, int>(clutBuffer);
             if (bitDepth == 8 && !info.RegisterInfo2.CSM)
             {
@@ -496,12 +230,12 @@ namespace Codec.MGS.Files
             if (bitDepth == 8)
             {
                 var texBuffer = tgaWriter.TgaStream.GetBuffer().AsSpan()[(int)tgaWriter.TgaStream.Position..];
-                readTexPSMT8(info.RegisterInfo2.TBP0, info.RegisterInfo2.TBW, u, v, width, height, texBuffer, gsmemTexture);
+                new GsViewByte(GsSwizzle.PSMT8, gsmemTexture).BulkRead(info.RegisterInfo2.TBP0, info.RegisterInfo2.TBW / 2, u, v, width, height, texBuffer);
             }
             else
             {
                 var texBuffer = new byte[width * height];
-                readTexPSMT4(info.RegisterInfo2.TBP0, info.RegisterInfo2.TBW, u, v, width, height, texBuffer.AsSpan(), gsmemTexture);
+                new GsViewNibble(GsSwizzle.PSMT4, gsmemTexture).BulkRead(info.RegisterInfo2.TBP0, info.RegisterInfo2.TBW / 2, u, v, width, height, texBuffer);
                 for (var y = 0; y < height; y++)
                 {
                     for (var x = 0; x < width; x++)
@@ -515,15 +249,6 @@ namespace Codec.MGS.Files
             }
 
             return tgaWriter.ToMagickImage();
-        }
-
-        private record class BlockFormat(Size PageSize)
-        {
-            public static readonly BlockFormat PSMT8 = new(
-                PageSize: new(128, 64));
-
-            public static readonly BlockFormat PSMT4 = new(
-                PageSize: new(128, 128));
         }
 
         private enum TextureFunction : uint
