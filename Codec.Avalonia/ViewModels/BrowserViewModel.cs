@@ -105,25 +105,18 @@
             {
                 case EntryType.Audio:
                     {
-                        if (this.fsm.TryFindParentFileSystem(item.Entry.Path, out var subPath, out var fs, out var fsPath))
-                        {
-                            var audioStream = this.serviceProvider.Resolve<AudioStream>(item.Entry.Path, subPath, fs, fsPath) ?? (AudioStream)fs.File.OpenRead(subPath);
-
-                            this.AudioPreviewRequested?.Invoke(this, (fs.Path.GetFileName(item.Entry.Path), audioStream));
-                        }
+                        var audioStream = this.fsm.Resolve<AudioStream>(item.Entry.Path) ?? (AudioStream)this.fsm.OpenRead(item.Entry.Path);
+                        this.AudioPreviewRequested?.Invoke(this, (this.fsm.GetFileName(item.Entry.Path), audioStream));
                     }
                     break;
 
                 case EntryType.Image:
                     try
                     {
-                        if (this.fsm.TryFindParentFileSystem(item.Entry.Path, out var subPath, out var fs, out var fsPath))
+                        var bmp = await this.imageLoader.LoadAsync(item.Entry).ConfigureAwait(true);
+                        if (bmp != null)
                         {
-                            var bmp = await this.imageLoader.LoadAsync(item.Entry).ConfigureAwait(true);
-                            if (bmp != null)
-                            {
-                                this.ImagePreviewRequested?.Invoke(this, (fs.Path.GetFileName(subPath), bmp));
-                            }
+                            this.ImagePreviewRequested?.Invoke(this, (this.fsm.GetFileName(item.Entry.Path), bmp));
                         }
                     }
                     catch (Exception ex)

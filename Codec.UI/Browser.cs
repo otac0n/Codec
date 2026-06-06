@@ -20,19 +20,15 @@ namespace Codec.UI
 
     internal partial class Browser : Form
     {
-        private readonly IServiceProvider serviceProvider;
         private readonly EntryTypeDetector detector;
         private readonly NestedFileSystemManager fsm;
-        private readonly List<FileHandlerResolver<Bitmap>> imageResolvers;
         private readonly VirtualImageList<Entry> textureDisplay;
         private bool suppressUpdates;
 
         public Browser(IServiceProvider serviceProvider)
         {
-            this.serviceProvider = serviceProvider;
             this.detector = serviceProvider.GetRequiredService<EntryTypeDetector>();
             this.fsm = serviceProvider.GetRequiredService<NestedFileSystemManager>();
-            this.imageResolvers = [.. serviceProvider.GetServices<FileHandlerResolver<Bitmap>>()];
 
             this.InitializeComponent();
             this.Icon = Properties.Resources.Otacon;
@@ -47,12 +43,7 @@ namespace Codec.UI
             this.saveSelectedDialog.InitialDirectory = Environment.ExpandEnvironmentVariables(this.saveSelectedDialog.InitialDirectory);
             this.saveToFolderDialog.InitialDirectory = Environment.ExpandEnvironmentVariables(this.saveToFolderDialog.InitialDirectory);
             this.textureDisplay = new VirtualImageList<Entry>(
-                entry =>
-                {
-                    this.fsm.TryFindParentFileSystem(entry.Path, out var subPath, out var fs, out var fsPath);
-                    var resolved = this.serviceProvider.Resolve(this.imageResolvers, entry.Path, subPath, fs!, fsPath!);
-                    return Task.FromResult(resolved!);
-                },
+                entry => Task.FromResult(this.fsm.Resolve<Bitmap>(entry.Path)!),
                 InterpolationMode.NearestNeighbor)
             {
                 Dock = DockStyle.Fill,
@@ -104,30 +95,26 @@ namespace Codec.UI
             this.fileTree.SelectedNode = currentNode;
             currentNode.EnsureVisible();
 
-            if (this.fsm.TryFindParentFileSystem(entry.Path, out var subPath, out var fs, out var _))
-            {
-                var entries = this.fsm.EnumerateEntries(entry.Path);
-                var items = entries
-                    .Select(e => new ListViewItem(fs.Path.GetFileName(e.Path) switch { "" => e.Path, var x => x }, (int)this.detector.Detect(e)) { Tag = e })
-                    .ToArray();
-                this.entryList.Items.Clear();
-                this.EntryList_SelectedIndexChanged(this.entryList, EventArgs.Empty);
-                this.entryList.Items.AddRange(items);
+            var entries = this.fsm.EnumerateEntries(entry.Path);
+            var items = entries
+                .Select(e => new ListViewItem(this.fsm.GetFileName(e.Path) switch { "" => e.Path, var x => x }, (int)this.detector.Detect(e)) { Tag = e })
+                .ToArray();
+            this.entryList.Items.Clear();
+            this.EntryList_SelectedIndexChanged(this.entryList, EventArgs.Empty);
+            this.entryList.Items.AddRange(items);
 
-                this.textureDisplay.Items = entries.Where(e => this.detector.Detect(e) == FileType.Image);
-            }
+            this.textureDisplay.Items = entries.Where(e => this.detector.Detect(e) == FileType.Image);
 
             this.suppressUpdates = false;
         }
 
         private void FileTree_BeforeExpand(object sender, TreeViewCancelEventArgs e)
         {
-            if (e.Node?.Tag is Entry entry && e.Node.Nodes is [TreeNode onlyChild] && onlyChild.Text == "..." &&
-                this.fsm.TryFindParentFileSystem(entry.Path, out var _, out var fs, out var _))
+            if (e.Node?.Tag is Entry entry && e.Node.Nodes is [TreeNode onlyChild] && onlyChild.Text == "...")
             {
                 e.Node.Nodes.Clear();
                 var entries = this.fsm.EnumerateEntries(entry.Path).Where(e => e.CanEnumerateEntries);
-                e.Node.Nodes.AddRange([.. entries.Select(e => new TreeNode(fs.Path.GetFileName(e.Path) switch { "" => e.Path, var x => x }, 0, 0, [this.CreateExpanderDummy()]) { Tag = e })]);
+                e.Node.Nodes.AddRange([.. entries.Select(e => new TreeNode(this.fsm.GetFileName(e.Path) switch { "" => e.Path, var x => x }, 0, 0, [this.CreateExpanderDummy()]) { Tag = e })]);
             }
         }
 
@@ -165,17 +152,17 @@ namespace Codec.UI
                 {
                     this.Navigate(entry);
                 }
-                else if (this.fsm.TryFindParentFileSystem(entry.Path, out var subPath, out var fs, out var fsPath))
+                else
                 {
                     switch (this.detector.Detect(entry))
                     {
                         case FileType.Image:
                             {
-                                if (this.serviceProvider.Resolve(this.imageResolvers, entry.Path, subPath, fs, fsPath) is var image)
+                                if (this.fsm.Resolve<Bitmap>(entry.Path) is var image)
                                 {
                                     var childForm = new Form
                                     {
-                                        Text = fs.Path.GetFileName(subPath),
+                                        Text = this.fsm.GetFileName(entry.Path),
                                         StartPosition = FormStartPosition.CenterParent,
                                         FormBorderStyle = FormBorderStyle.SizableToolWindow,
                                     };
@@ -194,10 +181,10 @@ namespace Codec.UI
                             {
                                 try
                                 {
-                                    var audioStream = this.serviceProvider.Resolve<AudioStream>(entry.Path, subPath, fs, fsPath) ?? (AudioStream)fs.File.OpenRead(subPath);
+                                    var audioStream = this.fsm.Resolve<AudioStream>(entry.Path) ?? (AudioStream)this.fsm.OpenRead(entry.Path);
                                     var childForm = new AudioPreviewForm(audioStream)
                                     {
-                                        Text = fs.Path.GetFileName(subPath),
+                                        Text = this.fsm.GetFileName(entry.Path),
                                     };
                                     this.ShowChild(childForm);
                                 }
@@ -253,15 +240,11 @@ namespace Codec.UI
             if (this.entryList.SelectedItems.Count == 1)
             {
                 var entry = (Entry)this.entryList.SelectedItems[0]?.Tag!;
-                if (!this.fsm.TryFindParentFileSystem(entry.Path, out var subPath, out var fs, out var fsPath))
-                {
-                    return;
-                }
 
                 MagickImageInfo? fileInfo = null;
                 try
                 {
-                    using var input = fs.File.OpenRead(subPath);
+                    using var input = this.fsm.OpenRead(entry.Path);
                     fileInfo = new MagickImageInfo(input);
                 }
                 catch (MagickMissingDelegateErrorException)
@@ -279,13 +262,12 @@ namespace Codec.UI
                     return;
                 }
 
-                if (fs != null)
                 {
-                    using var input = fs.File.OpenRead(subPath);
+                    using var input = this.fsm.OpenRead(entry.Path);
                     var path = this.saveSelectedDialog.FileName;
-                    if (Path.GetExtension(path) != Path.GetExtension(subPath))
+                    if (Path.GetExtension(path) != this.fsm.GetExtension(entry.Path))
                     {
-                        if (this.serviceProvider.Resolve(this.imageResolvers, entry.Path, subPath, fs, fsPath) is var resolved)
+                        if (this.fsm.Resolve<Bitmap>(entry.Path) is var resolved)
                         {
                             resolved.Save(path);
                             return;
@@ -320,12 +302,9 @@ namespace Codec.UI
 
                 foreach (var (source, target) in targetFiles)
                 {
-                    if (this.fsm.TryFindParentFileSystem(source, out var subPath, out var fs, out var _))
-                    {
-                        using var input = fs.File.OpenRead(subPath);
-                        using var output = File.Create(target);
-                        input.CopyTo(output);
-                    }
+                    using var input = this.fsm.OpenRead(source);
+                    using var output = File.Create(target);
+                    input.CopyTo(output);
                 }
             }
         }

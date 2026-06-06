@@ -12,10 +12,12 @@
         private readonly PathComparer comparer;
         private readonly Dictionary<string, FileSystemFactory?> nestedFactories;
         private readonly Dictionary<string, IFileSystem> fileSystems;
+        private readonly IServiceProvider serviceProvider;
         private readonly FileSystemHandler[] handlers;
 
-        public NestedFileSystemManager(IFileSystem fs, params FileSystemHandler[] handlers)
+        public NestedFileSystemManager(IServiceProvider serviceProvider, IFileSystem fs, params FileSystemHandler[] handlers)
         {
+            this.serviceProvider = serviceProvider;
             this.handlers = handlers;
             this.comparer = new();
             this.nestedFactories = new(this.comparer);
@@ -28,17 +30,25 @@
 
         public Entry RootEntry { get; }
 
-        public bool TryFindParentFileSystem(string path, out string parentRelativePath, [NotNullWhen(true)] out IFileSystem? parent, [NotNullWhen(true)] out string? parentPath)
+        /// <summary>
+        /// Returns the parent filesystem that contains the specified path.
+        /// </summary>
+        /// <remarks>
+        ///   "G:\Data\Foo.zip/a/b/c.txt" -> ("a/b/c.txt", ZipFileSystem, "G:\Data\Foo.zip")
+        ///   "G:\Data\Foo.zip/" -> ("", ZipFileSystem, "G:\Data\Foo.zip")
+        ///   "G:\Data\Foo.zip" -> ("G:\Data\Foo.zip", FileSystem, "")
+        /// </remarks>
+        private bool TryFindParentFileSystem(string path, out string parentRelativePath, [NotNullWhen(true)] out IFileSystem? parent, [NotNullWhen(true)] out string? parentPath, bool asFile = true)
         {
             var found = this.fileSystems.TryGetValue(path, out parent);
-            if (found && parent != null)
+            if (found && parent != null && !asFile)
             {
                 parentPath = path;
                 parentRelativePath = string.Empty;
                 return true;
             }
 
-            if (PathExtensions.GetDirectoryName(path) is string directoryName && this.TryFindParentFileSystem(directoryName, out var relativePath, out parent, out parentPath))
+            if (PathExtensions.GetDirectoryName(path) is string directoryName && this.TryFindParentFileSystem(directoryName, out var relativePath, out parent, out parentPath, asFile: false))
             {
                 parentRelativePath = parent.Path.Combine(relativePath, directoryName == string.Empty ? path : parent.Path.GetRelativePath(directoryName, path));
                 if (!found && this.GetOrAddFactory(path, parentRelativePath, parent, parentPath, out var factory))
@@ -48,7 +58,7 @@
                         var newParent = factory(path, parentRelativePath, parent, parentPath);
                         this.fileSystems.Add(path, newParent);
                         this.nestedFactories.Remove(path);
-                        if (newParent != null)
+                        if (newParent != null && !asFile)
                         {
                             parent = newParent;
                             parentPath = path;
@@ -101,27 +111,54 @@
 
         public bool FileExists(string path)
         {
-            if (!this.TryFindParentFileSystem(path, out var parentRelativePath, out var parent, out _))
-            {
-                throw new FileNotFoundException(path);
-            }
-
-            return parent.File.Exists(parentRelativePath);
+            return this.TryFindParentFileSystem(path, out var parentRelativePath, out var parent, out _) && parent.File.Exists(parentRelativePath);
         }
 
-        public Stream OpenRead(string path)
+        public Stream OpenRead(string path) => this.Open(path, new FileStreamOptions { Mode = FileMode.Open, Access = FileAccess.Read, Share = FileShare.Read });
+
+        public Stream Open(string path, FileStreamOptions options)
         {
             if (!this.TryFindParentFileSystem(path, out var parentRelativePath, out var parent, out _))
             {
                 throw new FileNotFoundException(path);
             }
 
-            return parent.File.OpenRead(parentRelativePath);
+            return parent.File.Open(parentRelativePath, options);
+        }
+
+        public string GetFileName(string path)
+        {
+            if (!this.TryFindParentFileSystem(path, out var parentRelativePath, out var parent, out _))
+            {
+                return PathExtensions.GetFileName(path);
+            }
+
+            return parent.Path.GetFileName(parentRelativePath);
+        }
+
+        public string GetExtension(string path)
+        {
+            if (!this.TryFindParentFileSystem(path, out var parentRelativePath, out var parent, out _))
+            {
+                return PathExtensions.GetExtension(path);
+            }
+
+            return parent.Path.GetExtension(parentRelativePath);
+        }
+
+        public T? Resolve<T>(string path)
+        {
+            if (!this.TryFindParentFileSystem(path, out var parentRelativePath, out var parent, out var parentPath))
+            {
+                return default;
+            }
+
+            return this.serviceProvider.Resolve<T>(path, parentRelativePath, parent, parentPath);
         }
 
         private IEnumerable<Entry> EnumerateEntries(string path)
         {
-            if (this.TryFindParentFileSystem(path, out var parentRelativePath, out var parent, out var parentPath))
+            if (this.TryFindParentFileSystem(path, out var parentRelativePath, out var parent, out var parentPath, asFile: false))
             {
                 if (string.IsNullOrEmpty(parentRelativePath) || parent.Directory.Exists(parentRelativePath))
                 {
@@ -229,7 +266,7 @@
                     }
                 }
 
-                return 0;
+                return PathExtensions.EndsWithSlash(x).CompareTo(PathExtensions.EndsWithSlash(y));
             }
 
             /// <inheritdoc/>
@@ -246,7 +283,7 @@
                         hash.Add(string.GetHashCode(part, compare));
                     }
 
-                    if (parts.Length == 0 || Array.IndexOf(PathExtensions.Separators, obj[^1]) != -1)
+                    if (parts.Length == 0 || PathExtensions.EndsWithSlash(obj))
                     {
                         hash.Add('/');
                     }

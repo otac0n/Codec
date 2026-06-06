@@ -55,7 +55,7 @@ namespace Codec
             services.AddSingleton(s =>
             {
                 var handlers = s.GetServices<FileSystemResolver>().Select(r => new FileSystemHandler((a, b, c, d) => r(s, a, b, c, d))).ToArray();
-                return new NestedFileSystemManager(new RootEnumerableFileSystem(), handlers);
+                return new NestedFileSystemManager(s, new RootEnumerableFileSystem(), handlers);
             });
 
             SetupHelper.SetupComplete();

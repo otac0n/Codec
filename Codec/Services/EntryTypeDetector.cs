@@ -18,14 +18,9 @@
                 return EntryType.Archive;
             }
 
-            if (!fsm.TryFindParentFileSystem(entry.Path, out var subPath, out var fs, out var _))
-            {
-                return default;
-            }
-
             // TODO: Run through our collection of FileHandlerResolvers here.
 
-            return fs.Path.GetExtension(subPath).ToUpperInvariant() switch
+            return fsm.GetExtension(entry.Path).ToUpperInvariant() switch
             {
                 ".BMP" or
                 ".CTXR" or

@@ -20,38 +20,28 @@
 
         public async Task<Bitmap?> LoadAsync(Entry entry, CancellationToken cancel = default)
         {
-            if (!fsm.TryFindParentFileSystem(entry.Path, out var subPath, out var fs, out var fsPath))
+            await this.semaphore.WaitAsync(cancel).ConfigureAwait(false);
+            Bitmap bmp;
+            System.Drawing.Bitmap? drawingBitmap = null;
+            try
             {
-                return null;
-            }
-
-            foreach (var handler in resolvers.Select(f => f(serviceProvider, entry.Path, subPath, fs, fsPath)).Where(f => f is not null))
-            {
-                await this.semaphore.WaitAsync(cancel).ConfigureAwait(false);
-                Bitmap bmp;
-                System.Drawing.Bitmap? drawingBitmap = null;
                 try
                 {
-                    try
-                    {
-                        drawingBitmap = handler(entry.Path, subPath, fs, fsPath);
-                    }
-                    finally
-                    {
-                        this.semaphore.Release();
-                    }
-
-                    bmp = ConvertToAvaloniaBitmap(drawingBitmap);
+                    drawingBitmap = fsm.Resolve<System.Drawing.Bitmap>(entry.Path);
                 }
                 finally
                 {
-                    drawingBitmap?.Dispose();
+                    this.semaphore.Release();
                 }
 
-                return bmp;
+                bmp = ConvertToAvaloniaBitmap(drawingBitmap);
+            }
+            finally
+            {
+                drawingBitmap?.Dispose();
             }
 
-            return null;
+            return bmp;
         }
 
         private static Bitmap? ConvertToAvaloniaBitmap(System.Drawing.Bitmap? src)

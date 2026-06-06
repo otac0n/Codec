@@ -1,6 +1,5 @@
 ﻿namespace Codec.Avalonia.Services
 {
-    using System;
     using System.Collections.Generic;
     using System.Drawing;
     using System.IO;
@@ -11,20 +10,14 @@
     using Codec.Archives;
     using Codec.Avalonia.Models;
     using Codec.Avalonia.Views;
-    using Codec.Files;
     using ImageMagick;
-    using Microsoft.Extensions.DependencyInjection;
 
-    public sealed class FileSaveService(NestedFileSystemManager fsm, IServiceProvider serviceProvider)
+    public sealed class FileSaveService(NestedFileSystemManager fsm)
     {
-        private List<FileHandlerResolver<Bitmap>>? imageResolvers;
-
-        public List<FileHandlerResolver<Bitmap>>? ImageResolvers => this.imageResolvers ??= [.. serviceProvider.GetServices<FileHandlerResolver<Bitmap>>()];
-
         public async Task SaveSingleAsync(Window owner, EntryItem item)
         {
             var entry = item.Entry;
-            if (!fsm.TryFindParentFileSystem(entry.Path, out var subPath, out var fs, out var fsPath))
+            if (!fsm.FileExists(entry.Path))
             {
                 return;
             }
@@ -32,7 +25,7 @@
             MagickImageInfo? fileInfo = null;
             try
             {
-                using var input = fs.File.OpenRead(subPath);
+                using var input = fsm.OpenRead(entry.Path);
                 fileInfo = new MagickImageInfo(input);
             }
             catch (MagickMissingDelegateErrorException)
@@ -43,7 +36,7 @@
             var options = new FilePickerSaveOptions
             {
                 Title = "Save File",
-                SuggestedFileName = fs.Path.GetFileName(subPath),
+                SuggestedFileName = fsm.GetFileName(entry.Path),
                 FileTypeChoices = fileInfo != null
                     ? [new FilePickerFileType("Image Files") { Patterns = ["*.bmp", "*.gif", "*.jpg", "*.jpeg", "*.png", "*.tif", "*.tiff", "*.pcx"] }, allFiles]
                     : [allFiles],
@@ -55,13 +48,12 @@
                 return;
             }
 
-            if (fs != null)
             {
-                using var input = fs.File.OpenRead(subPath);
+                using var input = fsm.OpenRead(entry.Path);
                 var path = file.Path.LocalPath;
-                if (Path.GetExtension(path) != Path.GetExtension(subPath))
+                if (Path.GetExtension(path) != fsm.GetExtension(entry.Path))
                 {
-                    if (serviceProvider.Resolve(this.ImageResolvers, entry.Path, subPath, fs, fsPath) is var resolved)
+                    if (fsm.Resolve<Bitmap>(entry.Path) is var resolved)
                     {
                         resolved.Save(path);
                         return;
@@ -100,12 +92,9 @@
 
             foreach (var (source, target) in targetFiles)
             {
-                if (fsm.TryFindParentFileSystem(source, out var subPath, out var fs, out var _))
-                {
-                    using var input = fs.File.OpenRead(subPath);
-                    using var output = File.Create(target);
-                    await input.CopyToAsync(output).ConfigureAwait(false);
-                }
+                using var input = fsm.OpenRead(source);
+                using var output = File.Create(target);
+                await input.CopyToAsync(output).ConfigureAwait(false);
             }
         }
 

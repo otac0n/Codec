@@ -55,16 +55,10 @@
 
                 this.Children.Clear();
 
-                if (!this.fsm.TryFindParentFileSystem(this.Entry.Path, out _, out var fs, out _))
-                {
-                    return;
-                }
-
                 var childEntries = this.fsm.EnumerateEntries(this.Entry.Path).Where(e => e.CanEnumerateEntries);
-
                 foreach (var child in childEntries)
                 {
-                    var name = fs.Path.GetFileName(child.Path) switch { "" => child.Path, var x => x };
+                    var name = this.fsm.GetFileName(child.Path) switch { "" => child.Path, var x => x };
                     this.Children.Add(new FileTreeNodeViewModel(child, name, this.fsm, this.detector));
                 }
             }

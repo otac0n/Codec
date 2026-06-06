@@ -63,17 +63,11 @@
             this.SelectedEntries.Clear();
             this.DisposeThumbnails();
 
-            if (!this.fsm.TryFindParentFileSystem(directory.Path, out _, out var fs, out _))
-            {
-                this.Entries.Clear();
-                return;
-            }
-
             var entries = this.fsm.EnumerateEntries(directory.Path);
 
             this.Entries = [.. entries.Select(entry =>
             {
-                var name = fs.Path.GetFileName(entry.Path) is { Length: > 0 } n ? n : entry.Path;
+                var name = this.fsm.GetFileName(entry.Path) is { Length: > 0 } n ? n : entry.Path;
                 return new EntryItem(entry, name, this.detector.Detect(entry));
             })];
         }
