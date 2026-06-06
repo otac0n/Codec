@@ -50,20 +50,17 @@
             using var stream = this.parent.File.OpenRead(this.parentRelativePath);
             using var reader = new BinaryReader(stream);
 
-            reader.BaseStream.Seek(0x4, SeekOrigin.Begin);
+            reader.BaseStream.Seek(0, SeekOrigin.Begin);
 
-            var disableSE2 = false;
+            var firstTableOffset = reader.ReadUInt32() * 0x800; // MGS2: sd_file.c
+            reader.ReadUInt32(); // se1: code
+            var secondTableOffset = reader.ReadUInt32() * 0x800;
+            reader.ReadUInt32(); // se2: code
 
-            if (reader.ReadUInt32() == 95)
-            {
-                reader.ReadBytes(4);
-                if (reader.ReadUInt32() == 255)
-                {
-                    disableSE2 = true; // this is a hack
-                }
-            }
 
-            reader.BaseStream.Seek(2048, SeekOrigin.Begin);
+
+
+            reader.BaseStream.Seek(firstTableOffset, SeekOrigin.Begin);
 
             var bound = BinaryPrimitives.ReadUInt32BigEndian(reader.ReadBytes(4));
             var size = BinaryPrimitives.ReadUInt32BigEndian(reader.ReadBytes(4));
@@ -77,27 +74,24 @@
 
             soundDatas.Add(new SpuData(reader));
 
-            if (!disableSE2)
+
+            reader.BaseStream.Seek(secondTableOffset, SeekOrigin.Begin);
+
+            bound = BinaryPrimitives.ReadUInt32BigEndian(reader.ReadBytes(4));
+            size = BinaryPrimitives.ReadUInt32BigEndian(reader.ReadBytes(4));
+
+            reader.ReadBytes(8);
+
+            if (size % 10 != 0 && size < 1000000)
             {
-                // is it really a hack if there isn't a better way?
-                // thanks bluepoint, i hate this
-                reader.BaseStream.Seek(Align(soundDatas[0].dataStart + soundDatas[0].spuSize, bound), SeekOrigin.Begin);
-
-                bound = BinaryPrimitives.ReadUInt32BigEndian(reader.ReadBytes(4));
-                size = BinaryPrimitives.ReadUInt32BigEndian(reader.ReadBytes(4));
-
-                reader.ReadBytes(8);
-
-                if (size % 10 != 0 && size < 1000000)
+                for (uint i = 0; i < (size / 0x10); i++)
                 {
-                    for (uint i = 0; i < (size / 0x10); i++)
-                    {
-                        result.Add(("1" + this.Path.DirectorySeparatorChar + i.ToString() + ".wav", reader.BaseStream.ReadLittleEndian<NoteParameters>(), 1));
-                    }
-
-                    soundDatas.Add(new SpuData(reader));
+                    result.Add(("1" + this.Path.DirectorySeparatorChar + i.ToString() + ".wav", reader.BaseStream.ReadLittleEndian<NoteParameters>(), 1));
                 }
+
+                soundDatas.Add(new SpuData(reader));
             }
+
 
             return result;
         }
