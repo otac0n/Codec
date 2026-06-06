@@ -35,8 +35,8 @@
         protected override string GetEntryName(Entry entry) =>
             this.Path.Combine(entry.FolderName, entry.FileName);
 
-        protected override Stream OpenRead(Entry entry) =>
-            new OffsetStreamSpan(parent.File.OpenRead(parentRelativePath), entry.Offset, entry.Length, Ownership.Dispose);
+        protected override Stream Open(Entry entry, FileStreamOptions parentOptions) =>
+            new OffsetStreamSpan(parent.File.Open(parentRelativePath, parentOptions), entry.Offset, entry.Length, Ownership.Dispose);
 
         private static void Align(Stream stream, long alignment)
         {

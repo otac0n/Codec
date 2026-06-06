@@ -92,8 +92,8 @@ namespace Codec.Archives
         protected override string GetEntryName(Entry entry) =>
             this.Path.Combine($"{entry.Group}", $"{entry.Id:x4}.{(entry.IsAnimation ? "anim" : "face")}");
 
-        protected override Stream OpenRead(Entry entry) =>
-            new OffsetStreamSpan(this.parent.File.OpenRead(this.parentRelativePath), entry.Offset, entry.Size, Ownership.Dispose);
+        protected override Stream Open(Entry entry, FileStreamOptions parentOptions) =>
+            new OffsetStreamSpan(this.parent.File.Open(this.parentRelativePath, parentOptions), entry.Offset, entry.Size, Ownership.Dispose);
 
         [StructLayout(LayoutKind.Sequential, Pack = 0)]
         private struct Header
@@ -132,9 +132,11 @@ namespace Codec.Archives
                 this.parent = parent;
             }
 
-            protected override Stream OpenRead(ImageEntry entry)
+            protected override Stream Open(ImageEntry entry, FileStreamOptions parentOptions)
             {
-                using var source = this.parent.File.OpenRead(this.parentRelativePath);
+                FileBase.EnsureReadOnly(parentOptions, "Writing to sub images in FACE.DAT is not supported.");
+
+                using var source = this.parent.File.Open(this.parentRelativePath, parentOptions);
                 var dest = new MemoryStream();
 
                 var (_, _, bmp) = GetBitmap(source, entry.PaletteOffset, entry.ImageOffset);

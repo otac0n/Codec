@@ -61,8 +61,10 @@ namespace Codec.Archives
         protected override string GetEntryName(string entry) =>
             entry;
 
-        protected override Stream OpenRead(string path)
+        protected override Stream Open(string path, FileStreamOptions parentOptions)
         {
+            FileBase.EnsureReadOnly(parentOptions, "Writing to sub streams .psb files is not supported.");
+
             using var stream = this.fileSystem.File.OpenRead(this.filePath);
             var psb = PsbDecode(stream);
             var root = psb.Root;

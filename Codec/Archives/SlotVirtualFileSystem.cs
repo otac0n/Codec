@@ -224,8 +224,8 @@
         protected override string GetEntryName(Entry entry) =>
             entry.Path;
 
-        protected override Stream OpenRead(Entry entry) =>
-            new OffsetStreamSpan(this.fileSystem.File.OpenRead(this.filePath), entry.Offset, entry.Size, Ownership.Dispose);
+        protected override Stream Open(Entry entry, FileStreamOptions parentOptions) =>
+            new OffsetStreamSpan(this.fileSystem.File.Open(this.filePath, parentOptions), entry.Offset, entry.Size, Ownership.Dispose);
 
         private static string GetExtension(uint ext) =>
             ExtensionsLookup[ext].FirstOrDefault() ?? ext.ToString("x2");

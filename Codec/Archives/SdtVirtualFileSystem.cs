@@ -77,10 +77,15 @@
         protected override string GetEntryName(Entry entry) =>
             entry.Stream.StreamId.ToString("x8", CultureInfo.InvariantCulture) + (SDTExtensionMap.TryGetValue(entry.Stream.StreamId, out var extension) ? extension : ".bin");
 
-        protected override Stream OpenRead(Entry entry)
+        protected override Stream Open(Entry entry, FileStreamOptions parentOptions)
         {
+            if (entry.Stream.StreamId == 0x00040001)
+            {
+                FileBase.EnsureReadOnly(parentOptions, "Header reformatting for .xwma files is not supported.");
+            }
+
             // Demux
-            var baseStream = parent.File.OpenRead(parentRelativePath);
+            var baseStream = parent.File.Open(parentRelativePath, parentOptions);
             Stream stream = new ConcatStream(
                 Ownership.Dispose,
                 [.. entry.Chunks.Select(c => new OffsetStreamSpan(baseStream, c.Position, c.Size, Ownership.Dispose))]);

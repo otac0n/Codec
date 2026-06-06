@@ -80,9 +80,12 @@ namespace Codec.Files
             protected override string GetEntryName(uint entry) =>
                 entry.ToString("x4") + ".tm2";
 
-            protected override Stream OpenRead(uint entry) =>
+            protected override Stream Open(uint entry, FileStreamOptions parentOptions)
+            {
                 // HACK: Each sub-file loads the whole file using the filename to locate the entry.
-                this.parent.File.OpenRead(this.path);
+                FileBase.EnsureReadOnly(parentOptions, "Writing to sub images in .tri files is not supported.");
+                return this.parent.File.Open(this.path, parentOptions);
+            }
         }
 
         private static int[] block32 =

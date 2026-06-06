@@ -1,5 +1,6 @@
 ﻿namespace Codec.Archives
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
@@ -8,14 +9,20 @@
 
     public class NestedFileSystemManager
     {
-        private readonly Dictionary<string, FileSystemFactory?> nestedFactories = new();
-        private readonly Dictionary<string, IFileSystem> fileSystems = new();
+        private readonly PathComparer comparer;
+        private readonly Dictionary<string, FileSystemFactory?> nestedFactories;
+        private readonly Dictionary<string, IFileSystem> fileSystems;
         private readonly FileSystemHandler[] handlers;
 
         public NestedFileSystemManager(IFileSystem fs, params FileSystemHandler[] handlers)
         {
             this.handlers = handlers;
-            this.fileSystems.Add(string.Empty, fs);
+            this.comparer = new();
+            this.nestedFactories = new(this.comparer);
+            this.fileSystems = new(this.comparer)
+            {
+                [string.Empty] = fs,
+            };
             this.RootEntry = new(string.Empty, false, false);
         }
 
@@ -177,5 +184,76 @@
         }
 
         public record Entry(string Path, bool CanOpen, bool CanEnumerateEntries);
+
+        public class PathComparer : IComparer<string?>, IEqualityComparer<string?>
+        {
+            public bool Equals(string? x, string? y) => this.Compare(x, y) == 0;
+
+            public int Compare(string? x, string? y)
+            {
+                if (ReferenceEquals(x, y) || string.Equals(x, y, StringComparison.Ordinal))
+                {
+                    return 0;
+                }
+                else if (x is null)
+                {
+                    return -1;
+                }
+                else if (y is null)
+                {
+                    return 1;
+                }
+
+                var xParts = PathExtensions.Split(x);
+                var yParts = PathExtensions.Split(y);
+
+                for (var i = 0; i < xParts.Length && i < yParts.Length; i++)
+                {
+                    if (xParts.Length != yParts.Length)
+                    {
+                        if (i == xParts.Length - 1)
+                        {
+                            return 1;
+                        }
+                        else if (i == yParts.Length - 1)
+                        {
+                            return -1;
+                        }
+                    }
+
+                    // TODO: Per-segment case sensitivity.
+                    var compare = StringComparison.OrdinalIgnoreCase;
+                    if (string.Compare(xParts[i], yParts[i], compare) is not 0 and var num)
+                    {
+                        return num;
+                    }
+                }
+
+                return 0;
+            }
+
+            /// <inheritdoc/>
+            public int GetHashCode(string? obj)
+            {
+                var hash = default(HashCode);
+                if (obj != null)
+                {
+                    var parts = PathExtensions.Split(obj);
+                    foreach (var part in parts)
+                    {
+                        // TODO: Per-segment case sensitivity.
+                        var compare = StringComparison.OrdinalIgnoreCase;
+                        hash.Add(string.GetHashCode(part, compare));
+                    }
+
+                    if (parts.Length == 0 || Array.IndexOf(PathExtensions.Separators, obj[^1]) != -1)
+                    {
+                        hash.Add('/');
+                    }
+                }
+
+                return hash.ToHashCode();
+            }
+        }
     }
 }

@@ -8,6 +8,7 @@
     using System.Linq;
 
     public abstract class IndexedFileSystem<TEntry> : FileSystemBase
+        where TEntry : notnull
     {
         private readonly StringComparison comparison;
 
@@ -22,7 +23,7 @@
 
         protected abstract IEnumerable<TEntry> ReadIndex();
 
-        protected abstract Stream OpenRead(TEntry entry);
+        protected abstract Stream Open(TEntry entry, FileStreamOptions parentOptions);
 
         protected abstract string GetEntryName(TEntry entry);
 
@@ -110,10 +111,12 @@
 
         private class IndexedFileBase(IndexedFileSystem<TEntry> parent) : FileBase(parent)
         {
+            private readonly FileLockManager<TEntry> locks = new();
+
             public override bool Exists([NotNullWhen(true)] string? path) =>
                 !PathExtensions.EndsWithSlash(path) && parent.Index.ContainsKey(parent.CanonicalizePath(path));
 
-            public override FileSystemStream OpenRead(string path)
+            public override FileSystemStream Open(string path, FileStreamOptions options)
             {
                 if (!PathExtensions.EndsWithSlash(path))
                 {
@@ -121,7 +124,13 @@
 
                     if (parent.Index.TryGetValue(canonicalPath, out var entry))
                     {
-                        return new StreamWrapper(parent.OpenRead(entry), canonicalPath, isAsync: false);
+                        var @lock = this.locks.Acquire(entry, options.Access, options.Share);
+                        var parentOptions = GetParentOptions(options);
+                        return new StreamWrapper(
+                            parent.Open(entry, parentOptions),
+                            canonicalPath,
+                            @lock,
+                            (options.Options & FileOptions.Asynchronous) == FileOptions.Asynchronous);
                     }
                 }
 

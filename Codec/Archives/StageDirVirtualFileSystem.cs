@@ -15,6 +15,7 @@ namespace Codec.Archives
     using Microsoft.Extensions.DependencyInjection;
     using DirEntry = (string name, long offset);
     using FileEntry = (string name, long offset, long size);
+    using FileSpan = (long offset, long size);
 
     public sealed class StageDirVirtualFileSystem : FileSystemBase
     {
@@ -49,6 +50,7 @@ namespace Codec.Archives
 
         private readonly DirEntry[] index;
         private readonly Dictionary<string, FileEntry[]> fileEntries = [];
+        private readonly FileLockManager<FileSpan> locks = new();
         private readonly string parentRelativePath;
         private readonly IFileSystem parent;
 
@@ -229,7 +231,7 @@ namespace Codec.Archives
             return files;
         }
 
-        private (long offset, long size)? GetStreamSpanRange(string path)
+        private FileSpan? GetStreamSpanRange(string path)
         {
             var ix = path.AsSpan().IndexOfAny(PathExtensions.Separators);
             if (ix >= 0)
@@ -249,13 +251,19 @@ namespace Codec.Archives
             return null;
         }
 
-        private Stream GetStreamSpan(string path)
+        private FileSystemStream Open(string path, FileStreamOptions options)
         {
             path = string.Join("/", path.Split(PathExtensions.Separators, StringSplitOptions.RemoveEmptyEntries));
 
-            if (this.GetStreamSpanRange(path) is (long offset, long size))
+            if (this.GetStreamSpanRange(path) is FileSpan fileSpan)
             {
-                return new OffsetStreamSpan(this.parent.File.OpenRead(this.parentRelativePath), offset, size, Ownership.Dispose);
+                var @lock = this.locks.Acquire(fileSpan, options.Access, options.Share);
+                var parentOptions = FileBase.GetParentOptions(options);
+                return new StreamWrapper(
+                    new OffsetStreamSpan(this.parent.File.Open(this.parentRelativePath, parentOptions), fileSpan.offset, fileSpan.size, Ownership.Dispose),
+                    path,
+                    @lock,
+                    (options.Options & FileOptions.Asynchronous) == FileOptions.Asynchronous);
             }
 
             throw new FileNotFoundException(new FileNotFoundException().Message, path);
@@ -386,7 +394,7 @@ namespace Codec.Archives
         {
             public override bool Exists([NotNullWhen(true)] string? path) => parent.GetStreamSpanRange(path) is not null;
 
-            public override FileSystemStream OpenRead(string path) => new StreamWrapper(parent.GetStreamSpan(path), path, isAsync: false);
+            public override FileSystemStream Open(string path, FileStreamOptions options) => parent.Open(path, options);
         }
     }
 }

@@ -283,6 +283,27 @@
                 this.parent = parent;
             }
 
+            public static void EnsureReadOnly(FileStreamOptions options, string message)
+            {
+                if ((options.Access & FileAccess.Write) == FileAccess.Write)
+                {
+                    throw new IOException(message);
+                }
+            }
+
+            public static FileStreamOptions GetParentOptions(FileStreamOptions options)
+            {
+                return new FileStreamOptions()
+                {
+                    Access = options.Access,
+                    Mode = FileMode.Open,
+                    Share = FileShare.ReadWrite,
+                    BufferSize = options.BufferSize,
+                    PreallocationSize = options.PreallocationSize,
+                    Options = options.Options & (FileOptions.Asynchronous | FileOptions.WriteThrough),
+                };
+            }
+
             /// <inheritdoc/>
             public virtual IFileSystem FileSystem => this.parent;
 
@@ -329,19 +350,19 @@
             public virtual FileSystemStream Create(string path, int bufferSize, FileOptions options) => throw new NotImplementedException();
 
             /// <inheritdoc/>
-            public virtual IFileSystemInfo CreateSymbolicLink(string path, string pathToTarget) => throw new NotImplementedException();
+            public virtual IFileSystemInfo CreateSymbolicLink(string path, string pathToTarget) => throw new NotSupportedException();
 
             /// <inheritdoc/>
             public virtual StreamWriter CreateText(string path) => throw new NotImplementedException();
 
             /// <inheritdoc/>
-            public virtual void Decrypt(string path) => throw new NotImplementedException();
+            public virtual void Decrypt(string path) => throw new NotSupportedException();
 
             /// <inheritdoc/>
             public virtual void Delete(string path) => throw new NotImplementedException();
 
             /// <inheritdoc/>
-            public virtual void Encrypt(string path) => throw new NotImplementedException();
+            public virtual void Encrypt(string path) => throw new NotSupportedException();
 
             /// <inheritdoc/>
             public virtual bool Exists([NotNullWhen(true)] string? path) => throw new NotImplementedException();
@@ -401,25 +422,25 @@
             public virtual void Move(string sourceFileName, string destFileName, bool overwrite) => throw new NotImplementedException();
 
             /// <inheritdoc/>
-            public virtual FileSystemStream Open(string path, FileMode mode) => throw new NotImplementedException();
+            public FileSystemStream Open(string path, FileMode mode) => this.Open(path, mode, FileAccess.ReadWrite);
 
             /// <inheritdoc/>
-            public virtual FileSystemStream Open(string path, FileMode mode, FileAccess access) => throw new NotImplementedException();
+            public FileSystemStream Open(string path, FileMode mode, FileAccess access) => this.Open(path, mode, access, FileShare.None);
 
             /// <inheritdoc/>
-            public virtual FileSystemStream Open(string path, FileMode mode, FileAccess access, FileShare share) => throw new NotImplementedException();
+            public FileSystemStream Open(string path, FileMode mode, FileAccess access, FileShare share) => this.Open(path, new FileStreamOptions { Mode = mode, Access = access, Share = share });
 
             /// <inheritdoc/>
             public virtual FileSystemStream Open(string path, FileStreamOptions options) => throw new NotImplementedException();
 
             /// <inheritdoc/>
-            public virtual FileSystemStream OpenRead(string path) => throw new NotImplementedException();
+            public FileSystemStream OpenRead(string path) => this.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
 
             /// <inheritdoc/>
-            public virtual StreamReader OpenText(string path) => throw new NotImplementedException();
+            public StreamReader OpenText(string path) => new StreamReader(this.OpenRead(path));
 
             /// <inheritdoc/>
-            public virtual FileSystemStream OpenWrite(string path) => throw new NotImplementedException();
+            public FileSystemStream OpenWrite(string path) => this.Open(path, FileMode.OpenOrCreate, FileAccess.Write);
 
             /// <inheritdoc/>
             public virtual byte[] ReadAllBytes(string path) => throw new NotImplementedException();

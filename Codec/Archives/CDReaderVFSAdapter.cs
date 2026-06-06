@@ -36,7 +36,8 @@
                     cueFS.CueSheet.Tracks[trackNumber - 1] is Track track &&
                     track.TrackDataType.ToString().StartsWith("MODE", StringComparison.Ordinal))
                 {
-                    return new FileSystemFactory((fullPath, parentRelativePath, parent, parentPath) => CreateCueTrackFileSystem(cueFS.CueSheetPath, cueFS.Parent, track));
+                    return (fullPath, parentRelativePath, parent, parentPath) =>
+                        CreateCueTrackFileSystem(cueFS.CueSheetPath, cueFS.Parent, track);
                 }
 
                 if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".cue", StringComparison.OrdinalIgnoreCase))
@@ -89,7 +90,7 @@
 
         private static CDReaderVFSAdapter CreateCueTrackFileSystem(string parentRelativePath, IFileSystem parent, Track track)
         {
-            var stream = OpenTrackFile(parentRelativePath, parent, track);
+            var stream = parent.File.OpenRead(GetTrackFileName(parentRelativePath, parent, track));
             var cdReader = new CDReader(
                 track.TrackDataType switch
                 {
@@ -102,14 +103,10 @@
             return new CDReaderVFSAdapter(cdReader);
         }
 
-        private static FileSystemStream OpenTrackFile(string parentRelativePath, IFileSystem parent, Track track)
-        {
-            var binPath = parent.Path.Combine(
+        private static string GetTrackFileName(string parentRelativePath, IFileSystem parent, Track track) =>
+            parent.Path.Combine(
                 parent.Path.GetDirectoryName(parentRelativePath)!,
                 track.DataFile.Filename);
-            var stream = parent.File.OpenRead(binPath);
-            return stream;
-        }
 
         [GeneratedRegex(@"Track (\d+)")]
         private static partial Regex TrackMatcher();
@@ -134,11 +131,11 @@
             protected override string GetEntryName(Track entry) =>
                 $"Track {entry.TrackNumber}.{(entry.TrackDataType == DataType.AUDIO ? "cdda" : "bin")}";
 
-            protected override Stream OpenRead(Track entry)
+            protected override Stream Open(Track entry, FileStreamOptions parentOptions)
             {
                 if (entry.TrackDataType.ToString().StartsWith("MODE", StringComparison.Ordinal))
                 {
-                    return OpenTrackFile(this.CueSheetPath, this.Parent, entry);
+                    return this.Parent.File.OpenRead(GetTrackFileName(this.CueSheetPath, this.Parent, entry));
                 }
 
                 if (entry.TrackDataType == DataType.AUDIO)
@@ -169,7 +166,7 @@
                         }
                     }
 
-                    var binStream = OpenTrackFile(this.CueSheetPath, this.Parent, fileEntry);
+                    var binStream = this.Parent.File.OpenRead(GetTrackFileName(this.CueSheetPath, this.Parent, fileEntry));
                     var startLba = GetLba(entry);
                     var endLba = trackIndex + 1 < this.CueSheet.Tracks.Length
                         ? GetLba(this.CueSheet.Tracks[trackIndex + 1])
@@ -262,6 +259,8 @@
 
         private class FileProvider(CDReaderVFSAdapter parent) : FileBase(parent)
         {
+            private readonly FileLockManager<string> locks = new();
+
             public override bool Exists([NotNullWhen(true)] string? path) => parent.cdReader.Exists(path);
 
             public override FileAttributes GetAttributes(string path) => parent.cdReader.GetAttributes(path);
@@ -278,11 +277,14 @@
 
             public override DateTime GetLastWriteTimeUtc(string path) => parent.cdReader.GetLastWriteTimeUtc(path);
 
-            public override FileSystemStream Open(string path, FileMode mode) => new StreamWrapper(parent.cdReader.OpenFile(path, mode), path, isAsync: false);
-
-            public override FileSystemStream Open(string path, FileMode mode, FileAccess access) => new StreamWrapper(parent.cdReader.OpenFile(path, mode, access), path, isAsync: false);
-
-            public override FileSystemStream OpenRead(string path) => new StreamWrapper(parent.cdReader.OpenFile(path, FileMode.Open), path, isAsync: false);
+            public override FileSystemStream Open(string path, FileStreamOptions options)
+            {
+                return new StreamWrapper(
+                    parent.cdReader.OpenFile(path, options.Mode, options.Access),
+                    path,
+                    this.locks.Acquire(path, options.Access, options.Share),
+                    (options.Options & FileOptions.Asynchronous) == FileOptions.Asynchronous);
+            }
 
             public override void SetAttributes(string path, FileAttributes fileAttributes) => parent.cdReader.SetAttributes(path, fileAttributes);
 

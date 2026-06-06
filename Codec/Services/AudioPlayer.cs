@@ -26,15 +26,20 @@
 
         public AudioPlayer(AudioStream stream, bool ownsStream = true)
         {
-            using var reader = new StreamMediaFoundationReader(stream);
-
             var ms = new MemoryStream();
-            WaveFileWriter.WriteWavFileToStream(ms, reader);
-            ms.Seek(0, SeekOrigin.Begin);
-
-            if (ownsStream)
+            try
             {
-                stream.Stream.Dispose();
+                using var reader = new StreamMediaFoundationReader(stream);
+
+                WaveFileWriter.WriteWavFileToStream(ms, reader);
+                ms.Seek(0, SeekOrigin.Begin);
+            }
+            finally
+            {
+                if (ownsStream)
+                {
+                    stream.Stream.Dispose();
+                }
             }
 
             this.reader = new WaveFileReader(ms);

@@ -54,7 +54,7 @@ namespace Codec.Archives
         protected override string GetEntryName(Entry entry) =>
             entry.Path;
 
-        protected override Stream OpenRead(Entry entry) =>
-            new OffsetStreamSpan(this.fileSystem.File.OpenRead(this.binPath), entry.Offset, entry.Length, Ownership.Dispose);
+        protected override Stream Open(Entry entry, FileStreamOptions parentOptions) =>
+            new OffsetStreamSpan(this.fileSystem.File.Open(this.binPath, parentOptions), entry.Offset, entry.Length, Ownership.Dispose);
     }
 }

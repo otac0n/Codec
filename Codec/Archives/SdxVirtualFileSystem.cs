@@ -105,8 +105,10 @@
         protected override string GetEntryName(Entry entry) =>
             entry.FileName;
 
-        protected override Stream OpenRead(Entry entry)
+        protected override Stream Open(Entry entry, FileStreamOptions parentOptions)
         {
+            FileBase.EnsureReadOnly(parentOptions, "Writing to sub patches in .sdx files is not supported.");
+
             using var stream = this.parent.File.OpenRead(this.parentRelativePath);
             using var reader = new BinaryReader(stream);
             reader.BaseStream.Seek(0, 0);

@@ -45,8 +45,8 @@ namespace Codec
                 return destination;
             }
 
-            var from = Split(relativeTo);
-            var to = Split(destination);
+            var from = SegmentSplitRegex().Split(relativeTo);
+            var to = SegmentSplitRegex().Split(destination);
 
             var common = 0;
             var max = Math.Min(from.Length, to.Length);
@@ -93,7 +93,7 @@ namespace Codec
             return aSpan.Equals(bSpan, comparison);
         }
 
-        public static string[] Split(string path) => SegmentSplitRegex().Split(path);
+        public static string[] Split(string path) => path.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
 
         public static bool IsPathRooted(ReadOnlySpan<char> path) => System.IO.Path.IsPathRooted(path);
 

@@ -63,10 +63,11 @@ namespace Codec.Archives
 
         protected override string GetEntryName(string entry) => entry;
 
-        protected override Stream OpenRead(string entry)
+        protected override Stream Open(string entry, FileStreamOptions parentOptions)
         {
             Debug.Assert(entry == this.fileName, "Entry does not match the file name.");
-            return ReadMArchive(this.fileSystem.File.OpenRead(this.filePath), this.seed, this.keyLength, out _) ?? throw new InvalidDataException("Not a valid M archive.");
+            FileBase.EnsureReadOnly(parentOptions, "Recompressing .m streams is not supported.");
+            return ReadMArchive(this.fileSystem.File.Open(this.filePath, parentOptions), this.seed, this.keyLength, out _) ?? throw new InvalidDataException("Not a valid M archive.");
         }
     }
 }
