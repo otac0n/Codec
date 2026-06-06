@@ -22,7 +22,7 @@ namespace Codec
             TriFile.Register(services);
             ImageMagickBitmapResolver.Register(services);
 
-            CDReaderVFSAdapter.Register(services);
+            CueSheetVirtualFileSystem.Register(services);
             BrfDatVirtualFileSystem.Register(services);
             FaceDatVirtualFileSystem.Register(services);
             StageDirVirtualFileSystem.Register(services);
@@ -44,7 +44,7 @@ namespace Codec
                         var file = parent.File.OpenRead(parentRelativePath);
                         var cdSector = new CDSectorStream(file, CDSectorStream.XAForm1);
                         var cdReader = new CDReader(cdSector, joliet: false);
-                        return new CDReaderVFSAdapter(cdReader);
+                        return new DiscUtilsVFSAdapter(cdReader);
                     };
                 }
 
