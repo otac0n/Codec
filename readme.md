@@ -37,6 +37,40 @@ To view Master Collection resources, you will need to have a copy of the game on
 |![MGS3](assets/mgs3.png)|![MGS4](assets/mgs4.png)|
 |![MG1](assets/mg1.png)|![MGSVR](assets/mgsvr.png)|
 
+Usage
+-----
+
+```csharp
+// Setup
+var services = new ServiceCollection(); // Dependency Injection root.
+ServiceRegistration.Register(services); // Register DI services.
+var rootCommand = new RootCommand();
+ArchiveOptions.Attach(rootCommand);
+var emptyContext = new InvocationContext(rootCommand.Parse(Array.Empty<string>())); // Empty command line arguments (e.g. use defaults)
+ArchiveOptions.Bind(emptyContext, services); // Register the key to the M2 Archive from the default arguments.
+using var serviceProvider = services.BuildServiceProvider(); // Create the root Dependency Injection scope.
+
+var fsm = serviceProvider.GetRequiredService<NestedFileSystemManager>(); // Grab the root filesystem.
+
+// API
+fsm.EnumerateEntries(@"G:\Rip\Exp\METAL GEAR SOLID DISC 1.CUE\MGS\FACE.DAT/0/f73b.face").Dump();
+
+var path = "...";
+using var readA = fsm.OpenRead(path);
+using var readB = fsm.Open(path, new FileStreamOptions { Mode = FileMode.Open, Access = FileAccess.Read, Share = FileShare.Read });
+using var readC = fsm.Open(path, new FileStreamOptions { Mode = FileMode.Open, Access = FileAccess.Read, Share = FileShare.None }); // Read/write file locks are supported hierarchically.
+using var write = fsm.Open(path, new FileStreamOptions { Mode = FileMode.Open, Access = FileAccess.ReadWrite, Share = FileShare.ReadWrite }); // Read/write is supported on some filetypes.
+// Some files are virtual and cannot be written. This will throw:
+using var virtualA = fsm.Open(@"...\MGS\FACE.DAT/0/f73b.face/base.img", new FileStreamOptions { Mode = FileMode.Open, Access = FileAccess.ReadWrite, Share = FileShare.None });
+// Some filesystems are read-only and cannot be written. This will throw:
+using var virtualB = fsm.Open(@"...\METAL GEAR SOLID DISC 1.CUE\...", new FileStreamOptions { Mode = FileMode.Open, Access = FileAccess.ReadWrite, Share = FileShare.None });
+
+// You can obtain bitmaps from known image types using:
+var bitmap = fsm.Resolve<System.Drawing.Bitmap>(path);
+// Likewise with Auio streams:
+var audio = fsm.Resolve<AudioStream>(path) ?? (AudioStream)fsm.OpenRead(path);
+```
+
 OpenSource Info
 ---------------
 
