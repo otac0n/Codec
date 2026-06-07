@@ -1,6 +1,5 @@
 ﻿namespace Codec.Files
 {
-    using System;
     using System.IO;
 
     public record class AudioStream(Stream Stream)

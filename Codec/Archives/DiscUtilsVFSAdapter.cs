@@ -5,12 +5,6 @@
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.IO.Abstractions;
-    using System.Linq;
-    using System.Text.RegularExpressions;
-    using CueSharp;
-    using DiscUtils.Iso9660;
-    using DiscUtils.Streams;
-    using Microsoft.Extensions.DependencyInjection;
 
     internal partial class DiscUtilsVFSAdapter : FileSystemBase
     {

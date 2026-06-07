@@ -1,6 +1,5 @@
 ﻿namespace Codec.Services
 {
-    using System.IO.Abstractions;
     using Codec.Archives;
     using Entry = Codec.Archives.NestedFileSystemManager.Entry;
 
