@@ -67,12 +67,14 @@ namespace Codec
             services.Resolve(services.GetServices<FileHandlerResolver<T>>(), path, subPath, fs, fsPath);
 
         public static T? Resolve<T>(this IServiceProvider services, IEnumerable<FileHandlerResolver<T>> resolvers, string path, string subPath, IFileSystem fs, string fsPath) =>
-            (from filter in resolvers
-             where filter != null
-             let resolver = filter(services, path, subPath, fs, fsPath)
-             where resolver is not null
-             let image = resolver(path, subPath, fs, fsPath)
-             where image is not null
-             select image).FirstOrDefault();
+            !fs.File.Exists(subPath)
+            ? default
+            : (from filter in resolvers
+               where filter != null
+               let resolver = filter(services, path, subPath, fs, fsPath)
+               where resolver is not null
+               let resolved = resolver(path, subPath, fs, fsPath)
+               where resolved is not null
+               select resolved).FirstOrDefault();
     }
 }
