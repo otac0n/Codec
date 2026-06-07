@@ -578,7 +578,7 @@ namespace Codec.Files
             PZM16S = 58,
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 0)]
         private struct Header
         {
             public uint Pad0;
@@ -591,7 +591,7 @@ namespace Codec.Files
             public int ClutOffset;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 0)]
         private struct TextureInfo
         {
             public float UOffset;
@@ -642,7 +642,7 @@ namespace Codec.Files
             public uint Pad14;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 0)]
         private struct GsTex0
         {
             public ulong Bitfield;

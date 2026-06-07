@@ -26,6 +26,8 @@ Support for the following formats is implemented:
     - WAV & MP3 Audio Files
     - .pcx Image Files
   - Metal Gear Specific
+    - .kmd Model Files
+    - .kms Model Files
     - .tri Texture Files (MGS2 & MGS3)
     - .ctxr Texture Files (MGS2 & MGS3)
 
