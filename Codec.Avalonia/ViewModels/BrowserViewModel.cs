@@ -106,7 +106,7 @@
                 case EntryType.Audio:
                     {
                         var audioStream = this.fsm.Resolve<AudioStream>(item.Entry.Path) ?? (AudioStream)this.fsm.OpenRead(item.Entry.Path);
-                        this.AudioPreviewRequested?.Invoke(this, (this.fsm.GetFileName(item.Entry.Path), audioStream));
+                        this.AudioPreviewRequested?.Invoke(this, new(audioStream, item.Entry.Path, this.fsm));
                     }
                     break;
                 case EntryType.Image:
@@ -115,7 +115,7 @@
                         var bmp = await this.imageLoader.LoadAsync(item.Entry).ConfigureAwait(true);
                         if (bmp != null)
                         {
-                            this.ImagePreviewRequested?.Invoke(this, (this.fsm.GetFileName(item.Entry.Path), bmp));
+                            this.ImagePreviewRequested?.Invoke(this, new(bmp, item.Entry.Path, this.fsm));
                         }
                     }
                     catch (Exception ex)
@@ -127,17 +127,26 @@
                     {
                         if (this.fsm.Resolve<Model>(item.Entry.Path) is Model model)
                         {
-                            this.ModelPreviewRequested?.Invoke(this, (this.fsm.GetFileName(item.Entry.Path), model));
+                            this.ModelPreviewRequested?.Invoke(this, new(model, item.Entry.Path, this.fsm));
                         }
                     }
                     break;
             }
         }
 
-        public event EventHandler<(string FileName, AudioStream Stream)>? AudioPreviewRequested;
+        public event EventHandler<PreviewRequestedEventArgs<AudioStream>>? AudioPreviewRequested;
 
-        public event EventHandler<(string FileName, Bitmap Bitmap)>? ImagePreviewRequested;
+        public event EventHandler<PreviewRequestedEventArgs<Bitmap>>? ImagePreviewRequested;
 
-        public event EventHandler<(string FileName, Model Model)>? ModelPreviewRequested;
+        public event EventHandler<PreviewRequestedEventArgs<Model>>? ModelPreviewRequested;
+
+        public class PreviewRequestedEventArgs<T>(T item, string path, NestedFileSystemManager parent) : EventArgs
+        {
+            public T Item { get; } = item;
+
+            public string Path { get; } = path;
+
+            public NestedFileSystemManager Parent { get; } = parent;
+        }
     }
 }

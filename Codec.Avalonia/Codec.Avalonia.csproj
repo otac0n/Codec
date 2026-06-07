@@ -27,9 +27,6 @@
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
     <AvaloniaResource Include="..\assets\Otacon.ico" Link="Assets\Otacon.ico" />
-    <Compile Update="Views\AudioPreviewWindow.axaml.cs">
-      <DependentUpon>AudioPreviewWindow.axaml</DependentUpon>
-    </Compile>
   </ItemGroup>
   <Import Project="..\PublishApp.targets" />
 </Project>

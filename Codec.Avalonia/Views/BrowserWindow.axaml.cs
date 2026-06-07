@@ -4,13 +4,11 @@
     using global::Avalonia.Controls;
     using global::Avalonia.Media.Imaging;
     using Codec.Avalonia.ViewModels;
-    using Codec.Services;
     using Codec.Files;
 
     public partial class BrowserWindow : Window
     {
         private readonly BrowserViewModel viewModel;
-        private AudioPlayer audioPlayer;
 
         public BrowserWindow(BrowserViewModel viewModel)
         {
@@ -22,13 +20,13 @@
             this.DataContext = viewModel;
         }
 
-        private void OnAudioPreviewRequested(object? sender, (string FileName, AudioStream Stream) args)
+        private void OnAudioPreviewRequested(object? sender, BrowserViewModel.PreviewRequestedEventArgs<AudioStream> args)
         {
             try
             {
-                var preview = new AudioPreviewWindow(args.Stream)
+                var preview = new AudioPreviewWindow(args.Item)
                 {
-                    Title = args.FileName,
+                    Title = args.Parent.GetFileName(args.Path),
                 };
                 preview.Show(this);
             }
@@ -38,16 +36,16 @@
             }
         }
 
-        private void OnImagePreviewRequested(object? sender, (string FileName, Bitmap Bitmap) args)
+        private void OnImagePreviewRequested(object? sender, BrowserViewModel.PreviewRequestedEventArgs<Bitmap> args)
         {
-            var preview = new ImagePreviewWindow(args.Bitmap)
+            var preview = new ImagePreviewWindow(args.Item)
             {
-                Title = args.FileName,
+                Title = args.Parent.GetFileName(args.Path),
             };
             preview.Show(this);
         }
 
-        private void OnModelPreviewRequested(object? sender, (string FileName, Model Model) args)
+        private void OnModelPreviewRequested(object? sender, BrowserViewModel.PreviewRequestedEventArgs<Model> args)
         {
         }
     }
