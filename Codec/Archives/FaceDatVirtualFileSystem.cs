@@ -78,11 +78,7 @@ namespace Codec.Archives
                 }
 
                 position += headers.Max(h => h.Offset + h.Size);
-                if (position % 2048 != 0)
-                {
-                    position += 2048 - position % 2048;
-                }
-
+                position = StreamExtensions.Align(position, 2048);
                 source.Position = position;
             }
 

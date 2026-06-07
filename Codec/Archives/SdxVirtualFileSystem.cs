@@ -39,11 +39,6 @@
             });
         }
 
-        static uint Align(uint offset, uint alignment)
-        {
-            return alignment == 0 || offset % alignment == 0 ? offset : offset + (alignment - (offset % alignment));
-        }
-
         protected override IEnumerable<Entry> ReadIndex()
         {
             var result = new List<Entry>();

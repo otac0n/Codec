@@ -204,9 +204,9 @@ namespace Codec.Archives
                 }
 
                 relative += entry.size;
-                if (!entry.packed && relative % SectorSize != 0)
+                if (!entry.packed)
                 {
-                    relative += SectorSize - relative % SectorSize;
+                    relative = StreamExtensions.Align(relative, SectorSize);
                 }
             }
 

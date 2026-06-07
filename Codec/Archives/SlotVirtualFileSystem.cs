@@ -148,7 +148,7 @@
 
                 var size = 0L;
                 size += Marshal.SizeOf<DataCNF>() + Marshal.SizeOf<DataCNFTag>() * cnf.NumTags;
-                size = Advance(size, out var _);
+                size = StreamExtensions.Align(size, SectorSize);
 
                 var tags = new DataCNFTag[cnf.NumTags];
                 for (var j = 0; j < cnf.NumTags; j++)
@@ -156,7 +156,7 @@
                     var tag = slotDat.ReadBigEndian<DataCNFTag>();
                     if (tag.Id == 0x7F000000)
                     {
-                        size += Advance(tag.Offset, out _);
+                        size += StreamExtensions.Align(tag.Offset, SectorSize);
                     }
 
                     tags[j] = tag;
@@ -182,7 +182,7 @@
                             {
                                 currentRegion = GetFileName(filename);
                                 currentSectionSize = tag.Offset;
-                                sectionOffset = Advance(sectionOffset, out _);
+                                sectionOffset = StreamExtensions.Align(sectionOffset, SectorSize);
                             }
                             else
                             {
@@ -232,12 +232,6 @@
 
         private static string GetFileName(uint filename) =>
             Regions.TryGetValue(filename, out var region) ? region : filename.ToString("x6");
-
-        private static long Advance(long size, out int diff)
-        {
-            diff = (int)((SectorSize - (size % SectorSize)) % SectorSize);
-            return size + diff;
-        }
 
         public record struct Entry(string Path, long Offset, long Size);
 

@@ -38,31 +38,6 @@
         protected override Stream Open(Entry entry, FileStreamOptions parentOptions) =>
             new OffsetStreamSpan(parent.File.Open(parentRelativePath, parentOptions), entry.Offset, entry.Length, Ownership.Dispose);
 
-        private static void Align(Stream stream, long alignment)
-        {
-            var offset = (alignment - (stream.Position % alignment)) % alignment;
-            if (offset > 0)
-            {
-                stream.Seek(offset, SeekOrigin.Current);
-            }
-        }
-
-        private static bool TryAlign(Stream stream, long alignment)
-        {
-            var offset = (alignment - (stream.Position % alignment)) % alignment;
-            if (offset + stream.Position > stream.Length)
-            {
-                return false;
-            }
-
-            if (offset > 0)
-            {
-                stream.Seek(offset, SeekOrigin.Current);
-            }
-
-            return true;
-        }
-
         private static List<Entry> ReadIndex(Stream stream)
         {
             var result = new List<Entry>();
@@ -80,7 +55,7 @@
                     result.Add(entry);
                 }
 
-                Align(stream, 0x800);
+                stream.Align(0x800);
             }
 
             stream.Seek(-4, SeekOrigin.Current);
@@ -107,7 +82,7 @@
                     stream.Seek(-4, SeekOrigin.Current);
                     SeekPastPCX(reader);
                     yield return new("pcx", pcxId.ToString("x8", CultureInfo.InvariantCulture) + ".pcx", pcxId, stream.Position - pcxId);
-                    if (!TryAlign(stream, 0x800))
+                    if (!stream.TryAlign(0x800))
                     {
                         end = true;
                     }
@@ -206,7 +181,7 @@
             for (var i = 0; i < fileCount; i++)
             {
                 var fileName = ReadString(stream);
-                Align(stream, 0x004);
+                stream.Align(0x004);
                 var fileSize = reader.ReadUInt32();
                 yield return new(folderId.ToString("x8", CultureInfo.InvariantCulture), fileName, stream.Position, fileSize);
                 stream.Seek(fileSize + 1, SeekOrigin.Current);

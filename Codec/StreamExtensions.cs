@@ -5,12 +5,52 @@ namespace Codec
     using System;
     using System.Buffers.Binary;
     using System.IO;
+    using System.Numerics;
     using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
 
     internal static class StreamExtensions
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T GetPadding<T>(T offset, T alignment)
+            where T : IModulusOperators<T, T, T>, INumberBase<T>
+        {
+            return alignment == T.Zero ? T.Zero : (alignment - offset % alignment) % alignment;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Align<T>(T offset, T alignment)
+            where T : IModulusOperators<T, T, T>, INumberBase<T>
+        {
+            return offset + GetPadding(offset, alignment);
+        }
+
+        public static void Align(this Stream stream, long alignment)
+        {
+            var offset = GetPadding(stream.Position, alignment);
+            if (offset > 0)
+            {
+                stream.Seek(offset, SeekOrigin.Current);
+            }
+        }
+
+        public static bool TryAlign(this Stream stream, long alignment)
+        {
+            var offset = GetPadding(stream.Position, alignment);
+            if (offset + stream.Position > stream.Length)
+            {
+                return false;
+            }
+
+            if (offset > 0)
+            {
+                stream.Seek(offset, SeekOrigin.Current);
+            }
+
+            return true;
+        }
+
         public static short ReadInt16BigEndian(this Stream s)
         {
             Span<byte> b = stackalloc byte[sizeof(short)];

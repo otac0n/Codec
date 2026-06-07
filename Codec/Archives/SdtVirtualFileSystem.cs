@@ -156,8 +156,7 @@
             var inputHeader = stream.ReadLittleEndian<Header>();
             stream.Seek(0x32, SeekOrigin.Begin);
             int seekEntryCount = stream.ReadInt16LittleEndian();
-            var pos = stream.Position + 4 * seekEntryCount;
-            pos = pos % 0x10 == 0 ? pos : pos + 0x10 - (pos % 0x10);
+            var pos = StreamExtensions.Align(stream.Position + 4 * seekEntryCount, 0x10);
             var audioData = new OffsetStreamSpan(stream, pos, stream.Length - pos, Ownership.Dispose);
 
             const int headerSize = 0x2E;
