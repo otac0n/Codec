@@ -17,6 +17,7 @@
             this.InitializeComponent();
             viewModel.AudioPreviewRequested += this.OnAudioPreviewRequested;
             viewModel.ImagePreviewRequested += this.OnImagePreviewRequested;
+            viewModel.ModelPreviewRequested += this.OnModelPreviewRequested;
             this.viewModel = viewModel;
             this.DataContext = viewModel;
         }
@@ -44,6 +45,10 @@
                 Title = args.FileName,
             };
             preview.Show(this);
+        }
+
+        private void OnModelPreviewRequested(object? sender, (string FileName, Model Model) args)
+        {
         }
     }
 }

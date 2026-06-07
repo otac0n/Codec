@@ -163,6 +163,16 @@ namespace Codec.UI.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap FontAwesome_ShapesSolid_20x20 {
+            get {
+                object obj = ResourceManager.GetObject("FontAwesome-ShapesSolid@20x20", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap FontAwesome_StopSolid_20x20 {
             get {
                 object obj = ResourceManager.GetObject("FontAwesome-StopSolid@20x20", resourceCulture);

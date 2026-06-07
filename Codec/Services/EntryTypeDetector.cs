@@ -45,6 +45,9 @@
                 ".WAV" or
                 ".WMA" or ".XWMA" => EntryType.Audio,
 
+                ".KMD" or
+                ".KMS" => EntryType.Model,
+
                 _ => EntryType.File,
             };
         }
@@ -57,6 +60,7 @@
             Image = 3,
             Video = 4,
             Audio = 5,
+            Model = 6,
         }
     }
 }

@@ -109,7 +109,6 @@
                         this.AudioPreviewRequested?.Invoke(this, (this.fsm.GetFileName(item.Entry.Path), audioStream));
                     }
                     break;
-
                 case EntryType.Image:
                     try
                     {
@@ -123,7 +122,14 @@
                     {
                         this.StatusMessage = $"Failed to load image: {ex.Message}";
                     }
-
+                    break;
+                case EntryType.Model:
+                    {
+                        if (this.fsm.Resolve<Model>(item.Entry.Path) is Model model)
+                        {
+                            this.ModelPreviewRequested?.Invoke(this, (this.fsm.GetFileName(item.Entry.Path), model));
+                        }
+                    }
                     break;
             }
         }
@@ -131,5 +137,7 @@
         public event EventHandler<(string FileName, AudioStream Stream)>? AudioPreviewRequested;
 
         public event EventHandler<(string FileName, Bitmap Bitmap)>? ImagePreviewRequested;
+
+        public event EventHandler<(string FileName, Model Model)>? ModelPreviewRequested;
     }
 }

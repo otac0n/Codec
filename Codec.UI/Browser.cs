@@ -39,6 +39,7 @@ namespace Codec.UI
                 Properties.Resources.FontAwesome_FileImageSolid_20x20,
                 Properties.Resources.FontAwesome_FileVideoSolid_20x20,
                 Properties.Resources.FontAwesome_FileAudioSolid_20x20,
+                Properties.Resources.FontAwesome_ShapesSolid_20x20,
             ]);
             this.saveSelectedDialog.InitialDirectory = Environment.ExpandEnvironmentVariables(this.saveSelectedDialog.InitialDirectory);
             this.saveToFolderDialog.InitialDirectory = Environment.ExpandEnvironmentVariables(this.saveToFolderDialog.InitialDirectory);
@@ -191,6 +192,13 @@ namespace Codec.UI
                                 catch (Exception ex)
                                 {
                                     MessageBox.Show(this, $"Failed to play audio: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                }
+                            }
+                            break;
+                        case FileType.Model:
+                            {
+                                if (this.fsm.Resolve<Model>(entry.Path) is Model model)
+                                {
                                 }
                             }
                             break;

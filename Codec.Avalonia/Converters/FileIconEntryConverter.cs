@@ -16,6 +16,7 @@
                 EntryType.Image => PackIconFontAwesomeKind.FileImageSolid,
                 EntryType.Audio => PackIconFontAwesomeKind.FileAudioSolid,
                 EntryType.Video => PackIconFontAwesomeKind.FileVideoSolid,
+                EntryType.Model => PackIconFontAwesomeKind.ShapesSolid,
                 _ => PackIconFontAwesomeKind.FileSolid,
             };
 
