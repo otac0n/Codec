@@ -51,6 +51,14 @@
         public static AppBuilder BuildAvaloniaApp(IServiceProvider services)
             => AppBuilder.Configure(() => new App(services))
                 .UsePlatformDetect()
+                .With(new Win32PlatformOptions
+                {
+                    RenderingMode = [Win32RenderingMode.Wgl]
+                })
+                .With(new X11PlatformOptions
+                {
+                    RenderingMode = [X11RenderingMode.Glx]
+                })
 #if DEBUG
                 .WithDeveloperTools()
 #endif

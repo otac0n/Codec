@@ -199,6 +199,17 @@ namespace Codec.UI
                             {
                                 if (this.fsm.Resolve<Model>(entry.Path) is Model model)
                                 {
+                                    var childForm = new Form
+                                    {
+                                        Text = this.fsm.GetFileName(entry.Path),
+                                        StartPosition = FormStartPosition.CenterParent,
+                                        FormBorderStyle = FormBorderStyle.SizableToolWindow,
+                                    };
+                                    childForm.Controls.Add(new ModelRendererControl(entry.Path, this.fsm, model)
+                                    {
+                                        Dock = DockStyle.Fill,
+                                    });
+                                    this.ShowChild(childForm);
                                 }
                             }
                             break;

@@ -47,6 +47,11 @@
 
         private void OnModelPreviewRequested(object? sender, BrowserViewModel.PreviewRequestedEventArgs<Model> args)
         {
+            var preview = new ModelPreviewWindow(args.Path, args.Parent, args.Item)
+            {
+                Title = args.Parent.GetFileName(args.Path),
+            };
+            preview.Show(this);
         }
     }
 }

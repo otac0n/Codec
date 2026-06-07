@@ -1,0 +1,13 @@
+<Window
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:views="using:Codec.Avalonia.Views"
+  x:Class="Codec.Avalonia.Views.ModelPreviewWindow"
+  Background="Black"
+  Icon="/Assets/avalonia-logo.ico"
+  WindowStartupLocation="CenterOwner"
+  Title="Image Preview"
+  Width="400"
+  Height="410">
+  <!-- <views:ModelRendererControl/> -->
+</Window>

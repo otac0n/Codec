@@ -23,6 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Codec\Codec.csproj" />
+    <ProjectReference Include="..\Codec.Rendering\Codec.Rendering.csproj" />
   </ItemGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
