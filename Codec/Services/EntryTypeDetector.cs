@@ -28,6 +28,7 @@
                 ".TIF" or ".TIFF" or
                 ".TM2" or
                 ".PCX" or
+                ".PLL" or
                 ".PNG" or
                 ".JPG" or ".JPEG" or
                 ".WEBP" => EntryType.Image,

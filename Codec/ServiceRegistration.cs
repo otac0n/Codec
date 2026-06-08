@@ -20,6 +20,7 @@ namespace Codec
             CdaFile.Register(services);
             CtxrFile.Register(services);
             TriFile.Register(services);
+            PllFile.Register(services);
             KmdFile.Register(services);
             KmsFile.Register(services);
             ImageMagickBitmapResolver.Register(services);
