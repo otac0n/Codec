@@ -3,7 +3,6 @@
 namespace Codec.Files
 {
     using System;
-    using System.Buffers.Binary;
     using System.Drawing;
     using System.Drawing.Imaging;
     using System.IO;
@@ -37,25 +36,42 @@ namespace Codec.Files
 
         public static Bitmap Load(Stream stream)
         {
-            var header = Header.Read(stream);
+            var header = stream.ReadBigEndian<Header>();
+            if (header.Signature != 0x54585452 || header.Version != 7)
+            {
+                throw new FormatException();
+            }
+            else if ((PixelFormat)header.PixelFormat != PixelFormat.A8R8G8B8)
+            {
+                throw new NotImplementedException($"The pixel format {header.PixelFormat} is not currently supported.");
+            }
+
+            stream.Align(0x80);
+            var size = (int)stream.ReadUInt32BigEndian();
+
             var bitmap = new Bitmap(header.Width, header.Height);
 
             BitmapData? bmpData = null;
             try
             {
-                bmpData = bitmap.LockBits(new Rectangle(Point.Empty, bitmap.Size), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+                bmpData = bitmap.LockBits(new Rectangle(Point.Empty, bitmap.Size), ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
                 var buffer = new byte[bmpData.Width * 4];
                 var scan = bmpData.Scan0;
                 for (var y = 0; y < bmpData.Height; y++, scan += bmpData.Stride)
                 {
-                    stream.ReadExactly(buffer, 0, buffer.Length);
-                    for (var x = 0; x < bmpData.Width; x++)
+                    var read = stream.Read(buffer, 0, Math.Min(buffer.Length, size));
+                    size -= read;
+                    for (var x = 0; x < read / 4; x++)
                     {
                         var ix = x * 4;
-                        (buffer[ix], buffer[ix + 1], buffer[ix + 2], buffer[ix + 3]) = (buffer[ix + 1], buffer[ix + 2], buffer[ix + 3], (byte)Math.Clamp(buffer[ix] * 2, 0, 255));
+                        buffer[ix + 3] = (byte)Math.Clamp(buffer[ix + 3] * 2, 0, 255);
                     }
 
-                    Marshal.Copy(buffer, 0, scan, buffer.Length);
+                    Marshal.Copy(buffer, 0, scan, read);
+                    if (read < buffer.Length)
+                    {
+                        break;
+                    }
                 }
             }
             finally
@@ -69,48 +85,52 @@ namespace Codec.Files
             return bitmap;
         }
 
+        private enum PixelFormat : ushort
+        {
+            A8R8G8B8 = 0x0,
+            A16B16G16R16F = 0x2,
+            R32F = 0x3,
+            D24X8 = 0x4,
+            DXT1 = 0x5,
+            DXT3 = 0x6,
+            DXT5 = 0x7,
+            A32B32G32R32F = 0x8,
+            Luminance8 = 0x9,
+            D24FS8 = 0xA,
+            Count = 0xB,
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 0)]
         private struct Header
         {
+            public uint Signature;
+            public uint Version;
             public ushort Width;
             public ushort Height;
             public ushort Depth;
+            public ushort UnknownA;
+            public ushort PixelFormat;
+            public ushort UnknownC;
+            public byte UnknownD;
+            public byte UnknownE;
+            public byte UnknownF;
+            public byte UnknownG;
+            public byte UnknownH;
+            public byte UnknownI;
+            public byte UnknownJ;
+            public byte UnknownK;
+            public byte UnknownL;
+            public byte UnknownM;
+            public byte UnknownN;
+            public byte UnknownO;
+            public byte UnknownP;
+            public byte UnknownQ;
+            public byte UnknownR;
+            public byte UnknownS;
+            public byte UnknownT;
+            public byte UnknownU;
             public byte MipMapsCount;
-
-            public Header()
-            {
-            }
-
-            public static Header Read(Stream stream)
-            {
-                var buffer = new byte[127];
-                stream.ReadExactly(buffer);
-
-                var signature = BinaryPrimitives.ReadUInt32BigEndian(buffer.AsSpan()[0..4]);
-                if (signature != 0x54585452)
-                {
-                    throw new FormatException();
-                }
-
-                var version = BinaryPrimitives.ReadUInt32BigEndian(buffer.AsSpan()[4..8]);
-                if (version != 7)
-                {
-                    throw new FormatException();
-                }
-
-                var width = BinaryPrimitives.ReadUInt16BigEndian(buffer.AsSpan()[8..10]);
-                var height = BinaryPrimitives.ReadUInt16BigEndian(buffer.AsSpan()[10..12]);
-                var depth = BinaryPrimitives.ReadUInt16BigEndian(buffer.AsSpan()[12..14]);
-
-                var mipMapCount = buffer[38];
-
-                return new Header
-                {
-                    Width = width,
-                    Height = height,
-                    Depth = depth,
-                    MipMapsCount = mipMapCount,
-                };
-            }
+            public byte UnknownV;
         }
     }
 }
