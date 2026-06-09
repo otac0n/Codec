@@ -262,6 +262,65 @@ namespace Codec
             return MemoryMarshal.Cast<byte, T>(buffer).ToArray();
         }
 
+        public static void WriteBigEndian<T>(this Stream stream, T value)
+            where T : struct =>
+            stream.WriteWithEndianness(value, swapEndianness: BitConverter.IsLittleEndian);
+
+        public static void WriteLittleEndian<T>(this Stream stream, T value)
+            where T : struct =>
+            stream.WriteWithEndianness(value, swapEndianness: !BitConverter.IsLittleEndian);
+
+        public static void WriteSystemEndianness<T>(this Stream stream, T value)
+            where T : struct =>
+            stream.WriteWithEndianness(value, swapEndianness: false);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void WriteWithEndianness<T>(this Stream stream, T value, bool swapEndianness)
+            where T : struct
+        {
+            var size = Marshal.SizeOf<T>();
+            var buffer = size < 64 ? stackalloc byte[size] : new byte[size].AsSpan();
+            MemoryMarshal.Write(buffer, in value);
+            if (swapEndianness)
+            {
+                SwapFields(buffer, typeof(T));
+            }
+
+            stream.Write(buffer);
+        }
+
+        public static void WriteArrayBigEndian<T>(this Stream stream, T[] values)
+            where T : struct =>
+            stream.WriteArrayWithEndianness(values, swapEndianness: BitConverter.IsLittleEndian);
+
+        public static void WriteArrayLittleEndian<T>(this Stream stream, T[] values)
+            where T : struct =>
+            stream.WriteArrayWithEndianness(values, swapEndianness: !BitConverter.IsLittleEndian);
+
+        public static void WriteArraySystemEndianness<T>(this Stream stream, T[] values)
+            where T : struct =>
+            stream.WriteArrayWithEndianness(values, swapEndianness: false);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void WriteArrayWithEndianness<T>(this Stream stream, T[] values, bool swapEndianness)
+            where T : struct
+        {
+            var elementSize = Marshal.SizeOf<T>();
+            var totalSize = checked(elementSize * values.Length);
+            var buffer = totalSize < 64 ? stackalloc byte[totalSize] : new byte[totalSize].AsSpan();
+            values.AsSpan().CopyTo(MemoryMarshal.Cast<byte, T>(buffer));
+
+            if (swapEndianness)
+            {
+                for (var offset = 0; offset < totalSize; offset += elementSize)
+                {
+                    SwapFields(buffer[offset..], typeof(T));
+                }
+            }
+
+            stream.Write(buffer);
+        }
+
         private static void SwapFields(Span<byte> buffer, Type type)
         {
             foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
