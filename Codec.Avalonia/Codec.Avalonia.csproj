@@ -22,7 +22,7 @@
     <PackageReference Include="IconPacks.Avalonia.FontAwesome" Version="2.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Codec\Codec.csproj" />
+    <ProjectReference Include="..\Codec.Base\Codec.Base.csproj" />
     <ProjectReference Include="..\Codec.Rendering\Codec.Rendering.csproj" />
   </ItemGroup>
   <ItemGroup>

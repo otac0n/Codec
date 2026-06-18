@@ -9,7 +9,7 @@
     <ApplicationIcon>..\assets\Otacon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Codec\Codec.csproj" />
+    <ProjectReference Include="..\Codec.Base\Codec.Base.csproj" />
     <ProjectReference Include="..\Codec.Rendering\Codec.Rendering.csproj" />
   </ItemGroup>
   <ItemGroup>
