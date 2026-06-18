@@ -16,6 +16,18 @@
             gl.DrawPrimitives(vertices, PrimitiveType.TriangleStrip, shader);
         }
 
+        public static void DrawLines<TVertex>(this GL gl, TVertex[] vertices, ShaderHandle<TVertex> shader)
+            where TVertex : unmanaged
+        {
+            gl.DrawPrimitives(vertices, PrimitiveType.Lines, shader);
+        }
+
+        public static void DrawLineStrip<TVertex>(this GL gl, TVertex[] vertices, ShaderHandle<TVertex> shader)
+            where TVertex : unmanaged
+        {
+            gl.DrawPrimitives(vertices, PrimitiveType.LineStrip, shader);
+        }
+
         private static unsafe void DrawPrimitives<TVertex>(this GL gl, TVertex[] vertices, PrimitiveType primitiveType, ShaderHandle<TVertex> shader)
             where TVertex : unmanaged
         {
