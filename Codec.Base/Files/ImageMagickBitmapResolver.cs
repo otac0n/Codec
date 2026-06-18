@@ -22,7 +22,6 @@
 
                 if (fileInfo != null)
                 {
-                    var seed = serviceProvider.GetRequiredService<ArchiveOptions>().Key;
                     return (fullPath, parentRelativePath, parent, parentPath) =>
                     {
                         using var input = parent.File.OpenRead(parentRelativePath);

@@ -124,7 +124,6 @@
             {
                 if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".slot", StringComparison.OrdinalIgnoreCase))
                 {
-                    var seed = serviceProvider.GetRequiredService<ArchiveOptions>().Key;
                     return (fullPath, parentRelativePath, parent, parentPath) => new SlotVirtualFileSystem(parentRelativePath, parent);
                 }
 
