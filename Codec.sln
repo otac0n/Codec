@@ -18,15 +18,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		stylecop.json = stylecop.json
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Codec.Avalonia", "Codec.Avalonia\Codec.Avalonia.csproj", "{8CF7C708-27C2-848B-AE26-4F25F79860CB}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Codec.Base", "Codec.Base\Codec.Base.csproj", "{4492962D-33B5-4B3E-B335-589689E32888}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Codec.Rendering", "Codec.Rendering\Codec.Rendering.csproj", "{3C018D0D-FF94-3EE7-6840-B0B15B266B71}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Codec.Tests", "Codec.Tests\Codec.Tests.csproj", "{6E852CB9-1445-4424-9773-1D774F88241A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Codec.UI", "Codec.UI\Codec.UI.csproj", "{2364BE65-3165-4A4B-B68D-461519E2D46F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Codec.UI.Avalonia", "Codec.UI.Avalonia\Codec.UI.Avalonia.csproj", "{8CF7C708-27C2-848B-AE26-4F25F79860CB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Codec.UI.WinForms", "Codec.UI.WinForms\Codec.UI.WinForms.csproj", "{2364BE65-3165-4A4B-B68D-461519E2D46F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -34,10 +34,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{8CF7C708-27C2-848B-AE26-4F25F79860CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8CF7C708-27C2-848B-AE26-4F25F79860CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8CF7C708-27C2-848B-AE26-4F25F79860CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8CF7C708-27C2-848B-AE26-4F25F79860CB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4492962D-33B5-4B3E-B335-589689E32888}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4492962D-33B5-4B3E-B335-589689E32888}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4492962D-33B5-4B3E-B335-589689E32888}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -50,6 +46,10 @@ Global
 		{6E852CB9-1445-4424-9773-1D774F88241A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E852CB9-1445-4424-9773-1D774F88241A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E852CB9-1445-4424-9773-1D774F88241A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8CF7C708-27C2-848B-AE26-4F25F79860CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8CF7C708-27C2-848B-AE26-4F25F79860CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8CF7C708-27C2-848B-AE26-4F25F79860CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8CF7C708-27C2-848B-AE26-4F25F79860CB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2364BE65-3165-4A4B-B68D-461519E2D46F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2364BE65-3165-4A4B-B68D-461519E2D46F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2364BE65-3165-4A4B-B68D-461519E2D46F}.Release|Any CPU.ActiveCfg = Release|Any CPU

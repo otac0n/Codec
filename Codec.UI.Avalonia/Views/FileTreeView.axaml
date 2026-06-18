@@ -1,0 +1,19 @@
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:Codec.UI.Avalonia.ViewModels"
+  x:Class="Codec.UI.Avalonia.Views.FileTreeView"
+  x:DataType="vm:FileTreeViewModel">
+  <TreeView ItemsSource="{Binding RootNodes}" SelectedItem="{Binding SelectedNode}" AutoScrollToSelectedItem="True">
+    <TreeView.ItemTemplate>
+      <TreeDataTemplate DataType="vm:FileTreeNodeViewModel" ItemsSource="{Binding Children}">
+        <TextBlock Text="{Binding DisplayName}" />
+      </TreeDataTemplate>
+    </TreeView.ItemTemplate>
+    <TreeView.Styles>
+      <Style Selector="TreeViewItem" x:DataType="vm:FileTreeNodeViewModel">
+        <Setter Property="IsExpanded" Value="{Binding IsExpanded}" />
+      </Style>
+    </TreeView.Styles>
+  </TreeView>
+</UserControl>

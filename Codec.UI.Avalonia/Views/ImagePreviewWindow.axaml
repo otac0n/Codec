@@ -1,0 +1,12 @@
+<Window
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  x:Class="Codec.UI.Avalonia.Views.ImagePreviewWindow"
+  Background="Black"
+  Icon="/Assets/avalonia-logo.ico"
+  WindowStartupLocation="CenterOwner"
+  Title="Image Preview"
+  Width="400"
+  Height="410">
+  <Image x:Name="PreviewImage" Stretch="Uniform" />
+</Window>

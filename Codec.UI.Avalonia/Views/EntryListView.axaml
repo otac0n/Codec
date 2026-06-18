@@ -1,0 +1,63 @@
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+  xmlns:models="using:Codec.UI.Avalonia.Models"
+  xmlns:conv="using:Codec.UI.Avalonia.Converters"
+  xmlns:vm="using:Codec.UI.Avalonia.ViewModels"
+  xmlns:views="using:Codec.UI.Avalonia.Views"
+  x:Class="Codec.UI.Avalonia.Views.EntryListView"
+  x:DataType="vm:EntryListViewModel">
+  <UserControl.Resources>
+    <conv:FileIconEntryConverter x:Key="FileIconEntryConverter" />
+    <conv:ViewModeConverter x:Key="ViewModeConverter" />
+  </UserControl.Resources>
+  <Panel>
+    <ListBox
+      ItemsSource="{Binding Entries}"
+      SelectionMode="Multiple"
+      SelectedItems="{Binding SelectedEntries}"
+      IsVisible="{Binding CurrentViewMode, Converter={StaticResource ViewModeConverter}, ConverterParameter={x:Static models:ViewMode.List}}"
+      DoubleTapped="ListBox_DoubleTapped">
+      <ListBox.KeyBindings>
+        <KeyBinding Command="{Binding ActivateSelectedItem}" Gesture="Enter" />
+      </ListBox.KeyBindings>
+      <ListBox.ContextMenu>
+        <ContextMenu>
+          <MenuItem Header="Save As..." IsEnabled="{Binding CanSave}" Command="{Binding SaveCommand}" CommandParameter="{Binding $parent[Window]}">
+            <MenuItem.Icon>
+              <iconPacks:PackIconFontAwesome
+                Kind="FloppyDiskSolid"
+                Width="{Binding $parent[TemplatedControl].FontSize}"
+                Height="{Binding $parent[TemplatedControl].FontSize}"/>
+            </MenuItem.Icon>
+          </MenuItem>
+        </ContextMenu>
+      </ListBox.ContextMenu>
+      <ListBox.ItemTemplate>
+        <DataTemplate DataType="models:EntryItem">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <iconPacks:PackIconFontAwesome
+              Kind="{Binding EntryType, Converter={StaticResource FileIconEntryConverter}}"
+              Width="{Binding $parent[TemplatedControl].FontSize}"
+              Height="{Binding $parent[TemplatedControl].FontSize}"
+              Margin="2" />
+            <TextBlock Text="{Binding DisplayName}" />
+          </StackPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+    <ScrollViewer IsVisible="{Binding CurrentViewMode, Converter={StaticResource ViewModeConverter}, ConverterParameter={x:Static models:ViewMode.ImagePreview}}">
+      <ItemsRepeater ItemsSource="{Binding Thumbnails}">
+        <ItemsRepeater.Layout>
+          <UniformGridLayout MinItemWidth="96" MinItemHeight="96" ItemsStretch="Fill" />
+        </ItemsRepeater.Layout>
+        <ItemsRepeater.ItemTemplate>
+          <DataTemplate DataType="vm:ThumbnailItemViewModel">
+            <views:ThumbnailCell />
+          </DataTemplate>
+        </ItemsRepeater.ItemTemplate>
+      </ItemsRepeater>
+    </ScrollViewer>
+  </Panel>
+</UserControl>

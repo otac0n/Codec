@@ -1,0 +1,10 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Codec.UI.Avalonia.ViewModels"
+             x:Class="Codec.UI.Avalonia.Views.ThumbnailCell"
+             x:DataType="vm:ThumbnailItemViewModel"
+             Width="96" Height="96">
+  <Grid>
+    <Image Source="{Binding Thumbnail}" Stretch="Uniform" />
+  </Grid>
+</UserControl>
