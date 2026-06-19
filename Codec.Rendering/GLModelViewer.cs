@@ -132,6 +132,15 @@
                     this.gl.Enable(EnableCap.CullFace);
                 }
 
+                if (gpuMesh.Material.IsWireFrameEnabled)
+                {
+                    this.gl.PolygonMode(GLEnum.FrontAndBack, GLEnum.Line);
+                }
+                else
+                {
+                    this.gl.PolygonMode(GLEnum.FrontAndBack, GLEnum.Fill);
+                }
+
                 var pixelArt = gpuMesh.Material
                     .GetAllProperties()
                     .SingleOrDefault(p => p.Name == $"$tex.pixelArt,{(int)gpuMesh.Material.TextureDiffuse.TextureType},{gpuMesh.Material.TextureDiffuse.TextureIndex}")
