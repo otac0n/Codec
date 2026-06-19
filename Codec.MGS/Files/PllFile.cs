@@ -6,7 +6,6 @@
     using System.Drawing.Imaging;
     using System.IO;
     using System.Runtime.InteropServices;
-    using Codec.Files;
     using Microsoft.Extensions.DependencyInjection;
 
     internal class PllFile

@@ -8,7 +8,6 @@ namespace Codec.MGS.Files
     using System.IO;
     using System.Runtime.InteropServices;
     using Codec.Archives;
-    using Codec.Files;
     using DiscUtils.Streams;
     using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;

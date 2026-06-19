@@ -8,7 +8,6 @@
     using System.Threading.Tasks;
     using global::Avalonia.Media.Imaging;
     using Codec.Archives;
-    using Codec.Files;
     using Entry = Codec.Archives.NestedFileSystemManager.Entry;
 
     public sealed class ImageLoader(

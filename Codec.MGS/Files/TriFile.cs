@@ -11,7 +11,6 @@ namespace Codec.MGS.Files
     using System.Runtime.InteropServices;
     using Codec;
     using Codec.Archives;
-    using Codec.Files;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Logging.Abstractions;

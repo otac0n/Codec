@@ -1,4 +1,4 @@
-﻿namespace Codec.Archives
+﻿namespace Codec
 {
     using System;
     using System.IO.Abstractions;
