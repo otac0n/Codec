@@ -10,9 +10,9 @@
     using Codec.Archives;
     using Codec.UI.Avalonia.Models;
     using Codec.UI.Avalonia.Views;
-    using ImageMagick;
+    using Codec.Services;
 
-    public sealed class FileSaveService(NestedFileSystemManager fsm)
+    public sealed class FileSaveService(NestedFileSystemManager fsm, EntryTypeDetector detector)
     {
         public async Task SaveSingleAsync(Window owner, EntryItem item)
         {
@@ -22,23 +22,15 @@
                 return;
             }
 
-            MagickImageInfo? fileInfo = null;
-            try
-            {
-                using var input = fsm.OpenRead(entry.Path);
-                fileInfo = new MagickImageInfo(input);
-            }
-            catch (MagickMissingDelegateErrorException)
-            {
-            }
+            var type = detector.Detect(entry);
 
             var allFiles = new FilePickerFileType("All Files") { Patterns = ["*.*"] };
             var options = new FilePickerSaveOptions
             {
                 Title = "Save File",
                 SuggestedFileName = fsm.GetFileName(entry.Path),
-                FileTypeChoices = fileInfo != null
-                    ? [new FilePickerFileType("Image Files") { Patterns = ["*.bmp", "*.gif", "*.jpg", "*.jpeg", "*.png", "*.tif", "*.tiff", "*.pcx"] }, allFiles]
+                FileTypeChoices = detector[type] is string supportedTypes
+                    ? [new FilePickerFileType($"{type} Files") { Patterns = supportedTypes.Split(';') }, allFiles]
                     : [allFiles],
             };
 
@@ -53,10 +45,15 @@
                 var path = file.Path.LocalPath;
                 if (Path.GetExtension(path) != fsm.GetExtension(entry.Path))
                 {
-                    if (fsm.Resolve<Bitmap>(entry.Path) is var resolved)
+                    switch (type)
                     {
-                        resolved.Save(path);
-                        return;
+                        case EntryTypeDetector.EntryType.Image:
+                            if (fsm.Resolve<Bitmap>(entry.Path) is Bitmap image)
+                            {
+                                image.Save(path);
+                                return;
+                            }
+                            break;
                     }
                 }
 

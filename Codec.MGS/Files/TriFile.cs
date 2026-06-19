@@ -11,6 +11,7 @@ namespace Codec.MGS.Files
     using System.Runtime.InteropServices;
     using Codec;
     using Codec.Archives;
+    using Codec.Services;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Logging.Abstractions;
@@ -19,6 +20,8 @@ namespace Codec.MGS.Files
     {
         public static void Register(IServiceCollection services)
         {
+            services.AddSingleton(new EntryTypeMatcher(EntryTypeDetector.EntryType.Image, "*.tm2"));
+
             services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
                 if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".tri", StringComparison.OrdinalIgnoreCase))

@@ -6,12 +6,15 @@
     using System.Drawing.Imaging;
     using System.IO;
     using System.Runtime.InteropServices;
+    using Codec.Services;
     using Microsoft.Extensions.DependencyInjection;
 
     internal class PllFile
     {
         public static void Register(IServiceCollection services)
         {
+            services.AddSingleton(new EntryTypeMatcher(EntryTypeDetector.EntryType.Image, "*.pll"));
+
             services.AddSingleton<FileHandlerResolver<Bitmap>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
                 if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".pll", StringComparison.OrdinalIgnoreCase))

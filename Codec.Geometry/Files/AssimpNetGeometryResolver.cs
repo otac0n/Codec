@@ -2,7 +2,9 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Assimp;
+    using Codec.Services;
     using Microsoft.Extensions.DependencyInjection;
 
     public class AssimpNetGeometryResolver
@@ -14,6 +16,8 @@
             {
                 supportedExtensions.UnionWith(probe.GetSupportedImportFormats());
             }
+
+            services.AddSingleton(new EntryTypeMatcher(EntryTypeDetector.EntryType.Model, string.Join(";", supportedExtensions.Select(e => $"*{e}"))));
 
             services.AddSingleton<FileHandlerResolver<RenderableScene>>(
                 (serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>

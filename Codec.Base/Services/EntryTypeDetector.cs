@@ -1,10 +1,31 @@
 ﻿namespace Codec.Services
 {
+    using System;
+    using System.Collections.Immutable;
+    using System.Linq;
+    using System.Text.RegularExpressions;
     using Codec.Archives;
+    using Microsoft.Extensions.DependencyInjection;
     using Entry = Codec.Archives.NestedFileSystemManager.Entry;
 
-    public sealed class EntryTypeDetector(NestedFileSystemManager fsm)
+    public sealed class EntryTypeDetector
     {
+        private readonly NestedFileSystemManager fsm;
+        private readonly ImmutableList<(Regex Regex, EntryType EntryType)> matchers;
+        private readonly ImmutableDictionary<EntryType, string> typeChoices;
+
+        public EntryTypeDetector(NestedFileSystemManager fsm, IServiceProvider serviceProvider)
+        {
+            this.fsm = fsm;
+            var matchers = serviceProvider.GetServices<EntryTypeMatcher>();
+            this.matchers = [.. matchers.Select(m => (PathExtensions.GlobToRegex(m.GlobPattern), m.EntryType))];
+            this.typeChoices = (from m in serviceProvider.GetServices<EntryTypeMatcher>()
+                                group m.GlobPattern by m.EntryType into g
+                                select (g.Key, Pattern: string.Join(";", g))).ToImmutableDictionary(g => g.Key, g => g.Pattern);
+        }
+
+        public string? this[EntryType entryType] => this.typeChoices.TryGetValue(entryType, out var type) ? type : null;
+
         public EntryType Detect(Entry entry)
         {
             if (entry.CanEnumerateEntries && !entry.CanOpen)
@@ -17,42 +38,15 @@
                 return EntryType.Archive;
             }
 
-            // TODO: Run through our collection of FileHandlerResolvers here.
-
-            return fsm.GetExtension(entry.Path).ToUpperInvariant() switch
+            foreach (var matcher in this.matchers)
             {
-                ".BMP" or
-                ".CTXR" or
-                ".GIF" or
-                ".IMG" or
-                ".TIF" or ".TIFF" or
-                ".TM2" or
-                ".PCX" or
-                ".PLL" or
-                ".PNG" or
-                ".JPG" or ".JPEG" or
-                ".WEBP" => EntryType.Image,
+                if (matcher.Regex.IsMatch(this.fsm.GetFileName(entry.Path)))
+                {
+                    return matcher.EntryType;
+                }
+            }
 
-                ".AVI" or
-                ".MOV" or
-                ".MP4" or
-                ".MKV" or
-                ".WEBM" => EntryType.Video,
-
-                ".CDA" or ".CDDA" or
-                ".MID" or ".MIDI" or
-                ".MP3" or
-                ".OGG" or
-                ".WAV" or
-                ".WMA" or ".XWMA" => EntryType.Audio,
-
-                ".OBJ" or
-                ".FBX" or
-                ".KMD" or
-                ".KMS" => EntryType.Model,
-
-                _ => EntryType.File,
-            };
+            return EntryType.File;
         }
 
         public enum EntryType

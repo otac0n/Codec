@@ -8,6 +8,7 @@ namespace Codec.MGS.Files
     using System.IO;
     using System.Runtime.InteropServices;
     using Codec.Archives;
+    using Codec.Services;
     using DiscUtils.Streams;
     using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +17,8 @@ namespace Codec.MGS.Files
     {
         public static void Register(IServiceCollection services)
         {
+            services.AddSingleton(new EntryTypeMatcher(EntryTypeDetector.EntryType.Image, "*.ctxr"));
+
             services.AddSingleton<FileHandlerResolver<Bitmap>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
                 if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".ctxr", StringComparison.OrdinalIgnoreCase))

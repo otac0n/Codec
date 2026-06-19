@@ -14,7 +14,6 @@ namespace Codec.UI.WinForms
     using Codec.Files;
     using Codec.MGS;
     using Codec.Services;
-    using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = Codec.Archives.NestedFileSystemManager.Entry;
     using FileType = Codec.Services.EntryTypeDetector.EntryType;
@@ -23,6 +22,7 @@ namespace Codec.UI.WinForms
     {
         private readonly EntryTypeDetector detector;
         private readonly NestedFileSystemManager fsm;
+        private readonly IServiceProvider serviceProvider;
         private readonly VirtualImageList<Entry> textureDisplay;
         private bool suppressUpdates;
 
@@ -55,6 +55,7 @@ namespace Codec.UI.WinForms
 
             this.fileTree.Nodes.Add(new TreeNode("root", 0, 0, [this.CreateExpanderDummy()]) { Tag = this.fsm.RootEntry });
             this.Navigate(Path.Combine(serviceProvider.GetRequiredService<EnvironmentOptions>().SteamApps, WellKnownPaths.AllDataBin, WellKnownPaths.CD1Path, WellKnownPaths.StageDirPath));
+            this.serviceProvider = serviceProvider;
         }
 
         private TreeNode CreateExpanderDummy() => new("...");
@@ -261,18 +262,10 @@ namespace Codec.UI.WinForms
             {
                 var entry = (Entry)this.entryList.SelectedItems[0]?.Tag!;
 
-                MagickImageInfo? fileInfo = null;
-                try
-                {
-                    using var input = this.fsm.OpenRead(entry.Path);
-                    fileInfo = new MagickImageInfo(input);
-                }
-                catch (MagickMissingDelegateErrorException)
-                {
-                }
+                var type = this.detector.Detect(entry);
 
-                this.saveSelectedDialog.Filter = fileInfo != null
-                    ? "Image Files|*.bmp;*.gif;*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.pcx|All Files|*.*"
+                this.saveSelectedDialog.Filter = this.detector[type] is string supportedTypes
+                    ? $"{type} Files|{supportedTypes}|All Files|*.*"
                     : "All Files|*.*";
 
                 this.saveSelectedDialog.FileName = Path.GetFileName(entry.Path);
@@ -287,10 +280,15 @@ namespace Codec.UI.WinForms
                     var path = this.saveSelectedDialog.FileName;
                     if (Path.GetExtension(path) != this.fsm.GetExtension(entry.Path))
                     {
-                        if (this.fsm.Resolve<Bitmap>(entry.Path) is var resolved)
+                        switch (type)
                         {
-                            resolved.Save(path);
-                            return;
+                            case FileType.Image:
+                                if (this.fsm.Resolve<Bitmap>(entry.Path) is Bitmap image)
+                                {
+                                    image.Save(path);
+                                    return;
+                                }
+                                break;
                         }
                     }
 

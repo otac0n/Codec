@@ -10,12 +10,15 @@
     using Codec.Archives;
     using Codec.Files;
     using Codec.Geometry;
+    using Codec.Services;
     using Microsoft.Extensions.DependencyInjection;
 
     public class KmsFile
     {
         public static void Register(IServiceCollection services)
         {
+            services.AddSingleton(new EntryTypeMatcher(EntryTypeDetector.EntryType.Model, "*.kms"));
+
             services.AddSingleton<FileHandlerResolver<RenderableScene>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
                 if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".kms", StringComparison.OrdinalIgnoreCase))

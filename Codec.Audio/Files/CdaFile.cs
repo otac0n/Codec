@@ -9,6 +9,8 @@
     {
         public static void Register(IServiceCollection services)
         {
+            services.AddSingleton(new EntryTypeMatcher(Services.EntryTypeDetector.EntryType.Audio, "*.cda;*.cdda"));
+
             services.AddSingleton<FileHandlerResolver<AudioStream>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
                 var ext = parent.Path.GetExtension(parentRelativePath);

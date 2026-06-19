@@ -220,18 +220,19 @@ namespace Codec
             }
         }
 
-        public static Regex GlobToRegex(string searchPattern) =>
+        public static Regex GlobToRegex(string searchPattern, bool ignoreCase = true) =>
             new Regex(
-                "^" +
+                "^(" +
                 string.Concat(
-                    Regex.Split(searchPattern, @"(\?|\*+)")
+                    Regex.Split(searchPattern, @"(\?|\*+|\;)")
                         .Select(p =>
                             p == ""  ? "" :
+                            p[0] == ';' ? "|" :
                             p[0] == '?' ? "." :
                             p[0] == '*' ? ".*" :
                             Regex.Escape(p))) +
-                "$",
-                RegexOptions.Singleline);
+                ")$",
+                RegexOptions.Singleline | (ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None));
 
         public static bool PrefixMatch(string[] prefix, string[] subject)
         {

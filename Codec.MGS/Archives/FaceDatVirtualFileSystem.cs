@@ -12,6 +12,7 @@ namespace Codec.MGS.Archives
     using System.Runtime.InteropServices;
     using Codec;
     using Codec.Archives;
+    using Codec.Services;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (int Group, ushort Id, bool IsAnimation, long Offset, long Size);
@@ -31,6 +32,8 @@ namespace Codec.MGS.Archives
 
         public static void Register(IServiceCollection services)
         {
+            services.AddSingleton(new EntryTypeMatcher(EntryTypeDetector.EntryType.Image, "*.img"));
+
             services.AddSingleton<FileSystemResolver>((servicProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
                 if (string.Equals(parent.Path.GetFileName(parentRelativePath), "FACE.DAT", StringComparison.OrdinalIgnoreCase))
