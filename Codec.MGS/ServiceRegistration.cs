@@ -13,7 +13,6 @@ namespace Codec.MGS
     {
         public static void Register(IServiceCollection services)
         {
-            CdaFile.Register(services);
             CtxrFile.Register(services);
             TriFile.Register(services);
             PllFile.Register(services);

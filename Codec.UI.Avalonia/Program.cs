@@ -28,6 +28,8 @@
                 var services = new ServiceCollection();
 
                 ServiceRegistration.Register(services);
+                Audio.ServiceRegistration.Register(services);
+                Imaging.ServiceRegistration.Register(services);
                 M2.ServiceRegistration.Register(services);
                 MGS.ServiceRegistration.Register(services);
                 EnvironmentOptions.Bind(context, services);

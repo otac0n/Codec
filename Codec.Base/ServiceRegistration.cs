@@ -7,7 +7,6 @@ namespace Codec
     using System.IO.Abstractions;
     using System.Linq;
     using Codec.Archives;
-    using Codec.Files;
     using Codec.Services;
     using DiscUtils.Complete;
     using Microsoft.Extensions.DependencyInjection;
@@ -16,8 +15,6 @@ namespace Codec
     {
         public static void Register(IServiceCollection services)
         {
-            ImageMagickBitmapResolver.Register(services);
-
             CueSheetVirtualFileSystem.Register(services);
 
             services.AddSingleton<EntryTypeDetector>();

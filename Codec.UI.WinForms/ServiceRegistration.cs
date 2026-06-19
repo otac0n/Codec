@@ -9,6 +9,8 @@ namespace Codec.UI.WinForms
         internal static void Register(IServiceCollection services)
         {
             Codec.ServiceRegistration.Register(services);
+            Audio.ServiceRegistration.Register(services);
+            Imaging.ServiceRegistration.Register(services);
             M2.ServiceRegistration.Register(services);
             MGS.ServiceRegistration.Register(services);
             services.AddTransient<Browser>();

@@ -10,7 +10,10 @@
     <WarningsAsErrors>CS0114</WarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Codec.Audio\Codec.Audio.csproj" />
     <ProjectReference Include="..\Codec.Base\Codec.Base.csproj" />
+    <ProjectReference Include="..\Codec.Geometry\Codec.Geometry.csproj" />
+    <ProjectReference Include="..\Codec.Imaging\Codec.Imaging.csproj" />
   </ItemGroup>
   <ItemGroup>
     <AdditionalFiles Include="..\stylecop.json" Link="stylecop.json" />

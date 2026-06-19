@@ -2,28 +2,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\SharedAssemblyProperties.props" />
   <PropertyGroup>
+    <RootNamespace>Codec</RootNamespace>
     <DebugType>portable</DebugType>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <TargetFrameworks>net9.0</TargetFrameworks>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
-    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/otac0n/Codec</PackageProjectUrl>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="HIDDevices" Version="4.0.2" />
-    <PackageReference Include="HIDDevices.Usages" Version="4.0.5" />
-    <PackageReference Include="Silk.NET.OpenGL" Version="2.23.0" />
+    <PackageReference Include="NAudio" Version="2.3.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Codec.Base\Codec.Base.csproj" />
-    <ProjectReference Include="..\Codec.Geometry\Codec.Geometry.csproj" />
-    <ProjectReference Include="..\Codec.Imaging\Codec.Imaging.csproj" />
-    <ProjectReference Include="..\Codec.MGS\Codec.MGS.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\readme.md" Pack="true" PackagePath="\" />
     <AdditionalFiles Include="..\stylecop.json" Link="stylecop.json" />
   </ItemGroup>
 </Project>
