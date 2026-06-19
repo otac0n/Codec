@@ -7,9 +7,9 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <TargetFrameworks>net9.0</TargetFrameworks>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
-    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/otac0n/Codec</PackageProjectUrl>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="HIDDevices" Version="4.0.2" />
@@ -20,7 +20,6 @@
     <ProjectReference Include="..\Codec.Base\Codec.Base.csproj" />
     <ProjectReference Include="..\Codec.Geometry\Codec.Geometry.csproj" />
     <ProjectReference Include="..\Codec.Imaging\Codec.Imaging.csproj" />
-    <ProjectReference Include="..\Codec.MGS\Codec.MGS.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\readme.md" Pack="true" PackagePath="\" />

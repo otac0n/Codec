@@ -12,6 +12,9 @@
     <PackageProjectUrl>https://github.com/otac0n/Codec</PackageProjectUrl>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="AssimpNetter" Version="6.0.4" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Codec.Base\Codec.Base.csproj" />
   </ItemGroup>
   <ItemGroup>

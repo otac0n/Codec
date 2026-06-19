@@ -11,6 +11,7 @@ namespace Codec.UI.WinForms
             Codec.ServiceRegistration.Register(services);
             Audio.ServiceRegistration.Register(services);
             Imaging.ServiceRegistration.Register(services);
+            Geometry.ServiceRegistration.Register(services);
             M2.ServiceRegistration.Register(services);
             MGS.ServiceRegistration.Register(services);
             services.AddTransient<Browser>();

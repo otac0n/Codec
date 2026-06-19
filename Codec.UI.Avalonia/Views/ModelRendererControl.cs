@@ -8,7 +8,7 @@
     using global::Avalonia.Threading;
     using Silk.NET.OpenGL;
 
-    public class ModelRendererControl(string path, NestedFileSystemManager fsm, Model? model = null) : OpenGlControlBase
+    public class ModelRendererControl(string path, NestedFileSystemManager fsm, RenderableScene? scene = null) : OpenGlControlBase
     {
         private GL? gl;
         private GLModelViewer modelViewer;
@@ -17,13 +17,14 @@
         {
             base.OnOpenGlInit(gl);
             this.gl = GL.GetApi(gl.GetProcAddress);
-            this.modelViewer = new GLModelViewer(path, fsm, model);
+            this.modelViewer = new GLModelViewer(path, fsm, scene);
             this.modelViewer.Initialize(this.gl);
         }
 
 
         protected override void OnOpenGlDeinit(GlInterface gl)
         {
+            this.modelViewer.Dispose();
             base.OnOpenGlDeinit(gl);
         }
 

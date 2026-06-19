@@ -45,7 +45,7 @@
             preview.Show(this);
         }
 
-        private void OnModelPreviewRequested(object? sender, BrowserViewModel.PreviewRequestedEventArgs<Model> args)
+        private void OnModelPreviewRequested(object? sender, BrowserViewModel.PreviewRequestedEventArgs<RenderableScene> args)
         {
             var preview = new ModelPreviewWindow(args.Path, args.Parent, args.Item)
             {

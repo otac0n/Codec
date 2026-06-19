@@ -126,7 +126,7 @@
                     break;
                 case EntryType.Model:
                     {
-                        if (this.fsm.Resolve<Model>(item.Entry.Path) is Model model)
+                        if (this.fsm.Resolve<RenderableScene>(item.Entry.Path) is RenderableScene model)
                         {
                             this.ModelPreviewRequested?.Invoke(this, new(model, item.Entry.Path, this.fsm));
                         }
@@ -139,7 +139,7 @@
 
         public event EventHandler<PreviewRequestedEventArgs<Bitmap>>? ImagePreviewRequested;
 
-        public event EventHandler<PreviewRequestedEventArgs<Model>>? ModelPreviewRequested;
+        public event EventHandler<PreviewRequestedEventArgs<RenderableScene>>? ModelPreviewRequested;
 
         public class PreviewRequestedEventArgs<T>(T item, string path, NestedFileSystemManager parent) : EventArgs
         {

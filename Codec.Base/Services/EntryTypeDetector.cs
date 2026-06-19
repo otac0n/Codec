@@ -46,6 +46,8 @@
                 ".WAV" or
                 ".WMA" or ".XWMA" => EntryType.Audio,
 
+                ".OBJ" or
+                ".FBX" or
                 ".KMD" or
                 ".KMS" => EntryType.Model,
 

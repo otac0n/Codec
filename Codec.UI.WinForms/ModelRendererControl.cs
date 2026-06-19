@@ -6,17 +6,17 @@
 
     public partial class ModelRendererControl : SilkControl
     {
-        private readonly Model model;
+        private readonly RenderableScene scene;
         private readonly string path;
         private readonly NestedFileSystemManager fsm;
         private readonly GLModelViewer modelViewer;
 
-        public ModelRendererControl(string path, NestedFileSystemManager fsm, Model model = null)
+        public ModelRendererControl(string path, NestedFileSystemManager fsm, RenderableScene? scene = null)
         {
             this.path = path;
             this.fsm = fsm;
-            this.model = model;
-            this.modelViewer = new GLModelViewer(this.path, this.fsm, this.model);
+            this.scene = scene;
+            this.modelViewer = new GLModelViewer(this.path, this.fsm, this.scene);
         }
 
         protected override void Initialize()

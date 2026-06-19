@@ -198,7 +198,7 @@ namespace Codec.UI.WinForms
                             break;
                         case FileType.Model:
                             {
-                                if (this.fsm.Resolve<Model>(entry.Path) is Model model)
+                                if (this.fsm.Resolve<RenderableScene>(entry.Path) is RenderableScene scene)
                                 {
                                     var childForm = new Form
                                     {
@@ -206,7 +206,7 @@ namespace Codec.UI.WinForms
                                         StartPosition = FormStartPosition.CenterParent,
                                         FormBorderStyle = FormBorderStyle.SizableToolWindow,
                                     };
-                                    childForm.Controls.Add(new ModelRendererControl(entry.Path, this.fsm, model)
+                                    childForm.Controls.Add(new ModelRendererControl(entry.Path, this.fsm, scene)
                                     {
                                         Dock = DockStyle.Fill,
                                     });

@@ -6,10 +6,10 @@
 
     public partial class ModelPreviewWindow : Window
     {
-        public ModelPreviewWindow(string path, NestedFileSystemManager fsm, Model? model = null)
+        public ModelPreviewWindow(string path, NestedFileSystemManager fsm, RenderableScene? scene = null)
         {
             this.InitializeComponent();
-            this.Content = new ModelRendererControl(path, fsm, model);
+            this.Content = new ModelRendererControl(path, fsm, scene);
         }
     }
 }

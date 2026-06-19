@@ -24,6 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Codec.Base\Codec.Base.csproj" />
     <ProjectReference Include="..\Codec.M2\Codec.M2.csproj" />
+    <ProjectReference Include="..\Codec.MGS\Codec.MGS.csproj" />
     <ProjectReference Include="..\Codec.Rendering\Codec.Rendering.csproj" />
   </ItemGroup>
   <ItemGroup>
