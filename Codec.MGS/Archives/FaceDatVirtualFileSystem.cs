@@ -1,6 +1,6 @@
-﻿// Copyright © John Gietzen. All Rights Reserved. This source is subject to the GPL license. Please see license.md for more information.
+﻿// Copyright © John Gietzen. All Rights Reserved. This source is subject to the MIT license. Please see license.md for more information.
 
-namespace Codec.Archives
+namespace Codec.MGS.Archives
 {
     using System;
     using System.Collections.Generic;
@@ -10,6 +10,8 @@ namespace Codec.Archives
     using System.IO.Abstractions;
     using System.Linq;
     using System.Runtime.InteropServices;
+    using Codec;
+    using Codec.Archives;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (int Group, ushort Id, bool IsAnimation, long Offset, long Size);

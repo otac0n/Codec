@@ -16,7 +16,7 @@
         {
             var rootCommand = new RootCommand();
 
-            ArchiveOptions.Attach(rootCommand);
+            M2.ArchiveOptions.Attach(rootCommand);
             EnvironmentOptions.Attach(rootCommand);
 
             var browseCommand = new Command("browse", "Browse Files");
@@ -28,8 +28,10 @@
                 var services = new ServiceCollection();
 
                 ServiceRegistration.Register(services);
+                M2.ServiceRegistration.Register(services);
+                MGS.ServiceRegistration.Register(services);
                 EnvironmentOptions.Bind(context, services);
-                ArchiveOptions.Bind(context, services);
+                M2.ArchiveOptions.Bind(context, services);
 
                 services.AddSingleton<ImageLoader>();
                 services.AddSingleton<FileSaveService>();

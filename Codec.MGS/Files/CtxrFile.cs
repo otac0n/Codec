@@ -1,6 +1,6 @@
-﻿// Copyright © John Gietzen. All Rights Reserved. This source is subject to the GPL license. Please see license.md for more information.
+﻿// Copyright © John Gietzen. All Rights Reserved. This source is subject to the MIT license. Please see license.md for more information.
 
-namespace Codec.Files
+namespace Codec.MGS.Files
 {
     using System;
     using System.Drawing;
@@ -8,6 +8,7 @@ namespace Codec.Files
     using System.IO;
     using System.Runtime.InteropServices;
     using Codec.Archives;
+    using Codec.Files;
     using DiscUtils.Streams;
     using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;

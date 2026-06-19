@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\SharedAssemblyProperties.props" />
+  <PropertyGroup>
+    <DebugType>portable</DebugType>
+    <TargetFrameworks>net9.0</TargetFrameworks>
+    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+  </PropertyGroup>
+  <PropertyGroup>
+    <WarningsAsErrors>CS0114</WarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="GMWare.M2" Version="1.1.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Codec.Base\Codec.Base.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="stylecop.json" />
+  </ItemGroup>
+</Project>

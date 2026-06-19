@@ -1,6 +1,6 @@
 ﻿// Copyright © John Gietzen. All Rights Reserved. This source is subject to the GPL license. Please see license.md for more information.
 
-namespace Codec.Archives
+namespace Codec.M2
 {
     using System;
     using System.Collections.Generic;
@@ -9,6 +9,7 @@ namespace Codec.Archives
     using System.IO.Abstractions;
     using System.Linq;
     using System.Text.RegularExpressions;
+    using Codec.Archives;
     using GMWare.M2.Psb;
     using Microsoft.Extensions.DependencyInjection;
     using Newtonsoft.Json;

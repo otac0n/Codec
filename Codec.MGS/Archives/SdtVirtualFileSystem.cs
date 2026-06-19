@@ -1,4 +1,4 @@
-﻿namespace Codec.Archives
+﻿namespace Codec.MGS.Archives
 {
     using System;
     using System.Collections.Generic;
@@ -8,6 +8,7 @@
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Codec.Archives;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (int Index, SdtVirtualFileSystem.SDTStream Stream, SdtVirtualFileSystem.SDTChunk[] Chunks);

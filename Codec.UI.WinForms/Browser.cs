@@ -12,6 +12,7 @@ namespace Codec.UI.WinForms
     using System.Windows.Forms;
     using Codec.Archives;
     using Codec.Files;
+    using Codec.MGS;
     using Codec.Services;
     using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;

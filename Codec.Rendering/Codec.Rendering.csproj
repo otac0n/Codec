@@ -18,6 +18,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Codec.Base\Codec.Base.csproj" />
+    <ProjectReference Include="..\Codec.MGS\Codec.MGS.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\readme.md" Pack="true" PackagePath="\" />

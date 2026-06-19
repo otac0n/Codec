@@ -11,6 +11,7 @@
     using global::Avalonia.Media.Imaging;
     using Entry = Codec.Archives.NestedFileSystemManager.Entry;
     using EntryType = Codec.Services.EntryTypeDetector.EntryType;
+    using Codec.MGS;
 
     public partial class BrowserViewModel : ObservableObject
     {

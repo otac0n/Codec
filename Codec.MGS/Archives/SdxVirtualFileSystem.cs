@@ -1,4 +1,4 @@
-﻿namespace Codec.Archives
+﻿namespace Codec.MGS.Archives
 {
     using System;
     using System.Buffers.Binary;
@@ -7,6 +7,7 @@
     using System.IO.Abstractions;
     using System.Linq;
     using System.Runtime.InteropServices;
+    using Codec.Archives;
     using Microsoft.Extensions.DependencyInjection;
     using NAudio.Utils;
     using NAudio.Wave;

@@ -6,7 +6,7 @@
     using System.IO;
     using System.IO.Abstractions;
 
-    internal partial class DiscUtilsVFSAdapter : FileSystemBase
+    public partial class DiscUtilsVFSAdapter : FileSystemBase
     {
         private readonly DiscUtils.IFileSystem underlying;
 

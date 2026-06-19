@@ -19,7 +19,7 @@ namespace Codec.UI.WinForms
         {
             var rootCommand = new RootCommand();
 
-            ArchiveOptions.Attach(rootCommand);
+            M2.ArchiveOptions.Attach(rootCommand);
             EnvironmentOptions.Attach(rootCommand);
 
             var browseCommand = new Command("browse", "Browse Files");
@@ -28,6 +28,7 @@ namespace Codec.UI.WinForms
 
             static void InstallSharedConfiguration(InvocationContext context, IServiceCollection services)
             {
+                M2.ArchiveOptions.Bind(context, services);
                 EnvironmentOptions.Bind(context, services);
                 ServiceRegistration.Register(services);
             }
@@ -35,11 +36,7 @@ namespace Codec.UI.WinForms
             void Browse(InvocationContext context)
             {
                 var builder = Host.CreateDefaultBuilder(args);
-                builder.ConfigureServices(services =>
-                {
-                    InstallSharedConfiguration(context, services);
-                    ArchiveOptions.Bind(context, services);
-                });
+                builder.ConfigureServices(services => InstallSharedConfiguration(context, services));
 
                 using var host = builder.Build();
                 ApplicationConfiguration.Initialize();

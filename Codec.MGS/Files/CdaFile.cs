@@ -1,7 +1,8 @@
-﻿namespace Codec.Files
+﻿namespace Codec.MGS.Files
 {
     using System;
     using System.IO;
+    using Codec.Files;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
 

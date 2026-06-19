@@ -8,7 +8,7 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <TargetFrameworks>net9.0</TargetFrameworks>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
-    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/otac0n/Codec</PackageProjectUrl>
   </PropertyGroup>
   <PropertyGroup>
@@ -17,7 +17,6 @@
   <ItemGroup>
     <PackageReference Include="CueSharp" Version="1.0.1" />
     <PackageReference Include="DiscUtils" Version="0.16.13" />
-    <PackageReference Include="GMWare.M2" Version="1.1.3" />
     <PackageReference Include="Magick.NET.SystemDrawing" Version="8.0.22" />
     <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.13.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.8" />

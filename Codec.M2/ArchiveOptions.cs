@@ -1,6 +1,6 @@
 ﻿// Copyright © John Gietzen. All Rights Reserved. This source is subject to the GPL license. Please see license.md for more information.
 
-namespace Codec
+namespace Codec.M2
 {
     using System.CommandLine;
     using System.CommandLine.Invocation;

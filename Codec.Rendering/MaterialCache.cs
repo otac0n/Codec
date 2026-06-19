@@ -6,6 +6,7 @@ namespace Codec.Rendering
     using System.Numerics;
     using Codec.Archives;
     using Codec.Files;
+    using Codec.MGS.Files;
     using Silk.NET.OpenGL;
 
     public abstract class MaterialCache

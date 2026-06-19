@@ -1,10 +1,11 @@
-﻿namespace Codec.Files
+﻿namespace Codec.MGS.Files
 {
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Numerics;
     using System.Runtime.InteropServices;
+    using Codec.Files;
     using Microsoft.Extensions.DependencyInjection;
     using Bounds = (System.Numerics.Vector3 Start, System.Numerics.Vector3 End);
 

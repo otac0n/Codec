@@ -1,4 +1,4 @@
-﻿// Copyright © John Gietzen. All Rights Reserved. This source is subject to the GPL license. Please see license.md for more information.
+﻿// Copyright © John Gietzen. All Rights Reserved. This source is subject to the MIT license. Please see license.md for more information.
 
 namespace Codec
 {
@@ -10,7 +10,7 @@ namespace Codec
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
 
-    internal static class StreamExtensions
+    public static class StreamExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T GetPadding<T>(T offset, T alignment)

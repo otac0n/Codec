@@ -7,6 +7,7 @@
     using System.Threading.Tasks;
     using Codec.Archives;
     using Codec.Files;
+    using Codec.MGS.Files;
     using Silk.NET.OpenGL;
 
     public class MaterialCache1 : MaterialCache

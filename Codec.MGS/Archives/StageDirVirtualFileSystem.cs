@@ -1,6 +1,6 @@
-﻿// Copyright © John Gietzen. All Rights Reserved. This source is subject to the GPL license. Please see license.md for more information.
+﻿// Copyright © John Gietzen. All Rights Reserved. This source is subject to the MIT license. Please see license.md for more information.
 
-namespace Codec.Archives
+namespace Codec.MGS.Archives
 {
     using System;
     using System.Collections.Generic;
@@ -11,13 +11,14 @@ namespace Codec.Archives
     using System.Linq;
     using System.Text;
     using Codec;
+    using Codec.Archives;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
     using DirEntry = (string name, long offset);
     using FileEntry = (string name, long offset, long size);
     using FileSpan = (long offset, long size);
 
-    public sealed class StageDirVirtualFileSystem : FileSystemBase
+    public sealed class StageDirVirtualFileSystem : Codec.Archives.FileSystemBase
     {
         private static readonly long SectorSize = 2048L;
         private static readonly ImmutableDictionary<byte, string> extensions = new Dictionary<byte, string>
