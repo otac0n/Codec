@@ -77,9 +77,14 @@
             }
         }
 
-        public unsafe void Bind()
+        public void Use()
         {
             this.gl.UseProgram(this.handle);
+        }
+
+        public unsafe void Bind()
+        {
+            this.Use();
 
             for (var i = 0u; i < this.attributes.Length; i++)
             {
@@ -90,13 +95,13 @@
         }
 
         public void SetUniform(string name, Vector2 value) =>
-            this.gl.Uniform1(this.GetUniformLocation(name), new[] { value.X, value.Y }.AsSpan());
+            this.gl.Uniform2(this.GetUniformLocation(name), new[] { value.X, value.Y }.AsSpan());
 
         public void SetUniform(string name, Vector3 value) =>
-            this.gl.Uniform1(this.GetUniformLocation(name), new[] { value.X, value.Y, value.Z }.AsSpan());
+            this.gl.Uniform3(this.GetUniformLocation(name), new[] { value.X, value.Y, value.Z }.AsSpan());
 
         public void SetUniform(string name, Vector4 value) =>
-            this.gl.Uniform1(this.GetUniformLocation(name), new[] { value.X, value.Y, value.Z, value.W }.AsSpan());
+            this.gl.Uniform4(this.GetUniformLocation(name), new[] { value.X, value.Y, value.Z, value.W }.AsSpan());
 
         public void SetUniform(string name, int value) =>
             this.gl.Uniform1(this.GetUniformLocation(name), value);
