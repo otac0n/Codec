@@ -41,6 +41,8 @@
             this.gl = gl;
             this.gl.Enable(EnableCap.DepthTest);
             this.gl.ClearColor(0.5f, 0.5f, 0.5f, 1);
+            this.gl.Enable(EnableCap.Blend);
+            this.gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             this.T = Stopwatch.StartNew();
             this.Camera.Up = new Vector3(0, 1, 0);
             this.shader = new(
@@ -121,7 +123,7 @@
             this.shader.Use();
             this.shader.SetUniform("uniform_cameraMatrix", this.Camera.Matrix);
 
-            foreach (var gpuMesh in this.gpuMeshes)
+            void DrawMesh(MeshGpuData gpuMesh)
             {
                 if (gpuMesh.Material.IsTwoSided)
                 {
@@ -158,6 +160,29 @@
 
                 this.gl.BindVertexArray(gpuMesh.Vao);
                 this.gl.DrawElements(Silk.NET.OpenGL.PrimitiveType.Triangles, (uint)gpuMesh.IndexCount, DrawElementsType.UnsignedInt, null);
+            }
+
+            var anyTransparent = false;
+            foreach (var gpuMesh in this.gpuMeshes)
+            {
+                if (gpuMesh.Material.HasOpacity && gpuMesh.Material.Opacity < 1)
+                {
+                    anyTransparent = true;
+                    continue;
+                }
+
+                DrawMesh(gpuMesh);
+            }
+
+            if (anyTransparent)
+            {
+                foreach (var gpuMesh in this.gpuMeshes)
+                {
+                    if (gpuMesh.Material.HasOpacity && gpuMesh.Material.Opacity < 1)
+                    {
+                        DrawMesh(gpuMesh);
+                    }
+                }
             }
 
             this.gl.BindVertexArray(0);
