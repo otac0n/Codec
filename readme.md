@@ -24,6 +24,7 @@ Support for the following formats is implemented:
   - Generic
     - CD Audio Tracks
     - All Basic Image Formats (PNG, JPEG, BMP, etc.)
+    - All Basic 3D Formats (FBX, OBJ, STL, STEP, etc.)
     - WAV & MP3 Audio Files
     - .pcx Image Files
   - Metal Gear Specific
@@ -73,6 +74,8 @@ using var virtualB = fsm.Open(@"...\METAL GEAR SOLID DISC 1.CUE\...", new FileSt
 var bitmap = fsm.Resolve<System.Drawing.Bitmap>(path);
 // Likewise with Auio streams:
 var audio = fsm.Resolve<AudioStream>(path) ?? (AudioStream)fsm.OpenRead(path);
+// And 3D Objects:
+var scene = fsm.Resolve<RenderableScene>(path);
 ```
 
 OpenSource Info
@@ -80,11 +83,12 @@ OpenSource Info
 
 | Project | License | Details |
 |---------|---------|---------|
-| [Silk.NET](https://github.com/dotnet/Silk.NET) | [MIT](https://github.com/dotnet/Silk.NET/blob/main/LICENSE.md) | 3D rendering and windowing (coming soon) |
-| [HIDDevices](https://github.com/DevDecoder/HIDDevices) | [Apache 2.0](https://github.com/DevDecoder/HIDDevices/blob/master/LICENSE.txt) | Device handling |
-| [Magick.NET](https://github.com/dlemstra/Magick.NET) | [Apache 2.0](https://github.com/dlemstra/Magick.NET/blob/main/License.txt) | PCX loading |
+| [Silk.NET](https://github.com/dotnet/Silk.NET) | [MIT](https://github.com/dotnet/Silk.NET/blob/main/LICENSE.md) | 3D rendering and windowing |
+| [Assimp](https://github.com/Saalvage/AssimpNetter) | [MIT + BSD-3-Clause](https://github.com/Saalvage/AssimpNetter/blob/master/License.txt) | 3D object loading and saving |
+| [Magick.NET](https://github.com/dlemstra/Magick.NET) | [Apache 2.0](https://github.com/dlemstra/Magick.NET/blob/main/License.txt) | Image loading and saving |
+| [NAudio](https://github.com/naudio/naudio) | [MIT](https://github.com/naudio/naudio/blob/main/LICENSE) | Audio loading and playing |
 | [System.IO.Abstractions](https://github.com/TestableIO/System.IO.Abstractions) | [MIT](https://github.com/TestableIO/System.IO.Abstractions/blob/main/LICENSE) | Nested filesystems |
-| [CueSharp](https://www.nuget.org/packages/CueSharp) | [BSD](https://www.nuget.org/packages/CueSharp/1.0.1/License) | CUE format |
+| [CueSharp](https://www.nuget.org/packages/CueSharp) | [BSD-2-Clause](https://www.nuget.org/packages/CueSharp/1.0.1/License) | CUE format |
 | [DiscUtils](https://github.com/DiscUtils/DiscUtils) | [MIT](https://github.com/DiscUtils/DiscUtils/blob/develop/LICENSE.txt) | ISO format |
 | [GMWare.M2](https://gitlab.com/modmyclassic/sega-mega-drive-mini/marchive-batch-tool) | [GPL 3.0](https://gitlab.com/modmyclassic/sega-mega-drive-mini/marchive-batch-tool/-/blob/master/COPYING) | M2 Archive format |
 | [metalgeardev/MGS1](https://github.com/metalgeardev/MGS1) | | Reference code |
@@ -92,7 +96,7 @@ OpenSource Info
 | [CtxrTool](https://github.com/Jayveer/CtxrTool) | [MIT](https://github.com/Jayveer/CtxrTool/blob/master/README.md) | Reference code |
 | [MGS-Master-Collection-Noesis](https://github.com/Jayveer/MGS-Master-Collection-Noesis) | | Reference code |
 | [Solideye](https://github.com/Jayveer/Solideye/tree/master) | | Reference code |
-| [MGS2-Sound-Tools](https://github.com/Gaming-With-Portals/MGS2-Sound-Tools) | | Reference code |
+| [MGS2-Sound-Tools](https://github.com/Gaming-With-Portals/MGS2-Sound-Tools) | [MIT](https://github.com/Gaming-With-Portals/MGS2-Sound-Tools/blob/main/LICENSE) | Reference code |
 | [Metal Gear Master Collection](https://store.steampowered.com/app/2131630/METAL_GEAR_SOLID__Master_Collection_Version/) | Non-transferrable | You need your own license to this software, and your license may not cover this usage. |
 | [Digital-7 Font](http://style7.website/font.php?font=digital-7) | Freeware for home use | Frequency display (coming soon) |
 | [Font Awesome Free Icons](https://fontawesome.com/icons) | [CC BY 4.0](https://fontawesome.com/license/free) | Used for UI icons |
