@@ -10,6 +10,7 @@ namespace Codec.UI.WinForms
     using System.Linq;
     using System.Threading.Tasks;
     using System.Windows.Forms;
+    using Assimp;
     using Codec.Archives;
     using Codec.Files;
     using Codec.MGS;
@@ -278,7 +279,7 @@ namespace Codec.UI.WinForms
                 {
                     using var input = this.fsm.OpenRead(entry.Path);
                     var path = this.saveSelectedDialog.FileName;
-                    if (Path.GetExtension(path) != this.fsm.GetExtension(entry.Path))
+                    if (!string.Equals(Path.GetExtension(path), this.fsm.GetExtension(entry.Path), StringComparison.OrdinalIgnoreCase))
                     {
                         switch (type)
                         {
@@ -287,6 +288,22 @@ namespace Codec.UI.WinForms
                                 {
                                     image.Save(path);
                                     return;
+                                }
+                                break;
+                            case FileType.Model:
+                                if (this.fsm.Resolve<RenderableScene>(entry.Path) is RenderableScene scene)
+                                {
+                                    // TODO: Handle linked image exports & renames.
+                                    var context = new AssimpContext();
+                                    var ext = Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
+                                    var formatId = context.GetSupportedExportFormats()
+                                        .FirstOrDefault(f => f.FileExtension.Equals(ext, StringComparison.OrdinalIgnoreCase))
+                                        ?.FormatId;
+                                    if (formatId != null)
+                                    {
+                                        context.ExportFile(scene.Scene, path, formatId);
+                                        return;
+                                    }
                                 }
                                 break;
                         }

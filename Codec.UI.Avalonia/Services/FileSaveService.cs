@@ -1,16 +1,19 @@
 ﻿namespace Codec.UI.Avalonia.Services
 {
+    using System;
     using System.Collections.Generic;
     using System.Drawing;
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
+    using Assimp;
     using global::Avalonia.Controls;
     using global::Avalonia.Platform.Storage;
     using Codec.Archives;
+    using Codec.Files;
+    using Codec.Services;
     using Codec.UI.Avalonia.Models;
     using Codec.UI.Avalonia.Views;
-    using Codec.Services;
 
     public sealed class FileSaveService(NestedFileSystemManager fsm, EntryTypeDetector detector)
     {
@@ -43,7 +46,7 @@
             {
                 using var input = fsm.OpenRead(entry.Path);
                 var path = file.Path.LocalPath;
-                if (Path.GetExtension(path) != fsm.GetExtension(entry.Path))
+                if (!string.Equals(Path.GetExtension(path), fsm.GetExtension(entry.Path), StringComparison.OrdinalIgnoreCase))
                 {
                     switch (type)
                     {
@@ -52,6 +55,22 @@
                             {
                                 image.Save(path);
                                 return;
+                            }
+                            break;
+                        case EntryTypeDetector.EntryType.Model:
+                            if (fsm.Resolve<RenderableScene>(entry.Path) is RenderableScene scene)
+                            {
+                                // TODO: Handle linked image exports & renames.
+                                var context = new AssimpContext();
+                                var ext = Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
+                                var formatId = context.GetSupportedExportFormats()
+                                    .FirstOrDefault(f => f.FileExtension.Equals(ext, StringComparison.OrdinalIgnoreCase))
+                                    ?.FormatId;
+                                if (formatId != null)
+                                {
+                                    context.ExportFile(scene.Scene, path, formatId);
+                                    return;
+                                }
                             }
                             break;
                     }
