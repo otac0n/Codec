@@ -87,7 +87,7 @@
                         {
                             textureCoords[vertexOutputOffset + v] = new(
                                 textureCoordData1[v].U / 4096f,
-                                textureCoordData1[v].V / 4096f);
+                                1 - textureCoordData1[v].V / 4096f);
                         }
                     }
 
@@ -159,7 +159,7 @@
 
                 var node = new Node($"node{p}")
                 {
-                    Transform = Matrix4x4.CreateTranslation(meshDefinitions[p].RelativeOrigin),
+                    Transform = Matrix4x4.Transpose(Matrix4x4.CreateTranslation(meshDefinitions[p].RelativeOrigin)),
                 };
                 node.Metadata["DrawingFlags"] = new Metadata.Entry(MetaDataType.Int32, (int)flags);
                 node.MeshIndices.AddRange(meshIndices);

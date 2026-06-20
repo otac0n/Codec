@@ -213,7 +213,7 @@
             while (nodes.Count > 0)
             {
                 var (transform, node) = nodes.Dequeue();
-                transform *= node.Transform;
+                transform *= Matrix4x4.Transpose(node.Transform);
                 foreach (var mesh in node.MeshIndices.Select(i => this.scene.Meshes[i]))
                 {
                     var hasUV = mesh.HasTextureCoords(0);
@@ -227,7 +227,7 @@
                         var o = i * 8;
                         (verts[o], verts[o + 1], verts[o + 2]) = (pos.X, pos.Y, pos.Z);
                         (verts[o + 3], verts[o + 4], verts[o + 5]) = (nor.X, nor.Y, nor.Z);
-                        (verts[o + 6], verts[o + 7]) = (uv.X, uv.Y);
+                        (verts[o + 6], verts[o + 7]) = (uv.X, 1 - uv.Y);
                     }
 
                     var indices = mesh.Faces

@@ -98,7 +98,7 @@
                             assimpMesh.Normals.Add(new(n.X / 4096f, n.Y / 4096f, n.Z / 4096f));
 
                             var uv = textureCoords[4 * fi + c];
-                            assimpMesh.TextureCoordinateChannels[0].Add(new(uv.U / 255f, uv.V / 255f, 0f));
+                            assimpMesh.TextureCoordinateChannels[0].Add(new(uv.U / 255f, 1 - uv.V / 255f, 0f));
                         }
 
                         assimpMesh.Faces.Add(new Face([baseVert + 1, baseVert, baseVert + 2]));
@@ -112,7 +112,7 @@
                 var origin = mesh.RelativeOrigin;
                 var node = new Node($"node{m}")
                 {
-                    Transform = Matrix4x4.CreateTranslation(origin.X, origin.Y, origin.Z),
+                    Transform = Matrix4x4.Transpose(Matrix4x4.CreateTranslation(origin.X, origin.Y, origin.Z)),
                 };
 
                 node.Metadata["DrawingFlags"] = new Metadata.Entry(MetaDataType.Int32, (int)flags);
