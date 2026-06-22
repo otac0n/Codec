@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Numerics;
     using System.Runtime.InteropServices;
@@ -127,7 +126,7 @@
         private static int EnsureMaterial(Scene scene, ushort texId, DrawingFlags flags)
         {
             flags &= DrawingFlags.TwoSided | DrawingFlags.Transparent;
-            var name = $"tex{texId}:{(uint)flags:x8}";
+            var name = $"{texId:x4}_{(uint)flags:x6}";
             for (var i = 0; i < scene.Materials.Count; i++)
             {
                 if (scene.Materials[i].Name == name)

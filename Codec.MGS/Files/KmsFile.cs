@@ -139,7 +139,7 @@
                     var texturePath = GetTexturePath(fsm, fullPath, header.Id, textureCache, texId);
                     var assimpMesh = new Mesh($"{header.Id:x}_node{p}_tex{texId:x6}", PrimitiveType.Triangle)
                     {
-                        MaterialIndex = EnsureMaterial(scene, texturePath, flags),
+                        MaterialIndex = EnsureMaterial(scene, texturePath, header.Id, texId, flags),
                     };
                     assimpMesh.UVComponentCount[0] = 2;
 
@@ -233,10 +233,9 @@
             return textures[textureId] = path;
         }
 
-        private static int EnsureMaterial(Scene scene, string texturePath, uint flags)
+        private static int EnsureMaterial(Scene scene, string texturePath, ulong modelId, ulong textureId, uint flags)
         {
-            flags &= 0;
-            var name = $"{texturePath}:{flags:x8}";
+            var name = $"{modelId:x6}_{textureId:x6}_{flags:x6}";
             for (var i = 0; i < scene.Materials.Count; i++)
             {
                 if (scene.Materials[i].Name == name)
