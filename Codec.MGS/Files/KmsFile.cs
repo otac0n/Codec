@@ -71,9 +71,9 @@
                     for (var v = 0; v < vertexCount; v++)
                     {
                         vertices[v + vertexOutputOffset] = new(
-                            vertexData[v].X / 4096f,
-                            vertexData[v].Y / 4096f,
-                            vertexData[v].Z / 4096f);
+                            vertexData[v].X,
+                            vertexData[v].Y,
+                            vertexData[v].Z);
                         normals[v + vertexOutputOffset] = new(
                             normalData[v].X / 4096f,
                             normalData[v].Y / 4096f,
@@ -259,6 +259,7 @@
                     wrapModeU: TextureWrapMode.Wrap,
                     wrapModeV: TextureWrapMode.Wrap,
                     flags: (int)TextureFlags.UseAlpha),
+                IsTwoSided = true,
             };
 
             scene.Materials.Add(mat);
