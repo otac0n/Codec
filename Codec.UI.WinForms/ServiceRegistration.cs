@@ -2,6 +2,7 @@
 
 namespace Codec.UI.WinForms
 {
+    using Codec.Services;
     using Microsoft.Extensions.DependencyInjection;
 
     internal class ServiceRegistration
@@ -14,6 +15,7 @@ namespace Codec.UI.WinForms
             Geometry.ServiceRegistration.Register(services);
             M2.ServiceRegistration.Register(services);
             MGS.ServiceRegistration.Register(services);
+            services.AddTransient<FileExportService>();
             services.AddTransient<Browser>();
         }
     }

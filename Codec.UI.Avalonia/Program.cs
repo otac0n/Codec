@@ -8,6 +8,7 @@
     using Codec.UI.Avalonia.Views;
     using Microsoft.Extensions.DependencyInjection;
     using System.CommandLine.Invocation;
+    using Codec.Services;
 
     sealed class Program
     {
@@ -35,6 +36,7 @@
                 MGS.ServiceRegistration.Register(services);
                 EnvironmentOptions.Bind(context, services);
                 M2.ArchiveOptions.Bind(context, services);
+                services.AddTransient<FileExportService>();
 
                 services.AddSingleton<ImageLoader>();
                 services.AddSingleton<FileSaveService>();

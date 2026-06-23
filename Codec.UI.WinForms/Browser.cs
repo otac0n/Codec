@@ -10,7 +10,6 @@ namespace Codec.UI.WinForms
     using System.Linq;
     using System.Threading.Tasks;
     using System.Windows.Forms;
-    using Assimp;
     using Codec.Archives;
     using Codec.Files;
     using Codec.MGS;
@@ -24,7 +23,7 @@ namespace Codec.UI.WinForms
     {
         private readonly EntryTypeDetector detector;
         private readonly NestedFileSystemManager fsm;
-        private readonly IServiceProvider serviceProvider;
+        private readonly FileExportService exportService;
         private readonly VirtualImageList<Entry> textureDisplay;
         private bool suppressUpdates;
 
@@ -32,6 +31,7 @@ namespace Codec.UI.WinForms
         {
             this.detector = serviceProvider.GetRequiredService<EntryTypeDetector>();
             this.fsm = serviceProvider.GetRequiredService<NestedFileSystemManager>();
+            this.exportService = serviceProvider.GetRequiredService<FileExportService>();
 
             this.InitializeComponent();
             this.Icon = Properties.Resources.Otacon;
@@ -57,7 +57,6 @@ namespace Codec.UI.WinForms
 
             this.fileTree.Nodes.Add(new TreeNode("root", 0, 0, [this.CreateExpanderDummy()]) { Tag = this.fsm.RootEntry });
             this.Navigate(Path.Combine(serviceProvider.GetRequiredService<EnvironmentOptions>().SteamApps, WellKnownPaths.AllDataBin, WellKnownPaths.CD1Path, WellKnownPaths.StageDirPath));
-            this.serviceProvider = serviceProvider;
         }
 
         private TreeNode CreateExpanderDummy() => new("...");
@@ -258,90 +257,40 @@ namespace Codec.UI.WinForms
             this.saveAsToolStripMenuItem.Enabled = this.saveButton.Enabled = enabled;
         }
 
-        private void SaveButton_Click(object sender, EventArgs e)
+        private async void SaveButton_Click(object sender, EventArgs e)
         {
             if (this.entryList.SelectedItems.Count == 1)
             {
                 var entry = (Entry)this.entryList.SelectedItems[0]?.Tag!;
 
-                var type = this.detector.Detect(entry);
-
-                this.saveSelectedDialog.Filter = this.detector[type] is string supportedTypes
-                    ? $"{type} Files|{supportedTypes}|All Files|*.*"
-                    : "All Files|*.*";
-
-                this.saveSelectedDialog.FileName = Path.GetFileName(entry.Path);
-                var result = this.saveSelectedDialog.ShowDialog();
-                if (result != DialogResult.OK)
+                await this.exportService.SaveSingleAsync(entry, (suggestedFileName, type, supportedPatterns) =>
                 {
-                    return;
-                }
+                    this.saveSelectedDialog.Filter = supportedPatterns is string supportedTypes
+                        ? $"{type} Files|{supportedTypes}|All Files|*.*"
+                        : "All Files|*.*";
 
-                {
-                    using var input = this.fsm.OpenRead(entry.Path);
-                    var path = this.saveSelectedDialog.FileName;
-                    if (!string.Equals(Path.GetExtension(path), this.fsm.GetExtension(entry.Path), StringComparison.OrdinalIgnoreCase))
-                    {
-                        switch (type)
-                        {
-                            case FileType.Image:
-                                if (this.fsm.Resolve<MagickImage>(entry.Path) is MagickImage image)
-                                {
-                                    image.Write(path);
-                                    return;
-                                }
-                                break;
-                            case FileType.Model:
-                                if (this.fsm.Resolve<RenderableScene>(entry.Path) is RenderableScene scene)
-                                {
-                                    // TODO: Handle linked image exports & renames.
-                                    var context = new AssimpContext();
-                                    var ext = Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
-                                    var formatId = context.GetSupportedExportFormats()
-                                        .FirstOrDefault(f => f.FileExtension.Equals(ext, StringComparison.OrdinalIgnoreCase))
-                                        ?.FormatId;
-                                    if (formatId != null)
-                                    {
-                                        context.ExportFile(scene.Scene, path, formatId);
-                                        return;
-                                    }
-                                }
-                                break;
-                        }
-                    }
-
-                    using var output = File.Create(path);
-                    input.CopyTo(output);
-                }
+                    this.saveSelectedDialog.FileName = suggestedFileName;
+                    var result = this.saveSelectedDialog.ShowDialog();
+                    return Task.FromResult(result == DialogResult.OK ? this.saveSelectedDialog.FileName : null);
+                });
             }
             else if (this.entryList.SelectedItems.Count >= 0)
             {
                 var entries = this.entryList.SelectedItems.Cast<ListViewItem>().Select(i => (Entry)i.Tag).ToList();
 
-                this.saveToFolderDialog.SelectedPath = string.Empty;
-                var result = this.saveToFolderDialog.ShowDialog();
-                if (result != DialogResult.OK)
-                {
-                    return;
-                }
-
-                var path = this.saveToFolderDialog.SelectedPath;
-                var targetFiles = entries.Select(e => (Source: e.Path, Target: Path.Combine(path, Path.GetFileName(e.Path)))).ToList();
-                if (targetFiles.Any(t => File.Exists(t.Target)))
-                {
-                    var overwriteResult = MessageBox.Show($"The destination path \"{path}\" already contians files with the same name. Do you want to overwrite?", "Confirm Overwrite", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                    if (overwriteResult != DialogResult.Yes)
+                await this.exportService.SaveMultipleAsync(
+                    entries,
+                    () =>
                     {
-                        return;
-                    }
-                }
-
-                foreach (var (source, target) in targetFiles)
-                {
-                    using var input = this.fsm.OpenRead(source);
-                    using var output = File.Create(target);
-                    input.CopyTo(output);
-                }
+                        this.saveToFolderDialog.SelectedPath = string.Empty;
+                        var result = this.saveToFolderDialog.ShowDialog();
+                        return Task.FromResult(result == DialogResult.OK ? this.saveToFolderDialog.SelectedPath : null);
+                    },
+                    path =>
+                    {
+                        var overwriteResult = MessageBox.Show($"The destination path \"{path}\" already contians files with the same name. Do you want to overwrite?", "Confirm Overwrite", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                        return Task.FromResult(overwriteResult == DialogResult.Yes);
+                    });
             }
         }
     }
