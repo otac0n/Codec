@@ -18,6 +18,10 @@
   </Window.Resources>
   <DockPanel>
     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+      <Button Content="{iconPacks:FontAwesome Kind=ChevronLeftSolid}" IsEnabled="{Binding CanGoBack}" Command="{Binding GoBackCommand}" />
+      <Button Content="{iconPacks:FontAwesome Kind=ChevronRightSolid}" IsEnabled="{Binding CanGoForward}" Command="{Binding GoForwardCommand}" />
+      <Button Content="{iconPacks:FontAwesome Kind=ArrowTurnUpSolid}" IsEnabled="{Binding CanGoUp}" Command="{Binding GoUpCommand}" />
+      <Separator Height="NaN" Width="1" />
       <Button Content="{iconPacks:FontAwesome Kind=FloppyDiskSolid}" IsEnabled="{Binding List.CanSave}" Command="{Binding List.SaveCommand}" CommandParameter="{Binding $parent[Window]}" />
       <DropDownButton Content="{iconPacks:FontAwesome Kind=GearSolid}" VerticalAlignment="Center">
         <DropDownButton.Flyout>
@@ -35,8 +39,6 @@
           </MenuFlyout>
         </DropDownButton.Flyout>
       </DropDownButton>
-      <Separator Height="NaN" Width="1" />
-      <Button Content="{iconPacks:FontAwesome Kind=ArrowTurnUpSolid}" IsEnabled="{Binding CanGoUp}" Command="{Binding GoUpCommand}" />
     </StackPanel>
     <DockPanel DockPanel.Dock="Top" Margin="4">
       <TextBlock DockPanel.Dock="Left" Text="Path:" VerticalAlignment="Center" Margin="0,0,4,0" />

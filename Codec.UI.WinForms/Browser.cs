@@ -25,6 +25,8 @@ namespace Codec.UI.WinForms
         private readonly NestedFileSystemManager fsm;
         private readonly FileExportService exportService;
         private readonly VirtualImageList<Entry> textureDisplay;
+        private readonly List<Entry> history = [];
+        private int historyIndex = -1;
         private bool suppressUpdates;
 
         public Browser(IServiceProvider serviceProvider)
@@ -69,10 +71,24 @@ namespace Codec.UI.WinForms
             }
         }
 
-        private void Navigate(Entry entry)
+        private void Navigate(Entry entry, bool addHistory = true)
         {
+            if (addHistory)
+            {
+                var removeCount = (this.history.Count - 1) - this.historyIndex;
+                if (removeCount > 0)
+                {
+                    this.history.RemoveRange(this.historyIndex, removeCount);
+                }
+
+                this.history.Add(entry);
+                this.historyIndex = this.history.Count - 1;
+            }
+
             this.suppressUpdates = true;
             this.goUpButton.Enabled = entry.Path?.IndexOfAny(PathExtensions.Separators) > -1;
+            this.backButton.Enabled = this.historyIndex > 0;
+            this.forwardButton.Enabled = this.historyIndex < this.history.Count - 1;
             this.pathBox.Tag = entry.Path;
             this.pathBox.Text = entry.Path;
 
@@ -146,6 +162,18 @@ namespace Codec.UI.WinForms
             {
                 this.Navigate(this.pathBox.Text);
             }
+        }
+
+        private void BackButton_Click(object sender, EventArgs e)
+        {
+            this.historyIndex--;
+            this.Navigate(this.history[this.historyIndex], addHistory: false);
+        }
+
+        private void ForwardButton_Click(object sender, EventArgs e)
+        {
+            this.historyIndex++;
+            this.Navigate(this.history[this.historyIndex], addHistory: false);
         }
 
         private void GoUpButton_Click(object sender, EventArgs e)

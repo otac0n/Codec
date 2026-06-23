@@ -1,6 +1,7 @@
 ﻿namespace Codec.UI.Avalonia.ViewModels
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using global::Avalonia.Media.Imaging;
     using Codec.Archives;
@@ -18,11 +19,19 @@
         private readonly IServiceProvider serviceProvider;
         private readonly NestedFileSystemManager fsm;
         private readonly ImageLoader imageLoader;
+        private readonly List<Entry> history = [];
+        private int historyIndex = -1;
         private bool navigating;
 
         public FileTreeViewModel Tree { get; }
 
         public EntryListViewModel List { get; }
+
+        [ObservableProperty]
+        private bool canGoBack = false;
+
+        [ObservableProperty]
+        private bool canGoForward = false;
 
         [ObservableProperty]
         private bool canGoUp = false;
@@ -61,7 +70,7 @@
                 if (e.PropertyName == nameof(FileTreeViewModel.SelectedNode) &&
                     this.Tree.SelectedNode is { } node && !this.navigating)
                 {
-                    this.NavigateToEntry(node.Entry);
+                    this.Navigate(node.Entry);
                 }
             };
 
@@ -75,6 +84,20 @@
         }
 
         [RelayCommand]
+        private void GoBack()
+        {
+            this.historyIndex--;
+            this.Navigate(this.history[this.historyIndex], addHistory: false);
+        }
+
+        [RelayCommand]
+        private void GoForward()
+        {
+            this.historyIndex++;
+            this.Navigate(this.history[this.historyIndex], addHistory: false);
+        }
+
+        [RelayCommand]
         private void GoUp()
         {
             this.Navigate(PathExtensions.GetDirectoryName(this.CurrentPath));
@@ -84,11 +107,11 @@
         {
             if (this.fsm.TryGetEntry(path, out var entry))
             {
-                this.NavigateToEntry(entry);
+                this.Navigate(entry);
             }
         }
 
-        private void NavigateToEntry(Entry entry)
+        private void Navigate(Entry entry, bool addHistory = true)
         {
             if (this.navigating)
             {
@@ -98,8 +121,22 @@
             this.navigating = true;
             try
             {
+                if (addHistory)
+                {
+                    var removeCount = (this.history.Count - 1) - this.historyIndex;
+                    if (removeCount > 0)
+                    {
+                        this.history.RemoveRange(this.historyIndex, removeCount);
+                    }
+
+                    this.history.Add(entry);
+                    this.historyIndex = this.history.Count - 1;
+                }
+
                 this.CurrentPath = entry.Path;
                 this.CanGoUp = entry.Path?.IndexOfAny(PathExtensions.Separators) > -1;
+                this.CanGoBack = this.historyIndex > 0;
+                this.CanGoForward = this.historyIndex < this.history.Count - 1;
                 this.Tree.SelectEntry(entry);
                 this.List.LoadEntries(entry);
             }
@@ -113,7 +150,7 @@
         {
             if (item.Entry.CanEnumerateEntries)
             {
-                this.NavigateToEntry(item.Entry);
+                this.Navigate(item.Entry);
                 return;
             }
 

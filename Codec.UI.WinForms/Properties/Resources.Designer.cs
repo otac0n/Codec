@@ -83,6 +83,26 @@ namespace Codec.UI.WinForms.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap FontAwesome_ChevronLeftSolid_20x20 {
+            get {
+                object obj = ResourceManager.GetObject("FontAwesome-ChevronLeftSolid@20x20", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap FontAwesome_ChevronRightSolid_20x20 {
+            get {
+                object obj = ResourceManager.GetObject("FontAwesome-ChevronRightSolid@20x20", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap FontAwesome_FileAudioSolid_20x20 {
             get {
                 object obj = ResourceManager.GetObject("FontAwesome-FileAudioSolid@20x20", resourceCulture);

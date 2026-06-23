@@ -43,6 +43,8 @@
             this.imagePreviewToolStripMenuItem = new ToolStripMenuItem();
             this.toolStripSeparator1 = new ToolStripSeparator();
             this.goUpButton = new ToolStripButton();
+            this.backButton = new ToolStripButton();
+            this.forwardButton = new ToolStripButton();
             this.lowerStatusStrip = new StatusStrip();
             this.saveSelectedDialog = new SaveFileDialog();
             this.saveToFolderDialog = new FolderBrowserDialog();
@@ -130,7 +132,7 @@
             // topToolStrip
             // 
             this.topToolStrip.ImageScalingSize = new Size(24, 24);
-            this.topToolStrip.Items.AddRange(new ToolStripItem[] { this.saveButton, this.viewDrowDown, this.toolStripSeparator1, this.goUpButton });
+            this.topToolStrip.Items.AddRange(new ToolStripItem[] { this.backButton, this.forwardButton, this.goUpButton, this.toolStripSeparator1, this.saveButton, this.viewDrowDown });
             this.topToolStrip.Location = new Point(0, 0);
             this.topToolStrip.Name = "topToolStrip";
             this.topToolStrip.Size = new Size(1203, 33);
@@ -189,6 +191,26 @@
             this.goUpButton.Text = "Go Up";
             this.goUpButton.Click += this.GoUpButton_Click;
             // 
+            // backButton
+            // 
+            this.backButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            this.backButton.Image = Properties.Resources.FontAwesome_ChevronLeftSolid_20x20;
+            this.backButton.ImageTransparentColor = Color.Magenta;
+            this.backButton.Name = "backButton";
+            this.backButton.Size = new Size(34, 28);
+            this.backButton.Text = "Back";
+            this.backButton.Click += this.BackButton_Click;
+            // 
+            // forwardButton
+            // 
+            this.forwardButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            this.forwardButton.Image = Properties.Resources.FontAwesome_ChevronRightSolid_20x20;
+            this.forwardButton.ImageTransparentColor = Color.Magenta;
+            this.forwardButton.Name = "forwardButton";
+            this.forwardButton.Size = new Size(34, 28);
+            this.forwardButton.Text = "Forward";
+            this.forwardButton.Click += this.ForwardButton_Click;
+            // 
             // lowerStatusStrip
             // 
             this.lowerStatusStrip.ImageScalingSize = new Size(24, 24);
@@ -246,5 +268,7 @@
         private ToolStripMenuItem saveAsToolStripMenuItem;
         private ToolStripButton goUpButton;
         private ToolStripSeparator toolStripSeparator1;
+        private ToolStripButton backButton;
+        private ToolStripButton forwardButton;
     }
 }
