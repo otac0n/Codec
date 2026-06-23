@@ -28,14 +28,7 @@
             {
                 var services = new ServiceCollection();
 
-                ServiceRegistration.Register(services);
-                Audio.ServiceRegistration.Register(services);
-                Imaging.ServiceRegistration.Register(services);
-                Geometry.ServiceRegistration.Register(services);
-                M2.ServiceRegistration.Register(services);
-                MGS.ServiceRegistration.Register(services);
-                EnvironmentOptions.Bind(context, services);
-                M2.ArchiveOptions.Bind(context, services);
+                Codec.UI.ServiceRegistration.Register(context, services);
                 services.AddTransient<FileExportService>();
 
                 services.AddSingleton<ImageLoader>();

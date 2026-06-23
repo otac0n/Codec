@@ -26,17 +26,14 @@ namespace Codec.UI.WinForms
             browseCommand.AddAlias("browser");
             rootCommand.Add(browseCommand);
 
-            static void InstallSharedConfiguration(InvocationContext context, IServiceCollection services)
-            {
-                M2.ArchiveOptions.Bind(context, services);
-                EnvironmentOptions.Bind(context, services);
-                ServiceRegistration.Register(services);
-            }
-
             void Browse(InvocationContext context)
             {
                 var builder = Host.CreateDefaultBuilder(args);
-                builder.ConfigureServices(services => InstallSharedConfiguration(context, services));
+                builder.ConfigureServices(services =>
+                {
+                    Codec.UI.ServiceRegistration.Register(context, services);
+                    services.AddTransient<Browser>();
+                });
 
                 using var host = builder.Build();
                 ApplicationConfiguration.Initialize();
