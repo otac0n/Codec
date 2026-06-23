@@ -44,9 +44,55 @@ namespace Codec.Services
                             break;
 
                         case EntryTypeDetector.EntryType.Model:
-                            if (fsm.Resolve<RenderableScene>(entry.Path) is RenderableScene scene)
+                            if (fsm.Resolve<RenderableScene>(entry.Path) is { Scene: var scene })
                             {
-                                // TODO: Handle linked image exports & renames.
+                                var parentFolder = Path.GetDirectoryName(path);
+                                var imageMap = new Dictionary<string, string>();
+                                void UpdateTexture(bool run, Func<TextureSlot> get, Action<TextureSlot> set)
+                                {
+                                    if (run)
+                                    {
+                                        var texture = get();
+                                        if (!imageMap.TryGetValue(texture.FilePath, out var filename))
+                                        {
+                                            var imagePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(entry.Path), texture.FilePath));
+
+                                            // TODO: Recursively determine file rename behavior.
+                                            imageMap[texture.FilePath] = filename = Path.ChangeExtension(fsm.GetFileName(texture.FilePath), ".png");
+                                            if (fsm.Resolve<MagickImage>(imagePath) is MagickImage image)
+                                            {
+                                                image.Write(Path.Combine(parentFolder, filename));
+                                            }
+
+                                            ////imageMap[texture.FilePath] = filename = fsm.GetFileName(texture.FilePath);
+                                            ////if (fsm.FileExists(imagePath))
+                                            ////{
+                                            ////    using var input = fsm.OpenRead(imagePath);
+                                            ////    using var output = File.Create(Path.Combine(parentFolder, filename));
+                                            ////    input.CopyTo(output);
+                                            ////}
+                                        }
+
+                                        texture.FilePath = filename;
+                                        set(texture);
+                                    }
+                                }
+
+                                foreach (var mat in scene.Materials)
+                                {
+                                    UpdateTexture(mat.HasTextureAmbient, () => mat.TextureAmbient, v => mat.TextureAmbient = v);
+                                    UpdateTexture(mat.HasTextureAmbientOcclusion, () => mat.TextureAmbientOcclusion, v => mat.TextureAmbientOcclusion = v);
+                                    UpdateTexture(mat.HasTextureDiffuse, () => mat.TextureDiffuse, v => mat.TextureDiffuse = v);
+                                    UpdateTexture(mat.HasTextureDisplacement, () => mat.TextureDisplacement, v => mat.TextureDisplacement = v);
+                                    UpdateTexture(mat.HasTextureEmissive, () => mat.TextureEmissive, v => mat.TextureEmissive = v);
+                                    UpdateTexture(mat.HasTextureHeight, () => mat.TextureHeight, v => mat.TextureHeight = v);
+                                    UpdateTexture(mat.HasTextureLightMap, () => mat.TextureLightMap, v => mat.TextureLightMap = v);
+                                    UpdateTexture(mat.HasTextureNormal, () => mat.TextureNormal, v => mat.TextureNormal = v);
+                                    UpdateTexture(mat.HasTextureOpacity, () => mat.TextureOpacity, v => mat.TextureOpacity = v);
+                                    UpdateTexture(mat.HasTextureReflection, () => mat.TextureReflection, v => mat.TextureReflection = v);
+                                    UpdateTexture(mat.HasTextureSpecular, () => mat.TextureSpecular, v => mat.TextureSpecular = v);
+                                }
+
                                 var context = new AssimpContext();
                                 var ext = Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
                                 var formatId = context.GetSupportedExportFormats()
@@ -54,7 +100,7 @@ namespace Codec.Services
                                     ?.FormatId;
                                 if (formatId != null)
                                 {
-                                    context.ExportFile(scene.Scene, path, formatId);
+                                    context.ExportFile(scene, path, formatId);
                                     return;
                                 }
                             }
