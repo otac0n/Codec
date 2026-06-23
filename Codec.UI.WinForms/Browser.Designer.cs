@@ -41,6 +41,8 @@
             this.viewDrowDown = new ToolStripDropDownButton();
             this.listToolStripMenuItem = new ToolStripMenuItem();
             this.imagePreviewToolStripMenuItem = new ToolStripMenuItem();
+            this.toolStripSeparator1 = new ToolStripSeparator();
+            this.goUpButton = new ToolStripButton();
             this.lowerStatusStrip = new StatusStrip();
             this.saveSelectedDialog = new SaveFileDialog();
             this.saveToFolderDialog = new FolderBrowserDialog();
@@ -128,7 +130,7 @@
             // topToolStrip
             // 
             this.topToolStrip.ImageScalingSize = new Size(24, 24);
-            this.topToolStrip.Items.AddRange(new ToolStripItem[] { this.saveButton, this.viewDrowDown });
+            this.topToolStrip.Items.AddRange(new ToolStripItem[] { this.saveButton, this.viewDrowDown, this.toolStripSeparator1, this.goUpButton });
             this.topToolStrip.Location = new Point(0, 0);
             this.topToolStrip.Name = "topToolStrip";
             this.topToolStrip.Size = new Size(1203, 33);
@@ -171,6 +173,21 @@
             this.imagePreviewToolStripMenuItem.Size = new Size(229, 34);
             this.imagePreviewToolStripMenuItem.Text = "Image Preview";
             this.imagePreviewToolStripMenuItem.Click += this.ImagePreviewToolStripMenuItem_Click;
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new Size(6, 33);
+            // 
+            // goUpButton
+            // 
+            this.goUpButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            this.goUpButton.Image = Properties.Resources.FontAwesome_ArrowTurnUpSolid_20x20;
+            this.goUpButton.ImageTransparentColor = Color.Magenta;
+            this.goUpButton.Name = "goUpButton";
+            this.goUpButton.Size = new Size(34, 28);
+            this.goUpButton.Text = "Go Up";
+            this.goUpButton.Click += this.GoUpButton_Click;
             // 
             // lowerStatusStrip
             // 
@@ -227,5 +244,7 @@
         private System.Windows.Forms.ToolStripMenuItem imagePreviewToolStripMenuItem;
         private ContextMenuStrip entryContextMenu;
         private ToolStripMenuItem saveAsToolStripMenuItem;
+        private ToolStripButton goUpButton;
+        private ToolStripSeparator toolStripSeparator1;
     }
 }

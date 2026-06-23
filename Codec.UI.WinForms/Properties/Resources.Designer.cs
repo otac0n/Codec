@@ -63,6 +63,16 @@ namespace Codec.UI.WinForms.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap FontAwesome_ArrowTurnUpSolid_20x20 {
+            get {
+                object obj = ResourceManager.GetObject("FontAwesome-ArrowTurnUpSolid@20x20", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap FontAwesome_BoxArchiveSolid_20x20 {
             get {
                 object obj = ResourceManager.GetObject("FontAwesome-BoxArchiveSolid@20x20", resourceCulture);

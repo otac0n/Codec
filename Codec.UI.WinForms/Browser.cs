@@ -72,6 +72,7 @@ namespace Codec.UI.WinForms
         private void Navigate(Entry entry)
         {
             this.suppressUpdates = true;
+            this.goUpButton.Enabled = entry.Path?.IndexOfAny(PathExtensions.Separators) > -1;
             this.pathBox.Tag = entry.Path;
             this.pathBox.Text = entry.Path;
 
@@ -145,6 +146,11 @@ namespace Codec.UI.WinForms
             {
                 this.Navigate(this.pathBox.Text);
             }
+        }
+
+        private void GoUpButton_Click(object sender, EventArgs e)
+        {
+            this.Navigate(PathExtensions.GetDirectoryName((string)this.pathBox.Tag));
         }
 
         private async void EntryList_ItemActivate(object sender, EventArgs e)

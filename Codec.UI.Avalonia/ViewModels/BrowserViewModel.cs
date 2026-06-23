@@ -25,6 +25,9 @@
         public EntryListViewModel List { get; }
 
         [ObservableProperty]
+        private bool canGoUp = false;
+
+        [ObservableProperty]
         private string currentPath = string.Empty;
 
         [ObservableProperty]
@@ -68,7 +71,18 @@
         [RelayCommand]
         private void CommitPathBox()
         {
-            if (this.fsm.TryGetEntry(this.CurrentPath, out var entry))
+            this.Navigate(this.CurrentPath);
+        }
+
+        [RelayCommand]
+        private void GoUp()
+        {
+            this.Navigate(PathExtensions.GetDirectoryName(this.CurrentPath));
+        }
+
+        private void Navigate(string path)
+        {
+            if (this.fsm.TryGetEntry(path, out var entry))
             {
                 this.NavigateToEntry(entry);
             }
@@ -85,6 +99,7 @@
             try
             {
                 this.CurrentPath = entry.Path;
+                this.CanGoUp = entry.Path?.IndexOfAny(PathExtensions.Separators) > -1;
                 this.Tree.SelectEntry(entry);
                 this.List.LoadEntries(entry);
             }

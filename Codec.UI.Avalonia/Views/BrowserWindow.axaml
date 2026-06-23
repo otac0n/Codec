@@ -35,6 +35,8 @@
           </MenuFlyout>
         </DropDownButton.Flyout>
       </DropDownButton>
+      <Separator Height="NaN" Width="1" />
+      <Button Content="{iconPacks:FontAwesome Kind=ArrowTurnUpSolid}" IsEnabled="{Binding CanGoUp}" Command="{Binding GoUpCommand}" />
     </StackPanel>
     <DockPanel DockPanel.Dock="Top" Margin="4">
       <TextBlock DockPanel.Dock="Left" Text="Path:" VerticalAlignment="Center" Margin="0,0,4,0" />
