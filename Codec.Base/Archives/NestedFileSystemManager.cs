@@ -220,8 +220,6 @@
             return false;
         }
 
-        public record Entry(string Path, bool CanOpen, bool CanEnumerateEntries);
-
         public class PathComparer : IComparer<string?>, IEqualityComparer<string?>
         {
             public bool Equals(string? x, string? y) => this.Compare(x, y) == 0;

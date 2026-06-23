@@ -21,7 +21,7 @@ namespace Codec.MGS.Files
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton(new EntryTypeMatcher(EntryTypeDetector.EntryType.Image, "*.tm2"));
+            services.AddSingleton(new EntryTypeMatcher(EntryType.Image, "*.tm2"));
 
             services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {

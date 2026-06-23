@@ -6,7 +6,6 @@
     using System.Text.RegularExpressions;
     using Codec.Archives;
     using Microsoft.Extensions.DependencyInjection;
-    using Entry = Codec.Archives.NestedFileSystemManager.Entry;
 
     public sealed class EntryTypeDetector
     {
@@ -47,17 +46,6 @@
             }
 
             return EntryType.File;
-        }
-
-        public enum EntryType
-        {
-            Folder = 0,
-            File = 1,
-            Archive = 2,
-            Image = 3,
-            Video = 4,
-            Audio = 5,
-            Model = 6,
         }
     }
 }

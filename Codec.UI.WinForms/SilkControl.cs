@@ -2,10 +2,10 @@
 
 namespace Codec.UI.WinForms
 {
-    using Silk.NET.Core.Contexts;
-    using Silk.NET.OpenGL;
     using System.Runtime.InteropServices;
     using System.Windows.Forms;
+    using Silk.NET.Core.Contexts;
+    using Silk.NET.OpenGL;
 
     public class SilkControl : UserControl
     {

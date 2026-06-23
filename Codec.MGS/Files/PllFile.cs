@@ -13,7 +13,7 @@
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton(new EntryTypeMatcher(EntryTypeDetector.EntryType.Image, "*.pll"));
+            services.AddSingleton(new EntryTypeMatcher(EntryType.Image, "*.pll"));
 
             services.AddSingleton<FileHandlerResolver<MagickImage>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {

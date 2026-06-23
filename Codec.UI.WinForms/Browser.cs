@@ -16,8 +16,6 @@ namespace Codec.UI.WinForms
     using Codec.Services;
     using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;
-    using Entry = Codec.Archives.NestedFileSystemManager.Entry;
-    using FileType = Codec.Services.EntryTypeDetector.EntryType;
 
     internal partial class Browser : Form
     {
@@ -124,7 +122,7 @@ namespace Codec.UI.WinForms
             this.EntryList_SelectedIndexChanged(this.entryList, EventArgs.Empty);
             this.entryList.Items.AddRange(items);
 
-            this.textureDisplay.Items = entries.Where(e => this.detector.Detect(e) == FileType.Image);
+            this.textureDisplay.Items = entries.Where(e => this.detector.Detect(e) == EntryType.Image);
 
             this.suppressUpdates = false;
         }
@@ -194,7 +192,7 @@ namespace Codec.UI.WinForms
                 {
                     switch (this.detector.Detect(entry))
                     {
-                        case FileType.Image:
+                        case EntryType.Image:
                             {
                                 if (this.fsm.Resolve<MagickImage>(entry.Path) is MagickImage image)
                                 {
@@ -215,7 +213,7 @@ namespace Codec.UI.WinForms
                                 }
                             }
                             break;
-                        case FileType.Audio:
+                        case EntryType.Audio:
                             {
                                 try
                                 {
@@ -232,7 +230,7 @@ namespace Codec.UI.WinForms
                                 }
                             }
                             break;
-                        case FileType.Model:
+                        case EntryType.Model:
                             {
                                 if (this.fsm.Resolve<RenderableScene>(entry.Path) is RenderableScene scene)
                                 {

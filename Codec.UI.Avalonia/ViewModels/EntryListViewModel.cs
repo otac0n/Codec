@@ -8,13 +8,11 @@
     using System.Threading.Tasks;
     using global::Avalonia.Controls;
     using Codec.Archives;
+    using Codec.Services;
     using Codec.UI.Avalonia.Models;
     using Codec.UI.Avalonia.Services;
-    using Codec.Services;
     using CommunityToolkit.Mvvm.ComponentModel;
     using CommunityToolkit.Mvvm.Input;
-    using Entry = Codec.Archives.NestedFileSystemManager.Entry;
-    using EntryType = Codec.Services.EntryTypeDetector.EntryType;
 
     public sealed partial class EntryListViewModel : ObservableObject, IDisposable
     {

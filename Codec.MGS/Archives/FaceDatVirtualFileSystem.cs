@@ -32,7 +32,7 @@ namespace Codec.MGS.Archives
 
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton(new EntryTypeMatcher(EntryTypeDetector.EntryType.Image, "*.img"));
+            services.AddSingleton(new EntryTypeMatcher(EntryType.Image, "*.img"));
 
             services.AddSingleton<FileSystemResolver>((servicProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {

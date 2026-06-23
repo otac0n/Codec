@@ -17,7 +17,7 @@
                 supportedExtensions.UnionWith(probe.GetSupportedImportFormats());
             }
 
-            services.AddSingleton(new EntryTypeMatcher(EntryTypeDetector.EntryType.Model, string.Join(";", supportedExtensions.Select(e => $"*{e}"))));
+            services.AddSingleton(new EntryTypeMatcher(EntryType.Model, string.Join(";", supportedExtensions.Select(e => $"*{e}"))));
 
             services.AddSingleton<FileHandlerResolver<RenderableScene>>(
                 (serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>

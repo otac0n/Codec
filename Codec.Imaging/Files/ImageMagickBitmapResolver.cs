@@ -9,7 +9,7 @@
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton(new EntryTypeMatcher(EntryTypeDetector.EntryType.Image, string.Join(";", MagickNET.SupportedFormats.Where(f => f.SupportsReading).Select(f => $"*.{f.Format.ToString().ToLowerInvariant()}"))));
+            services.AddSingleton(new EntryTypeMatcher(EntryType.Image, string.Join(";", MagickNET.SupportedFormats.Where(f => f.SupportsReading).Select(f => $"*.{f.Format.ToString().ToLowerInvariant()}"))));
 
             services.AddSingleton<FileHandlerResolver<MagickImage>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {

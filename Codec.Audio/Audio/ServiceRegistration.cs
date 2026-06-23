@@ -11,8 +11,8 @@ namespace Codec.Audio
         public static void Register(IServiceCollection services)
         {
             CdaFile.Register(services);
-            services.AddSingleton(new EntryTypeMatcher(EntryTypeDetector.EntryType.Audio, "*.mid;*.midi;*.mp3;*.ogg;*.wav;*.wma;*.xwma"));
-            services.AddSingleton(new EntryTypeMatcher(EntryTypeDetector.EntryType.Video, "*.avi;*.mov;*.mp4;*.mkv;*.webm"));
+            services.AddSingleton(new EntryTypeMatcher(EntryType.Audio, "*.mid;*.midi;*.mp3;*.ogg;*.wav;*.wma;*.xwma"));
+            services.AddSingleton(new EntryTypeMatcher(EntryType.Video, "*.avi;*.mov;*.mp4;*.mkv;*.webm"));
         }
     }
 }

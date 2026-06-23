@@ -4,7 +4,7 @@
     using Codec.Services;
 
     public sealed record EntryItem(
-        NestedFileSystemManager.Entry Entry,
+        Entry Entry,
         string DisplayName,
-        EntryTypeDetector.EntryType EntryType);
+        EntryType EntryType);
 }

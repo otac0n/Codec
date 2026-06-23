@@ -15,7 +15,7 @@
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton(new EntryTypeMatcher(EntryTypeDetector.EntryType.Model, "*.kmd"));
+            services.AddSingleton(new EntryTypeMatcher(EntryType.Model, "*.kmd"));
 
             services.AddSingleton<FileHandlerResolver<RenderableScene>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {

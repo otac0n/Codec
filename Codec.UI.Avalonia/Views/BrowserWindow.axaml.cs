@@ -3,8 +3,8 @@
     using System;
     using global::Avalonia.Controls;
     using global::Avalonia.Media.Imaging;
-    using Codec.UI.Avalonia.ViewModels;
     using Codec.Files;
+    using Codec.UI.Avalonia.ViewModels;
 
     public partial class BrowserWindow : Window
     {

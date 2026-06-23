@@ -5,7 +5,6 @@
     using Codec.Archives;
     using Codec.Services;
     using CommunityToolkit.Mvvm.ComponentModel;
-    using Entry = Codec.Archives.NestedFileSystemManager.Entry;
 
     public sealed partial class FileTreeViewModel : ObservableObject
     {

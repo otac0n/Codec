@@ -2,6 +2,7 @@
 {
     using System;
     using System.IO;
+    using Codec.Services;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
 
@@ -9,7 +10,7 @@
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton(new EntryTypeMatcher(Services.EntryTypeDetector.EntryType.Audio, "*.cda;*.cdda"));
+            services.AddSingleton(new EntryTypeMatcher(EntryType.Audio, "*.cda;*.cdda"));
 
             services.AddSingleton<FileHandlerResolver<AudioStream>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {

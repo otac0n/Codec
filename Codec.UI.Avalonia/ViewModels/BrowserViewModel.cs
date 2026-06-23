@@ -7,12 +7,11 @@
     using Codec.Archives;
     using Codec.Files;
     using Codec.MGS;
+    using Codec.Services;
     using Codec.UI.Avalonia.Models;
     using Codec.UI.Avalonia.Services;
     using CommunityToolkit.Mvvm.ComponentModel;
     using CommunityToolkit.Mvvm.Input;
-    using Entry = Codec.Archives.NestedFileSystemManager.Entry;
-    using EntryType = Codec.Services.EntryTypeDetector.EntryType;
 
     public partial class BrowserViewModel : ObservableObject
     {

@@ -14,7 +14,7 @@ namespace Codec.Services
 
     public sealed class FileExportService(NestedFileSystemManager fsm, EntryTypeDetector detector)
     {
-        public async Task SaveSingleAsync(NestedFileSystemManager.Entry entry, Func<string, EntryTypeDetector.EntryType, string?, Task<string?>> pickSavePath)
+        public async Task SaveSingleAsync(Entry entry, Func<string, EntryType, string?, Task<string?>> pickSavePath)
         {
             if (!fsm.FileExists(entry.Path))
             {
@@ -34,7 +34,7 @@ namespace Codec.Services
                 {
                     switch (type)
                     {
-                        case EntryTypeDetector.EntryType.Image:
+                        case EntryType.Image:
                             if (fsm.Resolve<MagickImage>(entry.Path) is MagickImage image)
                             {
                                 image.Write(path);
@@ -43,7 +43,7 @@ namespace Codec.Services
 
                             break;
 
-                        case EntryTypeDetector.EntryType.Model:
+                        case EntryType.Model:
                             if (fsm.Resolve<RenderableScene>(entry.Path) is { Scene: var scene })
                             {
                                 var parentFolder = Path.GetDirectoryName(path);
@@ -114,7 +114,7 @@ namespace Codec.Services
             }
         }
 
-        public async Task SaveMultipleAsync(IEnumerable<NestedFileSystemManager.Entry> entries, Func<Task<string?>> pickFolder, Func<string, Task<bool>> confirmOverwrite)
+        public async Task SaveMultipleAsync(IEnumerable<Entry> entries, Func<Task<string?>> pickFolder, Func<string, Task<bool>> confirmOverwrite)
         {
             var path = await pickFolder().ConfigureAwait(false);
             if (path is null)

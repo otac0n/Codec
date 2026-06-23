@@ -2,13 +2,13 @@
 {
     using System;
     using System.CommandLine;
+    using System.CommandLine.Invocation;
     using global::Avalonia;
+    using Codec.Services;
     using Codec.UI.Avalonia.Services;
     using Codec.UI.Avalonia.ViewModels;
     using Codec.UI.Avalonia.Views;
     using Microsoft.Extensions.DependencyInjection;
-    using System.CommandLine.Invocation;
-    using Codec.Services;
 
     sealed class Program
     {

@@ -12,7 +12,7 @@
     {
         private readonly SemaphoreSlim semaphore = new(5);
 
-        public async Task<Bitmap?> LoadAsync(NestedFileSystemManager.Entry entry, CancellationToken cancel = default)
+        public async Task<Bitmap?> LoadAsync(Entry entry, CancellationToken cancel = default)
         {
             // TODO: Handle muti-frame images.
             await this.semaphore.WaitAsync(cancel).ConfigureAwait(false);
