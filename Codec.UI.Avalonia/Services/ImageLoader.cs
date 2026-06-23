@@ -1,48 +1,42 @@
 ﻿namespace Codec.UI.Avalonia.Services
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Avalonia.Media.Imaging;
     using Codec.Archives;
-    using Entry = Codec.Archives.NestedFileSystemManager.Entry;
+    using ImageMagick;
 
-    public sealed class ImageLoader(
-        IServiceProvider serviceProvider,
-        NestedFileSystemManager fsm,
-        IEnumerable<FileHandlerResolver<System.Drawing.Bitmap>> resolvers) : IDisposable
+    public sealed class ImageLoader(NestedFileSystemManager fsm) : IDisposable
     {
         private readonly SemaphoreSlim semaphore = new(5);
 
-        public async Task<Bitmap?> LoadAsync(Entry entry, CancellationToken cancel = default)
+        public async Task<Bitmap?> LoadAsync(NestedFileSystemManager.Entry entry, CancellationToken cancel = default)
         {
+            // TODO: Handle muti-frame images.
             await this.semaphore.WaitAsync(cancel).ConfigureAwait(false);
-            Bitmap bmp;
-            System.Drawing.Bitmap? drawingBitmap = null;
+            MagickImage? magickImage = null;
             try
             {
                 try
                 {
-                    drawingBitmap = fsm.Resolve<System.Drawing.Bitmap>(entry.Path);
+                    magickImage = fsm.Resolve<MagickImage>(entry.Path);
                 }
                 finally
                 {
                     this.semaphore.Release();
                 }
 
-                bmp = ConvertToAvaloniaBitmap(drawingBitmap);
+                return ConvertToAvaloniaBitmap(magickImage);
             }
             finally
             {
-                drawingBitmap?.Dispose();
+                magickImage?.Dispose();
             }
-
-            return bmp;
         }
 
-        private static Bitmap? ConvertToAvaloniaBitmap(System.Drawing.Bitmap? src)
+        private static Bitmap? ConvertToAvaloniaBitmap(MagickImage? src)
         {
             if (src is null)
             {
@@ -50,7 +44,7 @@
             }
 
             using var ms = new MemoryStream();
-            src.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+            src.Write(ms, MagickFormat.Png);
             ms.Seek(0, SeekOrigin.Begin);
             return new Bitmap(ms);
         }

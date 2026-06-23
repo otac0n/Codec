@@ -3,15 +3,14 @@
 namespace Codec.Rendering
 {
     using System;
-    using System.Drawing;
-    using System.Drawing.Imaging;
+    using ImageMagick;
     using Silk.NET.OpenGL;
 
     public sealed class TextureHandle : IDisposable
     {
         private readonly GL gl;
 
-        public unsafe TextureHandle(GL gl, Bitmap source, TextureMagFilter magnify = TextureMagFilter.Linear, TextureMinFilter minify = TextureMinFilter.LinearMipmapLinear)
+        public unsafe TextureHandle(GL gl, MagickImage source, TextureMagFilter magnify = TextureMagFilter.Linear, TextureMinFilter minify = TextureMinFilter.LinearMipmapLinear)
         {
             this.gl = gl;
 
@@ -19,19 +18,12 @@ namespace Codec.Rendering
             gl.ActiveTexture(TextureUnit.Texture0);
             gl.BindTexture(TextureTarget.Texture2D, this.Handle);
 
-            BitmapData? bmp = null;
-            try
+            using var pixels = source.GetPixelsUnsafe();
+            var bytes = pixels.ToByteArray("BGRA") ?? throw new InvalidOperationException("Failed to get BGRA pixel data from MagickImage.");
+
+            fixed (byte* ptr = bytes)
             {
-                bmp = source.LockBits(new Rectangle(Point.Empty, source.Size), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                var ptr = (byte*)bmp.Scan0;
-                gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba, (uint)bmp.Width, (uint)bmp.Height, 0, Silk.NET.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, ptr);
-            }
-            finally
-            {
-                if (bmp != null)
-                {
-                    source.UnlockBits(bmp);
-                }
+                gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba, source.Width, source.Height, 0, Silk.NET.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, ptr);
             }
 
             gl.TextureParameter(this.Handle, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);

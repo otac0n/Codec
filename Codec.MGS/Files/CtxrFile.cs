@@ -3,8 +3,6 @@
 namespace Codec.MGS.Files
 {
     using System;
-    using System.Drawing;
-    using System.Drawing.Imaging;
     using System.IO;
     using System.Runtime.InteropServices;
     using Codec.Archives;
@@ -19,7 +17,7 @@ namespace Codec.MGS.Files
         {
             services.AddSingleton(new EntryTypeMatcher(EntryTypeDetector.EntryType.Image, "*.ctxr"));
 
-            services.AddSingleton<FileHandlerResolver<Bitmap>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
+            services.AddSingleton<FileHandlerResolver<MagickImage>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
                 if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".ctxr", StringComparison.OrdinalIgnoreCase))
                 {
@@ -34,13 +32,13 @@ namespace Codec.MGS.Files
             });
         }
 
-        public static Bitmap Load(string path)
+        public static MagickImage Load(string path)
         {
             using var stream = File.OpenRead(path);
             return Load(stream);
         }
 
-        public static Bitmap Load(Stream stream)
+        public static MagickImage Load(Stream stream)
         {
             var header = stream.ReadBigEndian<Header>();
             if (header.Signature != 0x54585452 || header.Version != 7)
@@ -55,43 +53,32 @@ namespace Codec.MGS.Files
             stream.Align(0x80);
             var size = (int)stream.ReadUInt32BigEndian();
 
-            var bitmap = new Bitmap(header.Width, header.Height);
+            var rowBytes = header.Width * 4;
+            var pixelData = new byte[header.Width * header.Height * 4];
+            var offset = 0;
 
-            BitmapData? bmpData = null;
-            try
+            for (var y = 0; y < header.Height; y++)
             {
-                bmpData = bitmap.LockBits(new Rectangle(Point.Empty, bitmap.Size), ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                var buffer = new byte[bmpData.Width * 4];
-                var scan = bmpData.Scan0;
-                for (var y = 0; y < bmpData.Height; y++, scan += bmpData.Stride)
+                var read = stream.Read(pixelData, offset, Math.Min(rowBytes, size));
+                size -= read;
+                for (var x = 0; x < read / 4; x++)
                 {
-                    var read = stream.Read(buffer, 0, Math.Min(buffer.Length, size));
-                    size -= read;
-                    for (var x = 0; x < read / 4; x++)
-                    {
-                        var ix = x * 4;
-                        buffer[ix + 3] = (byte)Math.Clamp(buffer[ix + 3] * 2, 0, 255);
-                    }
-
-                    Marshal.Copy(buffer, 0, scan, read);
-                    if (read < buffer.Length)
-                    {
-                        break;
-                    }
+                    var ix = offset + x * 4;
+                    static int ScaleAlpha(int v) => v * 2;
+                    pixelData[ix + 3] = (byte)Math.Clamp(ScaleAlpha(pixelData[ix + 3]), 0, 255);
                 }
-            }
-            finally
-            {
-                if (bmpData is not null)
+
+                offset += rowBytes;
+                if (read < rowBytes)
                 {
-                    bitmap.UnlockBits(bmpData);
+                    break;
                 }
             }
 
-            return bitmap;
+            return new MagickImage(pixelData, new PixelReadSettings(header.Width, header.Height, StorageType.Char, "BGRA"));
         }
 
-        private static Bitmap ConvertWithImageMagick(Header header, Stream stream)
+        private static MagickImage ConvertWithImageMagick(Header header, Stream stream)
         {
             var pixelFormat = (PixelFormat)header.PixelFormat;
             switch (pixelFormat)
@@ -101,9 +88,7 @@ namespace Codec.MGS.Files
                 case PixelFormat.DXT5:
                     {
                         using var ddsStream = BuildDdsStream(header, pixelFormat, stream);
-                        using var image = new MagickImage();
-                        image.Read(ddsStream);
-                        return image.ToBitmap();
+                        return new MagickImage(ddsStream);
                     }
 
                 default:

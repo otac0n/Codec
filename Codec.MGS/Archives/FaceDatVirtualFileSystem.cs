@@ -4,16 +4,16 @@ namespace Codec.MGS.Archives
 {
     using System;
     using System.Collections.Generic;
-    using System.Drawing;
-    using System.Drawing.Imaging;
     using System.IO;
     using System.IO.Abstractions;
     using System.Linq;
     using System.Runtime.InteropServices;
     using Codec;
     using Codec.Archives;
+    using Codec.Imaging;
     using Codec.Services;
     using DiscUtils.Streams;
+    using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (int Group, ushort Id, bool IsAnimation, long Offset, long Size);
     using ImageEntry = (int Index, long PaletteOffset, long ImageOffset);
@@ -139,9 +139,8 @@ namespace Codec.MGS.Archives
 
                 using var source = this.parent.File.Open(this.parentRelativePath, parentOptions);
                 var dest = new MemoryStream();
-
-                var (_, _, bmp) = GetBitmap(source, entry.PaletteOffset, entry.ImageOffset);
-                bmp.Save(dest, ImageFormat.Png);
+                var (_, _, img) = GetImage(source, entry.PaletteOffset, entry.ImageOffset);
+                img.Write(dest, MagickFormat.Png);
                 dest.Position = 0;
                 return dest;
             }
@@ -208,31 +207,16 @@ namespace Codec.MGS.Archives
                 entry.Index + ".img";
         }
 
-        static (int X, int Y, Bitmap Image) GetBitmap(Stream source, long paletteOffset, long imageOffset)
+        static (int X, int Y, MagickImage Image) GetImage(Stream source, long paletteOffset, long imageOffset)
         {
-            var format = PixelFormat.Format8bppIndexed;
             const int PaletteCount = 1 << 8; // 8BPP
             const int PaletteSize = sizeof(ushort) * PaletteCount;
 
             source.Seek(imageOffset, SeekOrigin.Begin);
             var dim = source.ReadLittleEndian<ImageDimensions>();
-            var buffer = new byte[Math.Max((int)dim.W, PaletteSize)];
+            var tgaWriter = new TgaWriter<int, byte>((ushort)dim.W, (ushort)dim.H, PaletteCount);
 
-            var bmp = new Bitmap(dim.W, dim.H, format);
-            var bmpData = bmp.LockBits(new Rectangle(0, 0, dim.W, dim.H), ImageLockMode.WriteOnly, format);
-            try
-            {
-                var scan = bmpData.Scan0;
-                for (var y = 0; y < dim.H; y++, scan += bmpData.Stride)
-                {
-                    source.ReadExactly(buffer, dim.W);
-                    Marshal.Copy(buffer, 0, scan, dim.W);
-                }
-            }
-            finally
-            {
-                bmp.UnlockBits(bmpData);
-            }
+            var imgPosition = source.Position;
 
             static int Intensity(int c) =>
                 ((c & 0b00010000) >> 4) * 80 +
@@ -242,22 +226,20 @@ namespace Codec.MGS.Archives
                 ((c & 0b00000001) >> 0) * 8 +
                 16;
 
-            var p = bmp.Palette;
-
             source.Seek(paletteOffset, SeekOrigin.Begin);
-            source.ReadExactly(buffer, PaletteSize);
             for (var i = 0; i < PaletteCount; i++)
             {
-                var color = BitConverter.ToUInt16(buffer, i * 2);
-                var r = Intensity((color & 0b0000000000011111) >> 0);
-                var g = Intensity((color & 0b0000001111100000) >> 5);
-                var b = Intensity((color & 0b1111110000000000) >> 10);
-                p.Entries[i] = Color.FromArgb(r, g, b);
+                var color = source.ReadUInt16LittleEndian();
+                tgaWriter.WriteColor(
+                    ((color & 0x8000) != 0 ? 0xFF : 0x00) << 24 |
+                    Intensity((color >> 0) & 0x001F) << 16 |
+                    Intensity((color >> 5) & 0x001F) << 8 |
+                    Intensity((color >> 10) & 0x001F) << 0);
             }
 
-            bmp.Palette = p;
+            source.CopyTo(tgaWriter.TgaStream, imgPosition, SeekOrigin.Begin, dim.W * dim.H);
 
-            return (dim.U, dim.V, bmp);
+            return (dim.U, dim.V, tgaWriter.ToMagickImage());
         }
     }
 }

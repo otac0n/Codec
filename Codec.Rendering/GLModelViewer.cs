@@ -3,13 +3,13 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Drawing;
     using System.IO;
     using System.Linq;
     using System.Numerics;
     using Assimp;
     using Codec.Archives;
     using Codec.Files;
+    using ImageMagick;
     using Silk.NET.OpenGL;
 
     public class GLModelViewer : IDisposable
@@ -280,8 +280,8 @@
             }
 
             var path = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(this.path), texturePath));
-            using var bmp = this.fsm.Resolve<Bitmap>(path);
-            return this.textures[(texturePath, pixelArt)] = bmp == null ? null : new TextureHandle(this.gl, bmp, pixelArt ? TextureMagFilter.Nearest : TextureMagFilter.Linear, pixelArt ? TextureMinFilter.Nearest : TextureMinFilter.Linear);
+            using var img = this.fsm.Resolve<MagickImage>(path);
+            return this.textures[(texturePath, pixelArt)] = img == null ? null : new TextureHandle(this.gl, img, pixelArt ? TextureMagFilter.Nearest : TextureMagFilter.Linear, pixelArt ? TextureMinFilter.Nearest : TextureMinFilter.Linear);
         }
     }
 }

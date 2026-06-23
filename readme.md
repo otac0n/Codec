@@ -71,7 +71,7 @@ using var virtualA = fsm.Open(@"...\MGS\FACE.DAT/0/f73b.face/base.img", new File
 using var virtualB = fsm.Open(@"...\METAL GEAR SOLID DISC 1.CUE\...", new FileStreamOptions { Mode = FileMode.Open, Access = FileAccess.ReadWrite, Share = FileShare.None });
 
 // You can obtain bitmaps from known image types using:
-var bitmap = fsm.Resolve<System.Drawing.Bitmap>(path);
+var bitmap = fsm.Resolve<MagickImage>(path);
 // Likewise with Auio streams:
 var audio = fsm.Resolve<AudioStream>(path) ?? (AudioStream)fsm.OpenRead(path);
 // And 3D Objects:

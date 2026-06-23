@@ -1,6 +1,5 @@
 ﻿namespace Codec.Files
 {
-    using System.Drawing;
     using System.Linq;
     using Codec.Services;
     using ImageMagick;
@@ -12,7 +11,7 @@
         {
             services.AddSingleton(new EntryTypeMatcher(EntryTypeDetector.EntryType.Image, string.Join(";", MagickNET.SupportedFormats.Where(f => f.SupportsReading).Select(f => $"*.{f.Format.ToString().ToLowerInvariant()}"))));
 
-            services.AddSingleton<FileHandlerResolver<Bitmap>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
+            services.AddSingleton<FileHandlerResolver<MagickImage>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
                 MagickImageInfo? fileInfo = null;
                 try
@@ -32,8 +31,7 @@
                     return (fullPath, parentRelativePath, parent, parentPath) =>
                     {
                         using var input = parent.File.OpenRead(parentRelativePath);
-                        using var image = new MagickImage(input);
-                        return image.ToBitmap();
+                        return new MagickImage(input);
                     };
                 }
 

@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Drawing;
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
@@ -14,6 +13,7 @@
     using Codec.Services;
     using Codec.UI.Avalonia.Models;
     using Codec.UI.Avalonia.Views;
+    using ImageMagick;
 
     public sealed class FileSaveService(NestedFileSystemManager fsm, EntryTypeDetector detector)
     {
@@ -51,9 +51,9 @@
                     switch (type)
                     {
                         case EntryTypeDetector.EntryType.Image:
-                            if (fsm.Resolve<Bitmap>(entry.Path) is Bitmap image)
+                            if (fsm.Resolve<MagickImage>(entry.Path) is MagickImage image)
                             {
-                                image.Save(path);
+                                image.Write(path);
                                 return;
                             }
                             break;

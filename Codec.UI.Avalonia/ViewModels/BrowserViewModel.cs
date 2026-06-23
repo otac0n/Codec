@@ -2,16 +2,16 @@
 {
     using System;
     using System.IO;
+    using global::Avalonia.Media.Imaging;
     using Codec.Archives;
+    using Codec.Files;
+    using Codec.MGS;
     using Codec.UI.Avalonia.Models;
     using Codec.UI.Avalonia.Services;
-    using Codec.Files;
     using CommunityToolkit.Mvvm.ComponentModel;
     using CommunityToolkit.Mvvm.Input;
-    using global::Avalonia.Media.Imaging;
     using Entry = Codec.Archives.NestedFileSystemManager.Entry;
     using EntryType = Codec.Services.EntryTypeDetector.EntryType;
-    using Codec.MGS;
 
     public partial class BrowserViewModel : ObservableObject
     {

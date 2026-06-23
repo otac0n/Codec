@@ -7,6 +7,9 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <PropertyGroup>
+    <WarningsAsErrors>CA1416</WarningsAsErrors>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="FixMe" Version="1.0.0" PrivateAssets="All" />
     <PackageReference Include="GitVersion.MsBuild" Version="6.3.0">

@@ -4,17 +4,18 @@ namespace Codec.MGS.Files
 {
     using System;
     using System.Collections.Generic;
-    using System.Drawing;
-    using System.Drawing.Imaging;
     using System.IO;
     using System.IO.Abstractions;
     using System.Runtime.InteropServices;
     using Codec;
     using Codec.Archives;
+    using Codec.Imaging;
     using Codec.Services;
+    using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Logging.Abstractions;
+    using Size = (int Width, int Height);
 
     internal class TriFile
     {
@@ -35,7 +36,7 @@ namespace Codec.MGS.Files
                 return null;
             });
 
-            services.AddSingleton<FileHandlerResolver<Bitmap>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
+            services.AddSingleton<FileHandlerResolver<MagickImage>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
                 if (parent is TriFileFileSystem)
                 {
@@ -371,7 +372,7 @@ namespace Codec.MGS.Files
             }
         }
 
-        public static Bitmap Load(Stream stream, uint textureId, ILogger<TriFile>? logger = null)
+        public static MagickImage? Load(Stream stream, uint textureId, ILogger<TriFile>? logger = null)
         {
             logger ??= NullLogger<TriFile>.Instance;
 
@@ -382,119 +383,104 @@ namespace Codec.MGS.Files
             var header = MemoryMarshal.Cast<byte, Header>(span)[0];
             var textureDefinitions = MemoryMarshal.Cast<byte, TextureInfo>(span[32..])[0..header.TextureCount];
 
+            var t = 0;
+            for (; t < header.TextureCount; t++)
+            {
+                if (textureDefinitions[t].Code == textureId)
+                {
+                    break;
+                }
+            }
+
+            if (t == header.TextureCount)
+            {
+                return null;
+            }
+
+            var info = textureDefinitions[t];
             var gsmemTexture = new uint[1024 * 1024];
             var gsmemPalette = new uint[1024 * 1024];
             writeTexPSMCT32(0, 1, 0, 0, 64, header.Height, span[header.ImageOffset..], gsmemTexture);
             writeTexPSMCT32(0, 1, 0, 0, 64, header.ClutHeight, span[header.ClutOffset..], gsmemPalette);
 
-            for (var t = 0; t < header.TextureCount; t++)
+            var bitDepth = info.RegisterInfo2.PSM switch
             {
-                var info = textureDefinitions[t];
-                if (info.Code != textureId)
-                {
-                    continue;
-                }
+                PixelStorageMode.PSMT4 => 4,
+                PixelStorageMode.PSMT8 => 8,
+                _ => throw new NotImplementedException(),
+            };
 
-                var targetFormat = info.RegisterInfo2.PSM switch
-                {
-                    PixelStorageMode.PSMT4 => PixelFormat.Format4bppIndexed,
-                    PixelStorageMode.PSMT8 => PixelFormat.Format8bppIndexed,
-                    _ => throw new NotImplementedException(),
-                };
+            var imageWidth = 1 << (int)info.RegisterInfo2.TW;
+            var imageHeight = 1 << (int)info.RegisterInfo2.TH;
 
-                var imageWidth = 1 << (int)info.RegisterInfo2.TW;
-                var imageHeight = 1 << (int)info.RegisterInfo2.TH;
+            var u = (int)(info.UOffset * imageWidth);
+            var v = (int)(info.VOffset * imageHeight);
+            var rawW = info.UScale * imageWidth;
+            var rawH = info.VScale * imageHeight;
 
-                var u = (int)(info.UOffset * imageWidth);
-                var v = (int)(info.VOffset * imageHeight);
-                var rawW = info.UScale * imageWidth;
-                var rawH = info.VScale * imageHeight;
+            var texelU = info.UOffset * imageWidth;
+            var texelV = info.VOffset * imageHeight;
+            var centerAddressed = (texelU - MathF.Floor(texelU) > 0.25f) || (texelV - MathF.Floor(texelV) > 0.25f);
 
-                var texelU = info.UOffset * imageWidth;
-                var texelV = info.VOffset * imageHeight;
-                var centerAddressed = (texelU - MathF.Floor(texelU) > 0.25f) || (texelV - MathF.Floor(texelV) > 0.25f);
+            var width = (int)rawW + (centerAddressed ? 1 : 0);
+            var height = (int)rawH + (centerAddressed ? 1 : 0);
 
-                var width = (int)rawW + (centerAddressed ? 1 : 0);
-                var height = (int)rawH + (centerAddressed ? 1 : 0);
+            var paletteLength = 1 << bitDepth;
+            var tgaWriter = new TgaWriter<int, byte>((ushort)width, (ushort)height, (ushort)paletteLength);
 
-                var bmp = new Bitmap(width, height, targetFormat);
-
-                if ((targetFormat & PixelFormat.Indexed) != 0)
-                {
-                    if (info.RegisterInfo2.CPSM != PixelStorageMode.PSMCT32)
-                    {
-                        throw new NotImplementedException();
-                    }
-
-                    var (w, h) = info.RegisterInfo2.PSM switch
-                    {
-                        PixelStorageMode.PSMT8 => (16, 16),
-                        PixelStorageMode.PSMT4 => (8, 2),
-                        _ => throw new NotImplementedException(),
-                    };
-
-                    var clutBuffer = new byte[1024 * 1024 * 4];
-                    readTexPSMCT32(info.RegisterInfo2.CBP, 1, (int)(info.RegisterInfo2.CSAX * 8), (int)(info.RegisterInfo2.CSAY * 2), w, h, clutBuffer.AsSpan(), gsmemPalette);
-                    var paletteData = MemoryMarshal.Cast<byte, int>(clutBuffer);
-                    if (info.RegisterInfo2.PSM == PixelStorageMode.PSMT8 && !info.RegisterInfo2.CSM)
-                    {
-                        unswizzleClut(clutBuffer);
-                    }
-
-                    var p = bmp.Palette;
-                    for (var i = 0; i < p.Entries.Length; i++)
-                    {
-                        var rgba = (uint)paletteData[i];
-                        var r = (int)(0xFF & rgba);
-                        var g = (int)((0xFF00 & rgba) >> 8);
-                        var b = (int)((0xFF0000 & rgba) >> 16);
-                        var a = (int)((0xFF000000 & rgba) >> 24);
-                        a = (byte)(int)Math.Round(a / 128f * 255);
-                        p.Entries[i] = Color.FromArgb(a, r, g, b);
-                    }
-
-                    bmp.Palette = p;
-                }
-
-                BitmapData? bmpData = null;
-                try
-                {
-                    int chunkSize;
-                    var texBuffer = new byte[1024 * 1024 * 4];
-                    if (info.RegisterInfo2.PSM == PixelStorageMode.PSMT8)
-                    {
-                        readTexPSMT8(info.RegisterInfo2.TBP0, info.RegisterInfo2.TBW, u, v, width, height, texBuffer.AsSpan(), gsmemTexture);
-                        chunkSize = width;
-                    }
-                    else
-                    {
-                        readTexPSMT4(info.RegisterInfo2.TBP0, info.RegisterInfo2.TBW, u, v, width, height, texBuffer.AsSpan(), gsmemTexture);
-                        chunkSize = width / 2;
-                    }
-
-                    bmpData = bmp.LockBits(new Rectangle(Point.Empty, bmp.Size), ImageLockMode.WriteOnly, targetFormat);
-
-                    Marshal.Copy(texBuffer, 0, bmpData.Scan0, bmpData.Stride * bmpData.Height);
-
-                    var scan = bmpData.Scan0;
-                    var buffer = new byte[bmpData.Stride];
-                    for (var y = 0; y < bmpData.Height; y++, scan += bmpData.Stride)
-                    {
-                        Marshal.Copy(texBuffer, y * chunkSize, scan, chunkSize);
-                    }
-                }
-                finally
-                {
-                    if (bmpData is not null)
-                    {
-                        bmp.UnlockBits(bmpData);
-                    }
-                }
-
-                return bmp;
+            if (info.RegisterInfo2.CPSM != PixelStorageMode.PSMCT32)
+            {
+                throw new NotImplementedException();
             }
 
-            return null;
+            var (w, h) = info.RegisterInfo2.PSM switch
+            {
+                PixelStorageMode.PSMT8 => (16, 16),
+                PixelStorageMode.PSMT4 => (8, 2),
+                _ => throw new NotImplementedException(),
+            };
+
+            var clutBuffer = new byte[1024 * 1024 * 4];
+            readTexPSMCT32(info.RegisterInfo2.CBP, 1, (int)(info.RegisterInfo2.CSAX * 8), (int)(info.RegisterInfo2.CSAY * 2), w, h, clutBuffer.AsSpan(), gsmemPalette);
+            var paletteData = MemoryMarshal.Cast<byte, int>(clutBuffer);
+            if (bitDepth == 8 && !info.RegisterInfo2.CSM)
+            {
+                unswizzleClut(clutBuffer);
+            }
+
+            for (var i = 0; i < paletteLength; i++)
+            {
+                var rgba = paletteData[i];
+                static int ScaleAlpha(int v) => (int)Math.Round(v / 128f * 255);
+                tgaWriter.WriteColor(
+                    ScaleAlpha((rgba >> 24) & 0xFF) << 24 |
+                    ((rgba >> 0) & 0xFF) << 16 |
+                    ((rgba >> 8) & 0xFF) << 8 |
+                    ((rgba >> 16) & 0xFF) << 0);
+            }
+
+            if (bitDepth == 8)
+            {
+                var texBuffer = tgaWriter.TgaStream.GetBuffer().AsSpan()[(int)tgaWriter.TgaStream.Position..];
+                readTexPSMT8(info.RegisterInfo2.TBP0, info.RegisterInfo2.TBW, u, v, width, height, texBuffer, gsmemTexture);
+            }
+            else
+            {
+                var texBuffer = new byte[width * height];
+                readTexPSMT4(info.RegisterInfo2.TBP0, info.RegisterInfo2.TBW, u, v, width, height, texBuffer.AsSpan(), gsmemTexture);
+                for (var y = 0; y < height; y++)
+                {
+                    for (var x = 0; x < width; x++)
+                    {
+                        byte index;
+                        var packed = texBuffer[(y * width + x) / 2];
+                        index = (x % 2 == 0) ? (byte)((packed >> 4) & 0x0F) : (byte)(packed & 0x0F);
+                        tgaWriter.WriteIndex(index);
+                    }
+                }
+            }
+
+            return tgaWriter.ToMagickImage();
         }
 
         private record class BlockFormat(Size PageSize)

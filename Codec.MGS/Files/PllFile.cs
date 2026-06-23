@@ -2,11 +2,11 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Drawing;
-    using System.Drawing.Imaging;
     using System.IO;
     using System.Runtime.InteropServices;
+    using Codec.Imaging;
     using Codec.Services;
+    using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;
 
     internal class PllFile
@@ -15,7 +15,7 @@
         {
             services.AddSingleton(new EntryTypeMatcher(EntryTypeDetector.EntryType.Image, "*.pll"));
 
-            services.AddSingleton<FileHandlerResolver<Bitmap>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
+            services.AddSingleton<FileHandlerResolver<MagickImage>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
                 if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".pll", StringComparison.OrdinalIgnoreCase))
                 {
@@ -30,7 +30,7 @@
             });
         }
 
-        public static Bitmap Load(Stream stream)
+        public static MagickImage Load(Stream stream)
         {
             var header = stream.ReadLittleEndian<Header>();
             var divisor = header.flag0 >> 12;
@@ -74,7 +74,19 @@
 
             stream.Align(4);
 
-            var data = new List<byte>();
+            var tgaWriter = new TgaWriter<int, byte>(header.width, header.height, (ushort)palette.Length);
+
+            for (var i = 0; i < palette.Length; i++)
+            {
+                var v = palette[i];
+                static int Expand5(int x) => (x << 3) | (x >> 2);
+                tgaWriter.WriteColor(
+                    ((v & 0x8000) != 0 ? 0xFF : 0x00) << 24 |
+                    Expand5((v >> 0) & 0x1F) << 16 |
+                    Expand5((v >> 5) & 0x1F) << 8 |
+                    Expand5((v >> 10) & 0x1F) << 0);
+            }
+
             for (var loop = 0; loop <= bitmap.Count / times; loop++)
             {
                 if (stream.Position + 4 >= stream.Length)
@@ -94,44 +106,12 @@
 
                     for (var repeat = 0; repeat < bitmap[loop * times + set]; repeat++)
                     {
-                        data.Add(index);
+                        tgaWriter.WriteIndex(index);
                     }
                 }
             }
 
-            var readIndex = 0;
-            var bmp = new Bitmap(header.width, header.height, PixelFormat.Format8bppIndexed);
-            var bmpData = bmp.LockBits(new Rectangle(0, 0, header.width, header.height), ImageLockMode.WriteOnly, PixelFormat.Format8bppIndexed);
-
-            var p = bmp.Palette;
-            for (var i = 0; i < palette.Length; i++)
-            {
-                var v = palette[i];
-
-                static int Expand5(int x) => (x << 3) | (x >> 2);
-                p.Entries[i] = Color.FromArgb(
-                    (v & 0x8000) != 0 ? 255 : 0,
-                    Expand5((v >> 0) & 0x1F),
-                    Expand5((v >> 5) & 0x1F),
-                    Expand5((v >> 10) & 0x1F));
-            }
-
-            bmp.Palette = p;
-
-            var indexData = new byte[header.width];
-            var scan = bmpData.Scan0;
-            for (var y = 0; y < header.height; y++, scan += bmpData.Stride)
-            {
-                for (var x = 0; x < header.width; x++)
-                {
-                    indexData[x] = (byte)(readIndex < data.Count ? data[readIndex++] : 0);
-                }
-
-                Marshal.Copy(indexData, 0, scan, header.width);
-            }
-
-            bmp.UnlockBits(bmpData);
-            return bmp;
+            return tgaWriter.ToMagickImage();
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 0)]

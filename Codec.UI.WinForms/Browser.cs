@@ -15,6 +15,7 @@ namespace Codec.UI.WinForms
     using Codec.Files;
     using Codec.MGS;
     using Codec.Services;
+    using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = Codec.Archives.NestedFileSystemManager.Entry;
     using FileType = Codec.Services.EntryTypeDetector.EntryType;
@@ -46,7 +47,7 @@ namespace Codec.UI.WinForms
             this.saveSelectedDialog.InitialDirectory = Environment.ExpandEnvironmentVariables(this.saveSelectedDialog.InitialDirectory);
             this.saveToFolderDialog.InitialDirectory = Environment.ExpandEnvironmentVariables(this.saveToFolderDialog.InitialDirectory);
             this.textureDisplay = new VirtualImageList<Entry>(
-                entry => Task.FromResult(this.fsm.Resolve<Bitmap>(entry.Path)!),
+                entry => Task.FromResult(this.fsm.Resolve<MagickImage>(entry.Path)?.ToBitmap()!),
                 InterpolationMode.NearestNeighbor)
             {
                 Dock = DockStyle.Fill,
@@ -162,7 +163,7 @@ namespace Codec.UI.WinForms
                     {
                         case FileType.Image:
                             {
-                                if (this.fsm.Resolve<Bitmap>(entry.Path) is var image)
+                                if (this.fsm.Resolve<MagickImage>(entry.Path) is MagickImage image)
                                 {
                                     var childForm = new Form
                                     {
@@ -174,7 +175,7 @@ namespace Codec.UI.WinForms
                                     {
                                         Dock = DockStyle.Fill,
                                         SizeMode = PictureBoxSizeMode.Zoom,
-                                        Image = image,
+                                        Image = image.ToBitmap(),
                                         BackColor = Color.Black,
                                     });
                                     this.ShowChild(childForm);
@@ -284,9 +285,9 @@ namespace Codec.UI.WinForms
                         switch (type)
                         {
                             case FileType.Image:
-                                if (this.fsm.Resolve<Bitmap>(entry.Path) is Bitmap image)
+                                if (this.fsm.Resolve<MagickImage>(entry.Path) is MagickImage image)
                                 {
-                                    image.Save(path);
+                                    image.Write(path);
                                     return;
                                 }
                                 break;
