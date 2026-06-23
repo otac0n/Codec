@@ -13,7 +13,7 @@
         {
             if (this.DataContext is EntryListViewModel vm)
             {
-                vm.ActivateSelectedItem();
+                vm.Preview();
             }
         }
     }

@@ -145,8 +145,13 @@
             }
         }
 
-        private async void OnEntryActivated(object? sender, EntryItem item)
+        private async void OnEntryActivated(object? sender, IList<EntryItem> items)
         {
+            if (items is not [var item])
+            {
+                return;
+            }
+
             if (item.Entry.CanEnumerateEntries)
             {
                 this.Navigate(item.Entry);

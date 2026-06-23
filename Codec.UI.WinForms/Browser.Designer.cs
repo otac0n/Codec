@@ -34,6 +34,7 @@
             this.fileTree = new TreeView();
             this.entryList = new ListView();
             this.entryContextMenu = new ContextMenuStrip(this.components);
+            this.previewToolStripMenuItem = new ToolStripMenuItem();
             this.saveAsToolStripMenuItem = new ToolStripMenuItem();
             this.fileTypes = new ImageList(this.components);
             this.topToolStrip = new ToolStrip();
@@ -111,9 +112,17 @@
             // entryContextMenu
             // 
             this.entryContextMenu.ImageScalingSize = new Size(24, 24);
-            this.entryContextMenu.Items.AddRange(new ToolStripItem[] { this.saveAsToolStripMenuItem });
+            this.entryContextMenu.Items.AddRange(new ToolStripItem[] { this.previewToolStripMenuItem, this.saveAsToolStripMenuItem });
             this.entryContextMenu.Name = "entryContextMenu";
-            this.entryContextMenu.Size = new Size(167, 36);
+            this.entryContextMenu.Size = new Size(167, 68);
+            // 
+            // previewToolStripMenuItem
+            // 
+            this.previewToolStripMenuItem.Image = Properties.Resources.FontAwesome_EyeSolid_20x20;
+            this.previewToolStripMenuItem.Name = "previewToolStripMenuItem";
+            this.previewToolStripMenuItem.Size = new Size(166, 32);
+            this.previewToolStripMenuItem.Text = "Preview...";
+            this.previewToolStripMenuItem.Click += this.PreviewMenuItem_Click;
             // 
             // saveAsToolStripMenuItem
             // 
@@ -270,5 +279,6 @@
         private ToolStripSeparator toolStripSeparator1;
         private ToolStripButton backButton;
         private ToolStripButton forwardButton;
+        private ToolStripMenuItem previewToolStripMenuItem;
     }
 }

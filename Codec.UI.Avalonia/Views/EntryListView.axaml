@@ -11,6 +11,7 @@
   <UserControl.Resources>
     <conv:FileIconEntryConverter x:Key="FileIconEntryConverter" />
     <conv:ViewModeConverter x:Key="ViewModeConverter" />
+    <conv:BoolToStringConverter x:Key="BoolToOpenTextConverter" TrueValue="Open" FalseValue="Preview..." />
   </UserControl.Resources>
   <Panel>
     <ListBox
@@ -20,10 +21,18 @@
       IsVisible="{Binding CurrentViewMode, Converter={StaticResource ViewModeConverter}, ConverterParameter={x:Static models:ViewMode.List}}"
       DoubleTapped="ListBox_DoubleTapped">
       <ListBox.KeyBindings>
-        <KeyBinding Command="{Binding ActivateSelectedItem}" Gesture="Enter" />
+        <KeyBinding Command="{Binding PreviewCommand}" Gesture="Enter" />
       </ListBox.KeyBindings>
       <ListBox.ContextMenu>
         <ContextMenu>
+          <MenuItem Header="{Binding PreviewIsOpen, Converter={StaticResource BoolToOpenTextConverter}}" IsEnabled="{Binding CanPreview}" Command="{Binding PreviewCommand}">
+            <MenuItem.Icon>
+              <iconPacks:PackIconFontAwesome
+                Kind="EyeSolid"
+                Width="{Binding $parent[TemplatedControl].FontSize}"
+                Height="{Binding $parent[TemplatedControl].FontSize}"/>
+            </MenuItem.Icon>
+          </MenuItem>
           <MenuItem Header="Save As..." IsEnabled="{Binding CanSave}" Command="{Binding SaveCommand}" CommandParameter="{Binding $parent[Window]}">
             <MenuItem.Icon>
               <iconPacks:PackIconFontAwesome

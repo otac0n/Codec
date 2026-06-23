@@ -38,10 +38,17 @@
         private ViewMode currentViewMode = ViewMode.List;
 
         [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(PreviewCommand))]
+        private bool canPreview;
+
+        [ObservableProperty]
+        private bool previewIsOpen;
+
+        [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
         private bool canSave;
 
-        public event EventHandler<EntryItem>? EntryActivated;
+        public event EventHandler<IList<EntryItem>>? EntryActivated;
 
         public EntryListViewModel(NestedFileSystemManager fsm, EntryTypeDetector detector, FileSaveService fileSaveService, ImageLoader imageLoader)
         {
@@ -50,7 +57,11 @@
             this.fileSaveService = fileSaveService;
             this.imageLoader = imageLoader;
             this.SelectedEntries.CollectionChanged += (_, _) =>
+            {
+                this.CanPreview = this.SelectedEntries.Count == 1;
+                this.PreviewIsOpen = this.SelectedEntries.Any(i => i.Entry.CanEnumerateEntries);
                 this.CanSave = this.SelectedEntries.Count >= 1 && this.SelectedEntries.All(i => i.Entry.CanOpen);
+            };
         }
 
         public void LoadEntries(Entry directory)
@@ -71,12 +82,9 @@
         }
 
         [RelayCommand]
-        internal void ActivateSelectedItem()
+        internal void Preview()
         {
-            if (this.SelectedEntries is [EntryItem item])
-            {
-                EntryActivated?.Invoke(this, item);
-            }
+            EntryActivated?.Invoke(this, this.SelectedEntries);
         }
 
         [RelayCommand(CanExecute = nameof(CanSave))]

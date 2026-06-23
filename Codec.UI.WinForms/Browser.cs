@@ -179,9 +179,18 @@ namespace Codec.UI.WinForms
             this.Navigate(PathExtensions.GetDirectoryName((string)this.pathBox.Tag));
         }
 
+        private void PreviewMenuItem_Click(object sender, EventArgs e)
+        {
+            this.EntryList_ItemActivate(sender, e);
+        }
+
         private async void EntryList_ItemActivate(object sender, EventArgs e)
         {
-            var item = this.entryList.SelectedItems.OfType<ListViewItem>().FirstOrDefault();
+            if (this.entryList.SelectedItems is not [ListViewItem item])
+            {
+                return;
+            }
+
             if (item?.Tag is Entry entry)
             {
                 if (entry.CanEnumerateEntries)
@@ -285,8 +294,9 @@ namespace Codec.UI.WinForms
 
         private void EntryList_SelectedIndexChanged(object sender, EventArgs e)
         {
-            var enabled = this.entryList.SelectedItems.Count >= 1 && this.entryList.SelectedItems.Cast<ListViewItem>().All(i => i.Tag is Entry entry && entry.CanOpen);
-            this.saveAsToolStripMenuItem.Enabled = this.saveButton.Enabled = enabled;
+            this.previewToolStripMenuItem.Enabled = this.entryList.SelectedItems.Count == 1;
+            this.previewToolStripMenuItem.Text = this.entryList.SelectedItems.Cast<ListViewItem>().Any(i => i.Tag is Entry { CanEnumerateEntries: true }) ? "Open" : "Preview...";
+            this.saveAsToolStripMenuItem.Enabled = this.saveButton.Enabled = this.entryList.SelectedItems.Count >= 1 && this.entryList.SelectedItems.Cast<ListViewItem>().All(i => i.Tag is Entry { CanOpen: true });
         }
 
         private async void SaveButton_Click(object sender, EventArgs e)
