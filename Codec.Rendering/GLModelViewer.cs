@@ -151,8 +151,14 @@
                 if (this.GetTexture(gpuMesh.Material.TextureDiffuse.FilePath, pixelArt) is TextureHandle texture)
                 {
                     texture.Activate();
-                    this.shader.SetUniform("uniform_textureDiffuse", 0);
                 }
+                else
+                {
+                    this.gl.ActiveTexture(TextureUnit.Texture0);
+                    this.gl.BindTexture(TextureTarget.Texture2D, 0);
+                }
+
+                this.shader.SetUniform("uniform_textureDiffuse", 0);
 
                 this.shader.SetUniform("uniform_colorTransparent", gpuMesh.Material.ColorTransparent);
                 this.shader.SetUniform("uniform_transparencyFactor", gpuMesh.Material.TransparencyFactor);
@@ -193,21 +199,6 @@
             var min = new Vector3(float.PositiveInfinity);
             var max = new Vector3(float.NegativeInfinity);
 
-            foreach (var mesh in this.scene.Meshes)
-            {
-                foreach (var v in mesh.Vertices)
-                {
-                    min = Vector3.Min(min, v);
-                    max = Vector3.Max(max, v);
-                }
-            }
-
-            var size = max - min;
-            this.center = min + size / 2;
-            this.size = Math.Max(size.X, Math.Max(size.Y, size.Z));
-            this.Camera.NearPlane = Math.Max(this.size / 1000f, 0.0001f);
-            this.Camera.FarPlane = Math.Max(2 * this.size, 0.2f);
-
             var nodes = new Queue<(Matrix4x4, Node)>();
             nodes.Enqueue((Matrix4x4.Identity, this.scene.RootNode));
             while (nodes.Count > 0)
@@ -222,6 +213,8 @@
                     for (var i = 0; i < mesh.VertexCount; i++)
                     {
                         var pos = Vector3.Transform(mesh.Vertices[i], transform);
+                        min = Vector3.Min(min, pos);
+                        max = Vector3.Max(max, pos);
                         var nor = mesh.Normals.Count > i ? mesh.Normals[i] : new(0, 1, 0);
                         var uv = hasUV ? mesh.TextureCoordinateChannels[0][i] : new(0, 0, 0);
                         var o = i * 8;
@@ -265,6 +258,12 @@
                     nodes.Enqueue((transform, child));
                 }
             }
+
+            var size = max - min;
+            this.center = min + size / 2;
+            this.size = Math.Max(size.X, Math.Max(size.Y, size.Z));
+            this.Camera.NearPlane = Math.Max(this.size / 1000f, 0.0001f);
+            this.Camera.FarPlane = Math.Max(2 * this.size, 0.2f);
         }
 
         protected TextureHandle? GetTexture(string texturePath, bool pixelArt)
