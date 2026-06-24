@@ -171,7 +171,7 @@
             Indirect = 0b00010000000000000000,
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct Header
         {
             public uint FaceCount;
@@ -180,7 +180,7 @@
             public Vec3<int> Max;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct MeshDefinition
         {
             public uint Flags;

@@ -114,7 +114,7 @@
             return tgaWriter.ToMagickImage();
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct Header
         {
             public ushort flag0;

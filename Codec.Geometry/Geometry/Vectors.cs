@@ -4,7 +4,7 @@
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
 
-    [StructLayout(LayoutKind.Sequential, Pack = 0)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct Vec2<T>
     {
         public T U;
@@ -30,7 +30,7 @@
         public Span<T> AsSpan() => MemoryMarshal.CreateSpan(ref this.U, 2);
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 0)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct Vec3<T>
     {
         public T X;
@@ -59,7 +59,7 @@
         public Span<T> AsSpan() => MemoryMarshal.CreateSpan(ref this.X, 3);
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 0)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct Vec4<T>
     {
         public T X;

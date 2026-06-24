@@ -131,7 +131,7 @@
 
         public record struct SDTChunk(long Position, long Size);
 
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct SDTStream
         {
             public uint ResourceId;
@@ -140,7 +140,7 @@
             public uint StreamId;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct Header
         {
             public uint Magic;

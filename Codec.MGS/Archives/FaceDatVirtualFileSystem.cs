@@ -96,7 +96,7 @@ namespace Codec.MGS.Archives
         protected override Stream Open(Entry entry, FileStreamOptions parentOptions) =>
             new OffsetStreamSpan(this.parent.File.Open(this.parentRelativePath, parentOptions), entry.Offset, entry.Size, Ownership.Dispose);
 
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct Header
         {
             public readonly ushort Animation;
@@ -105,7 +105,7 @@ namespace Codec.MGS.Archives
             public readonly uint Offset;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct FrameHeader
         {
             public readonly uint PaletteOffset;
@@ -113,7 +113,7 @@ namespace Codec.MGS.Archives
             public readonly uint Unknown;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct ImageDimensions
         {
             public readonly sbyte U;

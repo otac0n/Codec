@@ -265,7 +265,7 @@
             return scene.Materials.Count - 1;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct StripDefinition
         {
             public uint Flags;
@@ -286,21 +286,23 @@
             public uint Pad6;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct Header
         {
             public uint Version;
             public uint PartCount;
             public uint BoneCount;
+            public uint Pad1;
             public ulong Id;
-            public uint UnknownB;
-            public uint UnknownC;
+            public uint Unknown1;
+            public uint Unknown2;
             public Vector3 Min;
             public Vector3 Max;
-            public Vector3 RelativeOrigin;
+            public uint Unknown3;
+            public uint Unknown4;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct MeshDefinition
         {
             public uint Flags;
@@ -315,6 +317,7 @@
             public uint Pad3;
             public uint Pad4;
             public uint Pad5;
+            public uint Pad6;
         }
     }
 }

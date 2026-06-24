@@ -568,7 +568,7 @@ namespace Codec.MGS.Files
             PZM16S = 58,
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct Header
         {
             public uint Pad0;
@@ -581,7 +581,7 @@ namespace Codec.MGS.Files
             public int ClutOffset;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct TextureInfo
         {
             public float UOffset;
@@ -632,7 +632,7 @@ namespace Codec.MGS.Files
             public uint Pad14;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct GsTex0
         {
             public ulong Bitfield;
