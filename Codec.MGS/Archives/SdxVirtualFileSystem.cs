@@ -44,50 +44,43 @@
         {
             var result = new List<Entry>();
             using var stream = this.parent.File.OpenRead(this.parentRelativePath);
-            using var reader = new BinaryReader(stream);
 
-            reader.BaseStream.Seek(0, SeekOrigin.Begin);
+            stream.Seek(0, SeekOrigin.Begin);
 
-            var firstTableOffset = reader.ReadUInt32() * 0x800; // MGS2: sd_file.c
-            reader.ReadUInt32(); // se1: code
-            var secondTableOffset = reader.ReadUInt32() * 0x800;
-            reader.ReadUInt32(); // se2: code
+            var firstTableOffset = stream.ReadUInt32LittleEndian() * 0x800;
+            stream.ReadUInt32LittleEndian(); // se1: code
+            var secondTableOffset = stream.ReadUInt32LittleEndian() * 0x800;
+            stream.ReadUInt32LittleEndian(); // se2: code
 
+            stream.Seek(firstTableOffset, SeekOrigin.Begin);
 
-
-
-            reader.BaseStream.Seek(firstTableOffset, SeekOrigin.Begin);
-
-            var bound = BinaryPrimitives.ReadUInt32BigEndian(reader.ReadBytes(4));
-            var size = BinaryPrimitives.ReadUInt32BigEndian(reader.ReadBytes(4));
-            reader.ReadBytes(8);
+            var bound = stream.ReadUInt32BigEndian();
+            var size = stream.ReadUInt32BigEndian();
+            stream.Position += 8;
 
             // SE 1
             for (uint i = 0; i < (size / 0x10); i++)
             {
-                result.Add(("0" + this.Path.DirectorySeparatorChar + i.ToString() + ".wav", reader.BaseStream.ReadLittleEndian<NoteParameters>(), 0));
+                result.Add(("0" + this.Path.DirectorySeparatorChar + i.ToString() + ".wav", stream.ReadLittleEndian<NoteParameters>(), 0));
             }
 
-            soundDatas.Add(new SpuData(reader));
+            soundDatas.Add(new SpuData(stream));
 
+            stream.Seek(secondTableOffset, SeekOrigin.Begin);
 
-            reader.BaseStream.Seek(secondTableOffset, SeekOrigin.Begin);
-
-            bound = BinaryPrimitives.ReadUInt32BigEndian(reader.ReadBytes(4));
-            size = BinaryPrimitives.ReadUInt32BigEndian(reader.ReadBytes(4));
-
-            reader.ReadBytes(8);
+            bound = stream.ReadUInt32BigEndian();
+            size = stream.ReadUInt32BigEndian();
+            stream.Position += 8;
 
             if (size % 10 != 0 && size < 1000000)
             {
                 for (uint i = 0; i < (size / 0x10); i++)
                 {
-                    result.Add(("1" + this.Path.DirectorySeparatorChar + i.ToString() + ".wav", reader.BaseStream.ReadLittleEndian<NoteParameters>(), 1));
+                    result.Add(("1" + this.Path.DirectorySeparatorChar + i.ToString() + ".wav", stream.ReadLittleEndian<NoteParameters>(), 1));
                 }
 
-                soundDatas.Add(new SpuData(reader));
+                soundDatas.Add(new SpuData(stream));
             }
-
 
             return result;
         }
@@ -100,12 +93,11 @@
             FileBase.EnsureReadOnly(parentOptions, "Writing to sub patches in .sdx files is not supported.");
 
             using var stream = this.parent.File.OpenRead(this.parentRelativePath);
-            using var reader = new BinaryReader(stream);
-            reader.BaseStream.Seek(0, 0);
+            stream.Seek(0, 0);
 
             var spu = soundDatas[(int)entry.SpuID];
 
-            var adpcm = spu.GetAudioData(reader, entry.Data.addrLe);
+            var adpcm = spu.GetAudioData(stream, entry.Data.addrLe);
 
             var pcmSamples = DecodeSpuAdpcm(adpcm);
 
@@ -177,7 +169,7 @@
             return samples.ToArray();
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct NoteParameters
         {
             public uint addrLe;
@@ -201,29 +193,29 @@
             public uint spuSize;
             public uint dataStart;
 
-            public SpuData(BinaryReader r)
+            public SpuData(Stream stream)
             {
-                spuOffset = BinaryPrimitives.ReadUInt32BigEndian(r.ReadBytes(4));
-                spuSize = BinaryPrimitives.ReadUInt32BigEndian(r.ReadBytes(4));
-                r.ReadBytes(8);
-                dataStart = (uint)r.BaseStream.Position;
+                spuOffset = stream.ReadUInt32BigEndian();
+                spuSize = stream.ReadUInt32BigEndian();
+                stream.Position += 8;
+                dataStart = (uint)stream.Position;
             }
 
-            public byte[] GetAudioData(BinaryReader r, uint offset)
+            public byte[] GetAudioData(Stream stream, uint offset)
             {
-                r.BaseStream.Seek(dataStart + (offset - spuOffset) + 0x10, SeekOrigin.Begin);
+                stream.Seek(dataStart + (offset - spuOffset) + 0x10, SeekOrigin.Begin);
                 MemoryStream memstream = new MemoryStream();
 
+                var frame = new byte[0x10];
                 while (true)
                 {
-                    var frame = r.ReadBytes(0x10);
-
-                    if (frame.Length < 0x10 || frame.All(b => b == 0))
+                    var read = stream.Read(frame, 0, 0x10);
+                    if (read < 0x10 || frame.All(b => b == 0))
                     {
                         break;
                     }
 
-                    memstream.Write(frame, 0, frame.Length);
+                    memstream.Write(frame, 0, read);
                 }
 
                 return memstream.ToArray();

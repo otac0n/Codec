@@ -47,15 +47,14 @@ namespace Codec.M2
 
         internal static Stream? ReadMArchive(FileSystemStream fs, string seed, int keyLength, out int decompressedLength)
         {
-            var br = new BinaryReader(fs);
-            var magic = br.ReadUInt32();
+            var magic = fs.ReadUInt32LittleEndian();
             if (!CodecLookup.TryGetValue(magic, out var codec))
             {
                 decompressedLength = 0;
                 return null;
             }
 
-            decompressedLength = br.ReadInt32();
+            decompressedLength = fs.ReadInt32LittleEndian();
             var cs = new MArchiveCryptoStream(fs, fs.Name, seed, keyLength);
             return codec.GetDecompressionStream(cs, decompressedLength);
         }

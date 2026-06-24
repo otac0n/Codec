@@ -6,10 +6,12 @@ namespace Codec.MGS.Files
     using System.IO;
     using System.Runtime.InteropServices;
     using Codec.Archives;
+    using Codec.Imaging;
     using Codec.Services;
     using DiscUtils.Streams;
     using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;
+    using static Codec.Imaging.DdsConstants;
 
     internal class CtxrFile
     {
@@ -152,7 +154,7 @@ namespace Codec.MGS.Files
             Count = 0xB,
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct Header
         {
             public uint Signature;
@@ -183,55 +185,6 @@ namespace Codec.MGS.Files
             public byte UnknownU;
             public byte MipMapsCount;
             public byte UnknownV;
-        }
-
-        private const uint DDSD_CAPS = 0x1;
-        private const uint DDSD_HEIGHT = 0x2;
-        private const uint DDSD_WIDTH = 0x4;
-        private const uint DDSD_PIXELFORMAT = 0x1000;
-        private const uint DDSD_LINEARSIZE = 0x80000;
-        private const uint DDSD_MIPMAPCOUNT = 0x20000;
-        private const uint DDSCAPS_COMPLEX = 0x8;
-        private const uint DDSCAPS_TEXTURE = 0x1000;
-        private const uint DDSCAPS_MIPMAP = 0x400000;
-        private const uint DDPF_FOURCC = 0x4;
-
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
-        struct DDS_HEADER
-        {
-            public uint Signature;
-            public uint Size;
-            public uint Flags;
-            public uint Height;
-            public uint Width;
-            public uint PitchOrLinearSize;
-            public uint Depth;
-            public uint MipMapCount;
-            public ulong ReservedA;
-            public ulong ReservedB;
-            public ulong ReservedC;
-            public ulong ReservedD;
-            public ulong ReservedE;
-            public uint ReservedF;
-            public DDS_PIXELFORMAT PixelFormat;
-            public uint Caps1;
-            public uint Caps2;
-            public uint Caps3;
-            public uint Caps4;
-            public uint Reserved2;
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
-        struct DDS_PIXELFORMAT
-        {
-            public uint Size;
-            public uint Flags;
-            public uint FourCC;
-            public uint RGBBitCount;
-            public uint RBitMask;
-            public uint GBitMask;
-            public uint BBitMask;
-            public uint ABitMask;
         }
     }
 }

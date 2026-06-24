@@ -6,15 +6,17 @@ namespace Codec.MGS.Archives
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.IO;
     using System.IO.Abstractions;
     using System.Linq;
+    using System.Runtime.CompilerServices;
+    using System.Runtime.InteropServices;
     using System.Text;
     using Codec;
     using Codec.Archives;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
-    using DirEntry = (string name, long offset);
     using FileEntry = (string name, long offset, long size);
     using FileSpan = (long offset, long size);
 
@@ -46,6 +48,7 @@ namespace Codec.MGS.Archives
         {
             [0x63] = "model",
             [0x6e] = "texture",
+            [0x72] = "player",
             [0x73] = "sound",
         }.ToImmutableDictionary();
 
@@ -86,126 +89,137 @@ namespace Codec.MGS.Archives
         private static string GetGroup(byte id) =>
             groups.TryGetValue(id, out var group) ? group : $"x{id:x2}";
 
+        [InlineArray(8)]
+        public struct Name8
+        {
+            public byte Char0;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        private struct StageDirEntry
+        {
+            public Name8 Name;
+            public uint Size;
+        }
+
+        private record struct DirEntry(string Name, long Offset);
+
         private static DirEntry[] ReadIndex(Stream source)
         {
-            var buffer = new byte[12];
-            source.ReadExactly(buffer, 4);
+            var dataOffset = source.ReadUInt32LittleEndian();
+            var entries = source.ReadArrayLittleEndian<StageDirEntry>((int)dataOffset / Marshal.SizeOf<StageDirEntry>());
+            return Array.ConvertAll(entries, entry =>
+                new DirEntry(
+                    Encoding.ASCII.GetString(entry.Name).TrimEnd('\0'),
+                    entry.Size * SectorSize));
+        }
 
-            var dataOffset = BitConverter.ToUInt32(buffer, 0);
-            var entries = new DirEntry[dataOffset / 12];
-            for (var i = 0; i < entries.Length; i++)
-            {
-                source.ReadExactly(buffer, 12);
-
-                var name = Encoding.ASCII.GetString(buffer, 0, 8).TrimEnd('\0');
-                var offset = BitConverter.ToUInt32(buffer, 8) * SectorSize;
-
-                entries[i] = (name, offset);
-            }
-
-            return entries;
+        [StructLayout(LayoutKind.Sequential, Pack = 2)]
+        private struct DarHeader
+        {
+            public ushort Id;
+            public byte FileType;
+            public uint Size;
         }
 
         private static FileEntry[] ReadDar(Stream source, string group, long offset, long length)
         {
-            var buffer = new byte[8];
-
             var entries = new List<FileEntry>();
+            var headerSize = (uint)Marshal.SizeOf<DarHeader>();
             var relative = 0u;
             while (relative < length - 7)
             {
-                source.Seek(offset + relative, SeekOrigin.Begin);
-                source.ReadExactly(buffer, 8);
-
-                var id = string.Concat(buffer[..2].AsEnumerable().Reverse().Select(b => b.ToString("x2"))); // TODO: Use Span.
-                var ext = GetExtension(buffer[2]);
-                var size = BitConverter.ToUInt32(buffer, 4);
-
-                var key = $"{group}/{id}.{ext}";
-
-                entries.Add((key, offset + relative + 8, size));
-
-                relative += 8 + size;
+                source.Position = offset + relative;
+                var header = source.ReadLittleEndian<DarHeader>();
+                var key = $"{group}/{header.Id:x4}.{GetExtension(header.FileType)}";
+                entries.Add((key, offset + relative + headerSize, header.Size));
+                relative += headerSize + header.Size;
             }
 
-            return entries.ToArray();
+            return [.. entries];
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        private struct DarItemEntry
+        {
+            public uint Filename;
+            public uint Size;
+
+            public readonly ushort Id => (ushort)Filename;
+
+            public readonly byte Group => (byte)(Filename >> 16);
+
+            public readonly byte Ext => (byte)(Filename >> 24);
         }
 
         private static FileEntry[] ReadList(Stream source, long offset)
         {
-            source.Seek(offset, SeekOrigin.Begin);
+            source.Position = offset + 2;
+            var totalSize = source.ReadUInt16LittleEndian() * SectorSize;
 
-            var buffer = new byte[8];
-            source.ReadExactly(buffer, 4);
-            var totalSize = BitConverter.ToUInt16(buffer, 2) * SectorSize;
-
-            var rawEntries = new List<(ushort id, byte group, byte ext, uint size, bool packed)>();
+            var rawEntries = new List<(DarItemEntry Entry, bool Packed)>();
             while (true)
             {
-                source.ReadExactly(buffer, 8);
-                if (BitConverter.ToUInt32(buffer, 0) == 0)
+                var entry = source.ReadLittleEndian<DarItemEntry>();
+                if (entry.Filename == 0)
                 {
                     break;
                 }
 
-                var id = BitConverter.ToUInt16(buffer, 0);
-                var group = buffer[2];
-                var ext = buffer[3];
-                var size = BitConverter.ToUInt32(buffer, 4);
-
-                if (ext == byte.MaxValue)
+                if (entry.Ext == byte.MaxValue)
                 {
                     var notLast = false;
                     for (var i = rawEntries.Count - 1; i >= 0; i--)
                     {
                         var prev = rawEntries[i];
-                        if (prev.group != group)
+                        if (prev.Entry.Group != entry.Group)
                         {
                             break;
                         }
 
-                        var nextSize = prev.size;
-                        rawEntries[i] = prev with { packed = notLast, size = size - prev.size };
-                        size = nextSize;
+                        var nextSize = prev.Entry.Size;
+                        prev.Packed = notLast;
+                        prev.Entry.Size = entry.Size - prev.Entry.Size;
+                        rawEntries[i] = prev;
+                        entry.Size = nextSize;
                         notLast = true;
                     }
                 }
                 else
                 {
-                    rawEntries.Add((id, group, ext, size, false));
+                    rawEntries.Add((entry, false));
                 }
             }
 
             var entries = new List<FileEntry>();
             var counts = new Dictionary<string, int>();
             var relative = SectorSize;
-            foreach (var entry in rawEntries)
+            foreach (var (entry, packed) in rawEntries)
             {
-                var group = GetGroup(entry.group);
+                var group = GetGroup(entry.Group);
 
-                if (entry.ext == 0x64)
+                if (entry.Ext == 0x64)
                 {
-                    entries.AddRange(ReadDar(source, group, offset + relative, entry.size));
+                    entries.AddRange(ReadDar(source, group, offset + relative, entry.Size));
                 }
                 else
                 {
-                    var id = entry.id.ToString("x4");
-                    var ext = GetExtension(entry.ext);
-
+                    var id = entry.Id.ToString("x4", CultureInfo.CurrentCulture);
+                    var ext = GetExtension(entry.Ext);
                     var key = $"{group}/{id}.{ext}";
+
                     counts.TryGetValue(key, out var ix);
                     counts[key] = ix + 1;
-
                     if (ix > 0)
                     {
                         key = $"{group}/{id}.{ix}.{ext}";
                     }
 
-                    entries.Add((key, offset + relative, entry.size));
+                    entries.Add((key, offset + relative, entry.Size));
                 }
 
-                relative += entry.size;
-                if (!entry.packed)
+                relative += entry.Size;
+                if (!packed)
                 {
                     relative = StreamExtensions.Align(relative, SectorSize);
                 }
@@ -216,7 +230,7 @@ namespace Codec.MGS.Archives
 
         private FileEntry[] GetFileIndex(string path)
         {
-            var ix = Array.FindIndex(this.index, e => e.name == path);
+            var ix = Array.FindIndex(this.index, e => e.Name == path);
             if (ix < 0)
             {
                 throw new DirectoryNotFoundException();
@@ -226,7 +240,7 @@ namespace Codec.MGS.Archives
             {
                 var entry = this.index[ix];
                 using var stream = this.parent.File.OpenRead(this.parentRelativePath);
-                this.fileEntries[path] = files = ReadList(stream, entry.offset);
+                this.fileEntries[path] = files = ReadList(stream, entry.Offset);
             }
 
             return files;
@@ -289,7 +303,7 @@ namespace Codec.MGS.Archives
                 }
 
                 var root = parts[0];
-                var ix = Array.FindIndex(parent.index, e => e.name == root);
+                var ix = Array.FindIndex(parent.index, e => e.Name == root);
                 if (ix < 0)
                 {
                     return false;
@@ -312,7 +326,7 @@ namespace Codec.MGS.Archives
                 {
                     if (searchOption == SearchOption.TopDirectoryOnly)
                     {
-                        return parent.index.Select(i => i.name).Where(f => glob.IsMatch(f));
+                        return parent.index.Select(i => i.Name).Where(f => glob.IsMatch(f));
                     }
                 }
 
@@ -359,10 +373,10 @@ namespace Codec.MGS.Archives
                     else
                     {
                         return parent.index.SelectMany(i =>
-                            parent.GetFileIndex(i.name)
+                            parent.GetFileIndex(i.Name)
                                 .Where(f =>
                                     glob.IsMatch(System.IO.Path.GetFileName(f.name)))
-                                .Select(f => $"{i.name}/{f.name}"));
+                                .Select(f => $"{i.Name}/{f.name}"));
                     }
                 }
                 else

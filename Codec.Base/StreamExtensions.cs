@@ -5,6 +5,7 @@ namespace Codec
     using System;
     using System.Buffers.Binary;
     using System.IO;
+    using System.Linq;
     using System.Numerics;
     using System.Reflection;
     using System.Runtime.CompilerServices;
@@ -323,19 +324,28 @@ namespace Codec
 
         private static void SwapFields(Span<byte> buffer, Type type)
         {
-            foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            var (count, stride) = (1, 0);
+            var inlineArray = type.GetCustomAttribute<InlineArrayAttribute>();
+            if (inlineArray is not null)
             {
-                var offset = (int)Marshal.OffsetOf(type, field.Name);
-                var fieldType = field.FieldType;
+                var elementField = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Single();
+                var elementType = elementField.FieldType;
+                (count, stride) = (inlineArray.Length, Marshal.SizeOf(elementType));
+            }
 
-                if (fieldType.IsValueType && !fieldType.IsPrimitive && !fieldType.IsEnum)
+            for (var root = 0; count > 0; count--, root += stride)
+            {
+                foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
                 {
-                    SwapFields(buffer.Slice(offset, Marshal.SizeOf(fieldType)), fieldType);
-                }
-                else
-                {
+                    var offset = root + (int)Marshal.OffsetOf(type, field.Name);
+                    var fieldType = field.FieldType;
                     var fieldSize = Marshal.SizeOf(fieldType);
-                    if (fieldSize > 1)
+
+                    if (fieldType.IsValueType && !fieldType.IsPrimitive && !fieldType.IsEnum)
+                    {
+                        SwapFields(buffer.Slice(offset, fieldSize), fieldType);
+                    }
+                    else if (fieldSize > 1)
                     {
                         buffer.Slice(offset, fieldSize).Reverse();
                     }

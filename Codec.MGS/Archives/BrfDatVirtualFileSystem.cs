@@ -7,6 +7,7 @@
     using System.IO.Abstractions;
     using System.Text;
     using Codec.Archives;
+    using Codec.Imaging;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (string FolderName, string FileName, long Offset, long Length);
@@ -42,16 +43,15 @@
         private static List<Entry> ReadIndex(Stream stream)
         {
             var result = new List<Entry>();
-            using var reader = new BinaryReader(stream);
             while (true)
             {
-                var fileCount = reader.ReadUInt32();
+                var fileCount = stream.ReadUInt32LittleEndian();
                 if (fileCount == 0 || IsPcx(fileCount))
                 {
                     break;
                 }
 
-                foreach (var entry in IndexFolder(fileCount, reader))
+                foreach (var entry in IndexFolder(fileCount, stream))
                 {
                     result.Add(entry);
                 }
@@ -60,7 +60,7 @@
             }
 
             stream.Seek(-4, SeekOrigin.Current);
-            foreach (var entry in IndexPcx(reader))
+            foreach (var entry in IndexPcx(stream))
             {
                 result.Add(entry);
             }
@@ -71,17 +71,16 @@
 
         private static bool IsPcx(uint signature) => (signature & 0xFFFFFF) == 0x01050a;
 
-        private static IEnumerable<Entry> IndexPcx(BinaryReader reader)
+        private static IEnumerable<Entry> IndexPcx(Stream stream)
         {
-            var stream = reader.BaseStream;
             var end = false;
             while (!end)
             {
                 var pcxId = (uint)stream.Position;
-                if (stream.Position < stream.Length && IsPcx(reader.ReadUInt32()))
+                if (stream.Position < stream.Length && IsPcx(stream.ReadUInt32LittleEndian()))
                 {
                     stream.Seek(-4, SeekOrigin.Current);
-                    SeekPastPCX(reader);
+                    SeekPastPCX(stream);
                     yield return new("pcx", pcxId.ToString("x8", CultureInfo.InvariantCulture) + ".pcx", pcxId, stream.Position - pcxId);
                     if (!stream.TryAlign(0x800))
                     {
@@ -95,45 +94,28 @@
             }
         }
 
-        private static void SeekPastPCX(BinaryReader br)
+        private static void SeekPastPCX(Stream s)
         {
-            var s = br.BaseStream;
-
             var start = s.Position;
+            var header = s.ReadLittleEndian<PcxHeader>();
 
-            var manufacturer = br.ReadByte(); // must be 0x0A
-            var version = br.ReadByte();
-            var encoding = br.ReadByte(); // must be 1 (RLE)
-            var bitsPerPixel = br.ReadByte();
-
-            if (manufacturer != 0x0A)
+            if (header.Manufacturer != 0x0A)
             {
                 throw new InvalidDataException("Not a PCX file.");
             }
-
-            if (encoding != 1)
+            else if (header.Encoding != 1)
             {
                 throw new InvalidDataException("Unsupported PCX encoding.");
             }
 
-            var xmin = br.ReadUInt16();
-            var ymin = br.ReadUInt16();
-            var xmax = br.ReadUInt16();
-            var ymax = br.ReadUInt16();
-            var width = xmax - xmin + 1;
-            var height = ymax - ymin + 1;
-
-            s.Seek(start + 0x041, SeekOrigin.Begin);
-            var colorPlanes = br.ReadByte();
-
-            s.Seek(start + 0x042, SeekOrigin.Begin);
-            var bytesPerLine = br.ReadUInt16();
+            var width = header.XMax - header.XMin + 1;
+            var height = header.YMax - header.YMin + 1;
 
             var decodedBytesRequired =
-                (long)height * colorPlanes * bytesPerLine;
+                (long)height * header.NumBitPlanes * header.BytesPerLine;
 
             var bitmapPos = start + 0x80;
-            s.Seek(bitmapPos, SeekOrigin.Begin);
+            s.Position = bitmapPos;
 
             long decoded = 0;
             while (decoded < decodedBytesRequired)
@@ -160,7 +142,7 @@
                 }
             }
 
-            if (bitsPerPixel == 8 && colorPlanes == 1)
+            if (header.BitsPerPixel == 8 && header.NumBitPlanes == 1)
             {
                 var marker = s.ReadByte();
 
@@ -175,15 +157,14 @@
             }
         }
 
-        private static IEnumerable<Entry> IndexFolder(uint fileCount, BinaryReader reader)
+        private static IEnumerable<Entry> IndexFolder(uint fileCount, Stream stream)
         {
-            var stream = reader.BaseStream;
             var folderId = (uint)stream.Position;
             for (var i = 0; i < fileCount; i++)
             {
                 var fileName = ReadString(stream);
                 stream.Align(0x004);
-                var fileSize = reader.ReadUInt32();
+                var fileSize = stream.ReadUInt32LittleEndian();
                 yield return new(folderId.ToString("x8", CultureInfo.InvariantCulture), fileName, stream.Position, fileSize);
                 stream.Seek(fileSize + 1, SeekOrigin.Current);
             }
