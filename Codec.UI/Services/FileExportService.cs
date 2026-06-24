@@ -116,7 +116,7 @@ namespace Codec.Services
 
         public async Task SaveMultipleAsync(IEnumerable<Entry> entries, Func<Task<string?>> pickFolder, Func<string, Task<bool>> confirmOverwrite)
         {
-            var path = await pickFolder().ConfigureAwait(false);
+            var path = await pickFolder().ConfigureAwait(true);
             if (path is null)
             {
                 return;
