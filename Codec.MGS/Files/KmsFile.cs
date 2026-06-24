@@ -219,7 +219,7 @@
                 var hash = StringCode.GetStrCode(tri.Path);
                 if (hash == modelId)
                 {
-                    path = Path.Combine(tri.Path, textureId.ToString("x6", CultureInfo.InvariantCulture) + ".tm2");
+                    path = Path.Combine(tri.Path, textureId.ToString("x6", CultureInfo.InvariantCulture) + ".tm2x");
                     if (fsm.FileExists(path))
                     {
                         path = Path.GetRelativePath(parentFolder, path);

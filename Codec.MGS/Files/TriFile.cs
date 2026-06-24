@@ -21,7 +21,7 @@ namespace Codec.MGS.Files
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton(new EntryTypeMatcher(EntryType.Image, "*.tm2"));
+            services.AddSingleton(new EntryTypeMatcher(EntryType.Image, "*.tm2x"));
 
             services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
@@ -83,7 +83,7 @@ namespace Codec.MGS.Files
             }
 
             protected override string GetEntryName(uint entry) =>
-                entry.ToString("x4") + ".tm2";
+                entry.ToString("x4") + ".tm2x";
 
             protected override Stream Open(uint entry, FileStreamOptions parentOptions)
             {
