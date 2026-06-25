@@ -25,6 +25,7 @@ namespace Codec.MGS
             SlotVirtualFileSystem.Register(services);
             SdtVirtualFileSystem.Register(services);
             SdxVirtualFileSystem.Register(services);
+            VoxDatVirtualFileSystem.Register(services);
 
             services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
