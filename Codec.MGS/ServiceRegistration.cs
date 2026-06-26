@@ -18,6 +18,7 @@ namespace Codec.MGS
             PllFile.Register(services);
             KmdFile.Register(services);
             KmsFile.Register(services);
+            ZmdFile.Register(services);
 
             BrfDatVirtualFileSystem.Register(services);
             FaceDatVirtualFileSystem.Register(services);

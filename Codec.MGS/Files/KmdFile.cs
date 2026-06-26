@@ -37,12 +37,27 @@
             var buffer = new byte[stream.Length];
             var fileSpan = buffer.AsSpan();
             stream.ReadExactly(fileSpan);
-            var header = MemoryMarshal.Cast<byte, Header>(fileSpan)[0];
-            var meshDefinitions = MemoryMarshal.Cast<byte, MeshDefinition>(fileSpan[32..])[0..(int)header.MeshCount];
 
             var scene = new Scene();
             var rootNode = new Node("root");
             scene.RootNode = rootNode;
+
+            var vertexOffset = 0;
+            var normalOffset = 0;
+            var texCoordOffset = 0;
+            LoadKmdModel(fileSpan, 0, 0, scene, rootNode, ref vertexOffset, ref normalOffset, ref texCoordOffset);
+
+            return scene;
+        }
+
+        public static int LoadKmdModel(Span<byte> fileSpan, int headerOffset, int dataOffset, Scene scene, Node rootNode, ref int vertexOffset, ref int normalOffset, ref int texCoordOffset)
+        {
+            var header = MemoryMarshal.Cast<byte, Header>(fileSpan[headerOffset..])[0];
+            var meshDefinitions = MemoryMarshal.Cast<byte, MeshDefinition>(fileSpan[(headerOffset + Marshal.SizeOf<Header>())..])[0..(int)header.MeshCount];
+
+            var totalVertexCount = 0;
+            var totalNormalCount = 0;
+            var totalTexCoordCount = 0;
             var nodes = new List<Node>((int)header.MeshCount);
             for (var m = 0; m < header.MeshCount; m++)
             {
@@ -52,14 +67,18 @@
                 var vertexCount = (int)mesh.VertexCount;
                 var normalCount = (int)mesh.NormalCount;
                 var faceCount = (int)mesh.FaceCount;
-                var texCoordCount = (int)((mesh.TextureOffset - mesh.TextureCoordOffset) / 2);
+                const int CornersPerSquare = 4;
+                var texCoordCount = faceCount * CornersPerSquare;
 
-                var vertices = MemoryMarshal.Cast<byte, Vec4<short>>(fileSpan[(int)mesh.VertexOffset..])[..vertexCount];
-                var normals = MemoryMarshal.Cast<byte, Vec4<short>>(fileSpan[(int)mesh.NormalOffset..])[..normalCount];
-                var textureCoords = MemoryMarshal.Cast<byte, Vec2<byte>>(fileSpan[(int)mesh.TextureCoordOffset..])[..texCoordCount];
-                var textureIds = MemoryMarshal.Cast<byte, ushort>(fileSpan[(int)mesh.TextureOffset..])[..faceCount];
-                var vertexIndices = MemoryMarshal.Cast<byte, Vec4<byte>>(fileSpan[(int)mesh.VertexIndexOffset..])[..faceCount];
-                var normalIndices = MemoryMarshal.Cast<byte, Vec4<byte>>(fileSpan[(int)mesh.NormalIndexOffset..])[..faceCount];
+                var vertices = MemoryMarshal.Cast<byte, Vec4<short>>(fileSpan[(int)(dataOffset + mesh.VertexOffset)..])[..vertexCount];
+                var normals = MemoryMarshal.Cast<byte, Vec4<short>>(fileSpan[(int)(dataOffset + mesh.NormalOffset)..])[..normalCount];
+                var textureCoords = MemoryMarshal.Cast<byte, Vec2<byte>>(fileSpan[(int)(dataOffset + mesh.TextureCoordOffset)..])[..texCoordCount];
+                var textureIds = MemoryMarshal.Cast<byte, ushort>(fileSpan[(int)(dataOffset + mesh.TextureOffset)..])[..faceCount];
+                var vertexIndices = MemoryMarshal.Cast<byte, Vec4<byte>>(fileSpan[(int)(dataOffset + mesh.VertexIndexOffset)..])[..faceCount];
+                var normalIndices = MemoryMarshal.Cast<byte, Vec4<byte>>(fileSpan[(int)(dataOffset + mesh.NormalIndexOffset)..])[..faceCount];
+                totalVertexCount += vertexCount;
+                totalNormalCount += normalCount;
+                totalTexCoordCount += texCoordCount;
 
                 var facesByTex = new Dictionary<ushort, List<int>>();
                 for (var f = 0; f < faceCount; f++)
@@ -120,7 +139,11 @@
                 relativeNode.Children.Add(node);
             }
 
-            return scene;
+            vertexOffset += totalVertexCount;
+            normalOffset += totalNormalCount;
+            texCoordOffset += totalTexCoordCount;
+
+            return Marshal.SizeOf<Header>() + (int)header.MeshCount * Marshal.SizeOf<MeshDefinition>();
         }
 
         private static int EnsureMaterial(Scene scene, ushort texId, DrawingFlags flags)
