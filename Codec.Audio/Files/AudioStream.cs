@@ -4,8 +4,8 @@
 
     public record class AudioStream(Stream Stream)
     {
-        public static explicit operator AudioStream(Stream stream) => new(stream);
+        public static explicit operator AudioStream(Stream stream) => stream is null ? null : new(stream);
 
-        public static implicit operator Stream(AudioStream audioStream) => audioStream.Stream;
+        public static implicit operator Stream(AudioStream audioStream) => audioStream?.Stream;
     }
 }
