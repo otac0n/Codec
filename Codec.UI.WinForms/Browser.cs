@@ -296,7 +296,14 @@ namespace Codec.UI.WinForms
         {
             this.previewToolStripMenuItem.Enabled = this.entryList.SelectedItems.Count == 1;
             this.previewToolStripMenuItem.Text = this.entryList.SelectedItems.Cast<ListViewItem>().Any(i => i.Tag is Entry { CanEnumerateEntries: true }) ? "Open" : "Preview...";
+            this.copyPathToolStripMenuItem.Enabled = this.entryList.SelectedItems.Count >= 1;
             this.saveAsToolStripMenuItem.Enabled = this.saveButton.Enabled = this.entryList.SelectedItems.Count >= 1 && this.entryList.SelectedItems.Cast<ListViewItem>().All(i => i.Tag is Entry { CanOpen: true });
+        }
+
+        private void CopyPathToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var paths = string.Join(Environment.NewLine, this.entryList.SelectedItems.Cast<ListViewItem>().Select(e => ((Entry)e.Tag).Path));
+            Clipboard.SetText(paths);
         }
 
         private async void SaveButton_Click(object sender, EventArgs e)

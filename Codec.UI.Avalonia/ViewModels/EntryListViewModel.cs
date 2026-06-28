@@ -7,6 +7,7 @@
     using System.Threading;
     using System.Threading.Tasks;
     using global::Avalonia.Controls;
+    using global::Avalonia.Input.Platform;
     using Codec.Archives;
     using Codec.Services;
     using Codec.UI.Avalonia.Models;
@@ -48,6 +49,10 @@
         [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
         private bool canSave;
 
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(CopyPathCommand))]
+        private bool canCopyPath;
+
         public event EventHandler<IList<EntryItem>>? EntryActivated;
 
         public EntryListViewModel(NestedFileSystemManager fsm, EntryTypeDetector detector, FileSaveService fileSaveService, ImageLoader imageLoader)
@@ -60,6 +65,7 @@
             {
                 this.CanPreview = this.SelectedEntries.Count == 1;
                 this.PreviewIsOpen = this.SelectedEntries.Any(i => i.Entry.CanEnumerateEntries);
+                this.CanCopyPath = this.SelectedEntries.Count >= 1;
                 this.CanSave = this.SelectedEntries.Count >= 1 && this.SelectedEntries.All(i => i.Entry.CanOpen);
             };
         }
@@ -79,6 +85,14 @@
                 var name = this.fsm.GetFileName(entry.Path) is { Length: > 0 } n ? n : entry.Path;
                 return new EntryItem(entry, name, this.detector.Detect(entry));
             })];
+        }
+
+        [RelayCommand]
+        internal void CopyPath(Window owner)
+        {
+            var paths = string.Join(Environment.NewLine, this.SelectedEntries.Select(e => e.Entry.Path));
+            var clipboard = TopLevel.GetTopLevel(owner)?.Clipboard;
+            clipboard?.SetTextAsync(paths);
         }
 
         [RelayCommand]

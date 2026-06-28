@@ -41,6 +41,14 @@
                 Height="{Binding $parent[TemplatedControl].FontSize}"/>
             </MenuItem.Icon>
           </MenuItem>
+          <MenuItem Header="Copy Path" IsEnabled="{Binding CanCopyPath}" Command="{Binding CopyPath}" CommandParameter="{Binding $parent[Window]}">
+              <MenuItem.Icon>
+                <iconPacks:PackIconFontAwesome
+                  Kind="SignsPostSolid"
+                  Width="{Binding $parent[TemplatedControl].FontSize}"
+                  Height="{Binding $parent[TemplatedControl].FontSize}"/>
+              </MenuItem.Icon>
+          </MenuItem>
         </ContextMenu>
       </ListBox.ContextMenu>
       <ListBox.ItemTemplate>

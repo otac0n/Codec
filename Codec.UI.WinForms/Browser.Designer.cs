@@ -36,16 +36,17 @@
             this.entryContextMenu = new ContextMenuStrip(this.components);
             this.previewToolStripMenuItem = new ToolStripMenuItem();
             this.saveAsToolStripMenuItem = new ToolStripMenuItem();
+            this.copyPathToolStripMenuItem = new ToolStripMenuItem();
             this.fileTypes = new ImageList(this.components);
             this.topToolStrip = new ToolStrip();
+            this.backButton = new ToolStripButton();
+            this.forwardButton = new ToolStripButton();
+            this.goUpButton = new ToolStripButton();
+            this.toolStripSeparator1 = new ToolStripSeparator();
             this.saveButton = new ToolStripButton();
             this.viewDrowDown = new ToolStripDropDownButton();
             this.listToolStripMenuItem = new ToolStripMenuItem();
             this.imagePreviewToolStripMenuItem = new ToolStripMenuItem();
-            this.toolStripSeparator1 = new ToolStripSeparator();
-            this.goUpButton = new ToolStripButton();
-            this.backButton = new ToolStripButton();
-            this.forwardButton = new ToolStripButton();
             this.lowerStatusStrip = new StatusStrip();
             this.saveSelectedDialog = new SaveFileDialog();
             this.saveToFolderDialog = new FolderBrowserDialog();
@@ -112,15 +113,15 @@
             // entryContextMenu
             // 
             this.entryContextMenu.ImageScalingSize = new Size(24, 24);
-            this.entryContextMenu.Items.AddRange(new ToolStripItem[] { this.previewToolStripMenuItem, this.saveAsToolStripMenuItem });
+            this.entryContextMenu.Items.AddRange(new ToolStripItem[] { this.previewToolStripMenuItem, this.saveAsToolStripMenuItem, this.copyPathToolStripMenuItem });
             this.entryContextMenu.Name = "entryContextMenu";
-            this.entryContextMenu.Size = new Size(167, 68);
+            this.entryContextMenu.Size = new Size(174, 100);
             // 
             // previewToolStripMenuItem
             // 
             this.previewToolStripMenuItem.Image = Properties.Resources.FontAwesome_EyeSolid_20x20;
             this.previewToolStripMenuItem.Name = "previewToolStripMenuItem";
-            this.previewToolStripMenuItem.Size = new Size(166, 32);
+            this.previewToolStripMenuItem.Size = new Size(248, 32);
             this.previewToolStripMenuItem.Text = "Preview...";
             this.previewToolStripMenuItem.Click += this.PreviewMenuItem_Click;
             // 
@@ -128,9 +129,17 @@
             // 
             this.saveAsToolStripMenuItem.Image = Properties.Resources.FontAwesome_FloppyDiskSolid_20x20;
             this.saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
-            this.saveAsToolStripMenuItem.Size = new Size(166, 32);
+            this.saveAsToolStripMenuItem.Size = new Size(248, 32);
             this.saveAsToolStripMenuItem.Text = "Save As...";
             this.saveAsToolStripMenuItem.Click += this.SaveButton_Click;
+            // 
+            // copyPathToolStripMenuItem
+            // 
+            this.copyPathToolStripMenuItem.Image = Properties.Resources.FontAwesome_SignsPostSolid_20x20;
+            this.copyPathToolStripMenuItem.Name = "copyPathToolStripMenuItem";
+            this.copyPathToolStripMenuItem.Size = new Size(173, 32);
+            this.copyPathToolStripMenuItem.Text = "Copy Path";
+            this.copyPathToolStripMenuItem.Click += this.CopyPathToolStripMenuItem_Click;
             // 
             // fileTypes
             // 
@@ -147,6 +156,41 @@
             this.topToolStrip.Size = new Size(1203, 33);
             this.topToolStrip.TabIndex = 2;
             this.topToolStrip.Text = "toolStrip1";
+            // 
+            // backButton
+            // 
+            this.backButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            this.backButton.Image = Properties.Resources.FontAwesome_ChevronLeftSolid_20x20;
+            this.backButton.ImageTransparentColor = Color.Magenta;
+            this.backButton.Name = "backButton";
+            this.backButton.Size = new Size(34, 28);
+            this.backButton.Text = "Back";
+            this.backButton.Click += this.BackButton_Click;
+            // 
+            // forwardButton
+            // 
+            this.forwardButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            this.forwardButton.Image = Properties.Resources.FontAwesome_ChevronRightSolid_20x20;
+            this.forwardButton.ImageTransparentColor = Color.Magenta;
+            this.forwardButton.Name = "forwardButton";
+            this.forwardButton.Size = new Size(34, 28);
+            this.forwardButton.Text = "Forward";
+            this.forwardButton.Click += this.ForwardButton_Click;
+            // 
+            // goUpButton
+            // 
+            this.goUpButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            this.goUpButton.Image = Properties.Resources.FontAwesome_ArrowTurnUpSolid_20x20;
+            this.goUpButton.ImageTransparentColor = Color.Magenta;
+            this.goUpButton.Name = "goUpButton";
+            this.goUpButton.Size = new Size(34, 28);
+            this.goUpButton.Text = "Go Up";
+            this.goUpButton.Click += this.GoUpButton_Click;
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new Size(6, 33);
             // 
             // saveButton
             // 
@@ -184,41 +228,6 @@
             this.imagePreviewToolStripMenuItem.Size = new Size(229, 34);
             this.imagePreviewToolStripMenuItem.Text = "Image Preview";
             this.imagePreviewToolStripMenuItem.Click += this.ImagePreviewToolStripMenuItem_Click;
-            // 
-            // toolStripSeparator1
-            // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new Size(6, 33);
-            // 
-            // goUpButton
-            // 
-            this.goUpButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
-            this.goUpButton.Image = Properties.Resources.FontAwesome_ArrowTurnUpSolid_20x20;
-            this.goUpButton.ImageTransparentColor = Color.Magenta;
-            this.goUpButton.Name = "goUpButton";
-            this.goUpButton.Size = new Size(34, 28);
-            this.goUpButton.Text = "Go Up";
-            this.goUpButton.Click += this.GoUpButton_Click;
-            // 
-            // backButton
-            // 
-            this.backButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
-            this.backButton.Image = Properties.Resources.FontAwesome_ChevronLeftSolid_20x20;
-            this.backButton.ImageTransparentColor = Color.Magenta;
-            this.backButton.Name = "backButton";
-            this.backButton.Size = new Size(34, 28);
-            this.backButton.Text = "Back";
-            this.backButton.Click += this.BackButton_Click;
-            // 
-            // forwardButton
-            // 
-            this.forwardButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
-            this.forwardButton.Image = Properties.Resources.FontAwesome_ChevronRightSolid_20x20;
-            this.forwardButton.ImageTransparentColor = Color.Magenta;
-            this.forwardButton.Name = "forwardButton";
-            this.forwardButton.Size = new Size(34, 28);
-            this.forwardButton.Text = "Forward";
-            this.forwardButton.Click += this.ForwardButton_Click;
             // 
             // lowerStatusStrip
             // 
@@ -280,5 +289,6 @@
         private ToolStripButton backButton;
         private ToolStripButton forwardButton;
         private ToolStripMenuItem previewToolStripMenuItem;
+        private ToolStripMenuItem copyPathToolStripMenuItem;
     }
 }
