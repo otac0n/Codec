@@ -143,22 +143,18 @@
                     this.gl.PolygonMode(GLEnum.FrontAndBack, GLEnum.Fill);
                 }
 
-                var pixelArt = gpuMesh.Material
-                    .GetAllProperties()
-                    .SingleOrDefault(p => p.Name == $"$tex.pixelArt,{(int)gpuMesh.Material.TextureDiffuse.TextureType},{gpuMesh.Material.TextureDiffuse.TextureIndex}")
-                    ?.GetBooleanValue()
-                    ?? false;
-                if (this.GetTexture(gpuMesh.Material.TextureDiffuse.FilePath, pixelArt) is TextureHandle texture)
-                {
-                    texture.Activate();
-                }
-                else
-                {
-                    this.gl.ActiveTexture(TextureUnit.Texture0);
-                    this.gl.BindTexture(TextureTarget.Texture2D, 0);
-                }
-
-                this.shader.SetUniform("uniform_textureDiffuse", 0);
+                // TODO: Implement a lighting model.
+                this.SetTexture(gpuMesh.Material.HasTextureDiffuse, gpuMesh.Material.TextureDiffuse, 0, "uniform_textureDiffuse", gpuMesh.Material);
+                ////this.SetTexture(gpuMesh.Material.HasTextureNormal, gpuMesh.Material.TextureNormal, 1, "uniform_textureNormal", gpuMesh.Material);
+                ////this.SetTexture(gpuMesh.Material.HasTextureSpecular, gpuMesh.Material.TextureSpecular, 2, "uniform_textureSpecular", gpuMesh.Material);
+                ////this.SetTexture(gpuMesh.Material.HasTextureAmbient, gpuMesh.Material.TextureAmbient, 3, "uniform_textureAmbient", gpuMesh.Material);
+                ////this.SetTexture(gpuMesh.Material.HasTextureAmbientOcclusion, gpuMesh.Material.TextureAmbientOcclusion, 4, "uniform_textureAmbientOcclusion", gpuMesh.Material);
+                ////this.SetTexture(gpuMesh.Material.HasTextureDisplacement, gpuMesh.Material.TextureDisplacement, 5, "uniform_textureDisplacement", gpuMesh.Material);
+                ////this.SetTexture(gpuMesh.Material.HasTextureEmissive, gpuMesh.Material.TextureEmissive, 6, "uniform_textureEmissive", gpuMesh.Material);
+                ////this.SetTexture(gpuMesh.Material.HasTextureHeight, gpuMesh.Material.TextureHeight, 7, "uniform_textureHeight", gpuMesh.Material);
+                ////this.SetTexture(gpuMesh.Material.HasTextureLightMap, gpuMesh.Material.TextureLightMap, 8, "uniform_textureLightMap", gpuMesh.Material);
+                ////this.SetTexture(gpuMesh.Material.HasTextureOpacity, gpuMesh.Material.TextureOpacity, 9, "uniform_textureOpacity", gpuMesh.Material);
+                ////this.SetTexture(gpuMesh.Material.HasTextureReflection, gpuMesh.Material.TextureReflection, 10, "uniform_textureReflection", gpuMesh.Material);
 
                 this.shader.SetUniform("uniform_colorTransparent", gpuMesh.Material.ColorTransparent);
                 this.shader.SetUniform("uniform_transparencyFactor", gpuMesh.Material.TransparencyFactor);
@@ -192,6 +188,27 @@
             }
 
             this.gl.BindVertexArray(0);
+        }
+
+        private void SetTexture(bool hasSlot, TextureSlot slot, int textureId, string uniform, Material material)
+        {
+            var pixelArt = material
+                .GetAllProperties()
+                .SingleOrDefault(p => p.Name == $"$tex.pixelArt,{(int)material.TextureDiffuse.TextureType},{material.TextureDiffuse.TextureIndex}")
+                ?.GetBooleanValue()
+                ?? false;
+
+            if (hasSlot && this.GetTexture(slot.FilePath, pixelArt) is TextureHandle texture)
+            {
+                texture.Activate();
+            }
+            else
+            {
+                this.gl.ActiveTexture(TextureUnit.Texture0 + textureId);
+                this.gl.BindTexture(TextureTarget.Texture2D, (uint)textureId);
+            }
+
+            this.shader.SetUniform(uniform, textureId);
         }
 
         private unsafe void UpdateModel()
