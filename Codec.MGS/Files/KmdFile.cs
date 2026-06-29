@@ -191,7 +191,7 @@
             Transparent = 0b00000000000000000010,
             NoLight = 0b00000000000000000100,
             TwoSided = 0b00000000010000000000,
-            Indirect = 0b00010000000000000000,
+            Indirect = 0b00010000000000000000, // Indexed normals?
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]

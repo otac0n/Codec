@@ -123,6 +123,12 @@
 
                 stream.Position = position;
                 var entry = stream.ReadLittleEndian<RawEntry>();
+                if (entry.Size == 0 || (position + entry.Size) > stream.Length)
+                {
+                    // Parse failed, not a valid VOX.DAT
+                    return [];
+                }
+
                 var fullEntry = new VoxEntry(MergeHeaderGroups(entry.Code), position + 4, entry.Size - 4);
                 position += entry.Size;
 
