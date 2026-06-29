@@ -47,14 +47,7 @@ Usage
 
 ```csharp
 // Setup
-var services = new ServiceCollection(); // Dependency Injection root.
-ServiceRegistration.Register(services); // Register DI services.
-var rootCommand = new RootCommand();
-ArchiveOptions.Attach(rootCommand);
-var emptyContext = new InvocationContext(rootCommand.Parse(Array.Empty<string>())); // Empty command line arguments (e.g. use defaults)
-ArchiveOptions.Bind(emptyContext, services); // Register the key to the M2 Archive from the default arguments.
-using var serviceProvider = services.BuildServiceProvider(); // Create the root Dependency Injection scope.
-
+var services = ServiceRegistration.RegisterHeadless(services);
 var fsm = serviceProvider.GetRequiredService<NestedFileSystemManager>(); // Grab the root filesystem.
 
 // API

@@ -2,12 +2,24 @@
 
 namespace Codec.UI
 {
+    using System.CommandLine;
     using System.CommandLine.Invocation;
     using Codec.Services;
     using Microsoft.Extensions.DependencyInjection;
 
     public class ServiceRegistration
     {
+        public static ServiceProvider RegisterHeadless()
+        {
+            var rootCommand = new RootCommand();
+            M2.ArchiveOptions.Attach(rootCommand);
+            EnvironmentOptions.Attach(rootCommand);
+            var emptyContext = new InvocationContext(rootCommand.Parse([]));
+            var services = new ServiceCollection();
+            Register(emptyContext, services);
+            return services.BuildServiceProvider();
+        }
+
         public static void Register(InvocationContext context, IServiceCollection services)
         {
             Codec.ServiceRegistration.Register(services);
