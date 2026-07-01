@@ -21,6 +21,8 @@ namespace Codec.MGS
             KmsFile.Register(services);
             ZmdFile.Register(services);
 
+            MgzFileSystemHandler.Register(services);
+
             BrfDatVirtualFileSystem.Register(services);
             FaceDatVirtualFileSystem.Register(services);
             StageDirVirtualFileSystem.Register(services);

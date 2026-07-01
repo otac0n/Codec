@@ -16,6 +16,7 @@ namespace Codec
         public static void Register(IServiceCollection services)
         {
             CueSheetVirtualFileSystem.Register(services);
+            ZipArchiveFileSystem.Register(services);
 
             services.AddSingleton<EntryTypeDetector>();
 

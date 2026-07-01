@@ -11,6 +11,7 @@ Support for the following formats is implemented:
   - Generic
     - .iso Images
     - .bin/cue Images
+    - .zip Files
   - Metal Gear Specific
     - M2 Archive (Master Collection v1)
       - .psb.m Packaging Format
