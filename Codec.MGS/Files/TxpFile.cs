@@ -29,7 +29,7 @@ namespace Codec.MGS.Files
                     using (var stream = parent.File.OpenRead(parentRelativePath))
                     {
                         var header = stream.ReadLittleEndian<Header>();
-                        if ((header.Flags & 0xFFF0) != 0 || header.TextureCount > 0x400)
+                        if (header.Flags > 0xFFF || header.TextureCount > 0x400)
                         {
                             Debug.WriteLine($"Unknown TXP. Flags: {header.Flags:x8}, Texture Count: {header.TextureCount}");
                             return null;
