@@ -3,7 +3,7 @@ Codec
 
 Asset browser for Metal Gear Solid games (and others).
 This project is licensed under the [MIT](LICENSE.md) license.
-Support for Master Collection files is provided as a separate project, licensed under the [GPL v3](Codec.MGS/LICENSE.md) license.
+Support for M2 files is provided as a separate project, licensed under the [GPL v3](Codec.M2/LICENSE.md) license.
 
 Support for the following formats is implemented:
 
