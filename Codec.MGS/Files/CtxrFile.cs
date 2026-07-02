@@ -100,7 +100,6 @@ namespace Codec.MGS.Files
 
         private static Stream BuildDdsStream(Header header, PixelFormat pixelFormat, Stream stream)
         {
-
             uint fourCC = pixelFormat switch
             {
                 PixelFormat.DXT1 => 0x31545844, // 'DXT1'

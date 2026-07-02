@@ -234,6 +234,7 @@ namespace Codec.MGS.Files
             return output.AsSpan();
         }
 
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct Header
         {
             public uint Flags;
@@ -246,6 +247,7 @@ namespace Codec.MGS.Files
             public uint ClutOffset;
         }
 
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct Entry
         {
             public ushort Flags;
@@ -257,6 +259,7 @@ namespace Codec.MGS.Files
             public uint ZOffset;
         }
 
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct Descriptor
         {
             public uint Flags;
@@ -273,6 +276,7 @@ namespace Codec.MGS.Files
             public short YOffset;
         }
 
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct Color
         {
             public byte R;

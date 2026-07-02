@@ -5,7 +5,6 @@ namespace Codec.MGS.Files
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Drawing;
     using System.IO;
     using System.IO.Abstractions;
     using System.Runtime.InteropServices;
@@ -125,7 +124,6 @@ namespace Codec.MGS.Files
             {
                 var v = stream.ReadUInt16LittleEndian();
                 static int Expand5(int x) => (x << 3) | (x >> 2);
-                var c = Color.FromArgb((v & 0x8000) != 0 ? 0xFF : 0x00, Expand5((v >> 10) & 0x1F), Expand5((v >> 5) & 0x1F), Expand5((v >> 0) & 0x1F));
                 writer.WriteColor(
                     ((v & 0x8000) != 0 ? 0xFF : 0x00) << 24 |
                     Expand5((v >> 0) & 0x1F) << 16 |
@@ -145,6 +143,7 @@ namespace Codec.MGS.Files
             return writer.ToMagickImage();
         }
 
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct Header
         {
             public byte PaletteCount;
@@ -152,6 +151,7 @@ namespace Codec.MGS.Files
             public ushort Pad;
         }
 
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct ItemDescriptor
         {
             public byte X;
