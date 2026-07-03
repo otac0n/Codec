@@ -13,7 +13,10 @@
         public static readonly uint DDSCAPS_COMPLEX = 0x8;
         public static readonly uint DDSCAPS_TEXTURE = 0x1000;
         public static readonly uint DDSCAPS_MIPMAP = 0x400000;
+        public static readonly uint DDPF_ALPHAPIXELS = 0x1;
+        public static readonly uint DDPF_ALPHA = 0x2;
         public static readonly uint DDPF_FOURCC = 0x4;
+        public static readonly uint DDPF_RGB = 0x40;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

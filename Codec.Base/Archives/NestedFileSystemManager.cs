@@ -114,9 +114,9 @@
             return this.TryFindParentFileSystem(path, out var parentRelativePath, out var parent, out _) && parent.File.Exists(parentRelativePath);
         }
 
-        public Stream OpenRead(string path) => this.Open(path, new FileStreamOptions { Mode = FileMode.Open, Access = FileAccess.Read, Share = FileShare.Read });
+        public FileSystemStream OpenRead(string path) => this.Open(path, new FileStreamOptions { Mode = FileMode.Open, Access = FileAccess.Read, Share = FileShare.Read });
 
-        public Stream Open(string path, FileStreamOptions options)
+        public FileSystemStream Open(string path, FileStreamOptions options)
         {
             if (!this.TryFindParentFileSystem(path, out var parentRelativePath, out var parent, out _))
             {

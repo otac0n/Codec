@@ -1,9 +1,11 @@
 ﻿namespace Codec.Archives
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
+    using DiscUtils.Streams;
 
-    public sealed class CachingSeekableStream(Stream inner) : Stream
+    public sealed class CachingSeekableStream(Stream inner, long? knownLength = null) : SparseStream
     {
         private const int CopyBufferSize = 81920;
 
@@ -29,6 +31,11 @@
             get
             {
                 ObjectDisposedException.ThrowIf(this.disposed, this);
+                if (knownLength is long value)
+                {
+                    return value;
+                }
+
                 this.EnsureFullyCached();
                 return this.cache.Length;
             }
@@ -44,6 +51,9 @@
             }
             set => this.Seek(value, SeekOrigin.Begin);
         }
+
+        /// <inheritdoc/>
+        public override IEnumerable<StreamExtent> Extents => [new StreamExtent(0, this.Length)];
 
         /// <inheritdoc/>
         public override void Flush()
