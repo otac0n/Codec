@@ -19,8 +19,10 @@ namespace Codec.MGS
             TxpFile.Register(services);
             PllFile.Register(services);
             RpkFile.Register(services);
+
             KmdFile.Register(services);
             KmsFile.Register(services);
+            MdnFile.Register(services);
             ZmdFile.Register(services);
 
             MgzFileSystemHandler.Register(services);

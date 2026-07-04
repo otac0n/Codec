@@ -231,6 +231,18 @@ namespace Codec
             return MemoryMarshal.Cast<byte, T>(buffer)[0];
         }
 
+        public static T[] ReadArrayBigEndian<T>(this Stream stream, uint count)
+            where T : struct =>
+            ReadArrayBigEndian<T>(stream, checked((int)count));
+
+        public static T[] ReadArrayLittleEndian<T>(this Stream stream, uint count)
+            where T : struct =>
+            ReadArrayLittleEndian<T>(stream, checked((int)count));
+
+        public static T[] ReadArraySystemEndianness<T>(this Stream stream, uint count)
+            where T : struct =>
+            ReadArraySystemEndianness<T>(stream, checked((int)count));
+
         public static T[] ReadArrayBigEndian<T>(this Stream stream, int count)
             where T : struct =>
             ReadArrayWithEndianness<T>(stream, count, swapEndianness: BitConverter.IsLittleEndian);
