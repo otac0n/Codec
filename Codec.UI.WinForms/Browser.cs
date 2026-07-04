@@ -24,8 +24,14 @@ namespace Codec.UI.WinForms
         private readonly FileExportService exportService;
         private readonly VirtualImageList<Entry> textureDisplay;
         private readonly List<Entry> history = [];
+        private readonly List<Entry> contextEntries = [];
         private int historyIndex = -1;
         private bool suppressUpdates;
+
+        public IList<Entry> SelectedEntries =>
+            this.contextEntries.Count > 0
+                ? this.contextEntries
+                : [.. this.entryList.SelectedItems.Cast<ListViewItem>().Select(i => (Entry)i.Tag)];
 
         public Browser(IServiceProvider serviceProvider)
         {
@@ -53,10 +59,25 @@ namespace Codec.UI.WinForms
                 Dock = DockStyle.Fill,
                 Visible = false,
             };
+            this.textureDisplay.MouseDown += this.TextureDisplay_Click;
             this.splitContainer.Panel2.Controls.Add(this.textureDisplay);
 
             this.fileTree.Nodes.Add(new TreeNode("root", 0, 0, [this.CreateExpanderDummy()]) { Tag = this.fsm.RootEntry });
             this.Navigate(Path.Combine(serviceProvider.GetRequiredService<EnvironmentOptions>().SteamApps, WellKnownPaths.AllDataBin, WellKnownPaths.CD1Path, WellKnownPaths.StageDirPath));
+        }
+
+        private void TextureDisplay_Click(object? sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right && e.Clicks == 1)
+            {
+                if (this.textureDisplay.HitTest(e.Location, out var hit))
+                {
+                    this.contextEntries.Clear();
+                    this.contextEntries.Add(hit);
+                    this.UpdateContextMenu();
+                    this.entryContextMenu.Show(this.textureDisplay, e.Location);
+                }
+            }
         }
 
         private TreeNode CreateExpanderDummy() => new("...");
@@ -186,78 +207,75 @@ namespace Codec.UI.WinForms
 
         private async void EntryList_ItemActivate(object sender, EventArgs e)
         {
-            if (this.entryList.SelectedItems is not [ListViewItem item])
+            if (this.SelectedEntries is not [Entry entry])
             {
                 return;
             }
 
-            if (item?.Tag is Entry entry)
+            if (entry.CanEnumerateEntries)
             {
-                if (entry.CanEnumerateEntries)
+                this.Navigate(entry);
+            }
+            else
+            {
+                switch (this.detector.Detect(entry))
                 {
-                    this.Navigate(entry);
-                }
-                else
-                {
-                    switch (this.detector.Detect(entry))
-                    {
-                        case EntryType.Image:
+                    case EntryType.Image:
+                        {
+                            if (this.fsm.Resolve<MagickImage>(entry.Path) is MagickImage image)
                             {
-                                if (this.fsm.Resolve<MagickImage>(entry.Path) is MagickImage image)
+                                var childForm = new Form
                                 {
-                                    var childForm = new Form
-                                    {
-                                        Text = this.fsm.GetFileName(entry.Path),
-                                        StartPosition = FormStartPosition.CenterParent,
-                                        FormBorderStyle = FormBorderStyle.SizableToolWindow,
-                                    };
-                                    childForm.Controls.Add(new PictureBox
-                                    {
-                                        Dock = DockStyle.Fill,
-                                        SizeMode = PictureBoxSizeMode.Zoom,
-                                        Image = image.ToBitmap(),
-                                        BackColor = Color.Black,
-                                    });
-                                    this.ShowChild(childForm);
-                                }
+                                    Text = this.fsm.GetFileName(entry.Path),
+                                    StartPosition = FormStartPosition.CenterParent,
+                                    FormBorderStyle = FormBorderStyle.SizableToolWindow,
+                                };
+                                childForm.Controls.Add(new PictureBox
+                                {
+                                    Dock = DockStyle.Fill,
+                                    SizeMode = PictureBoxSizeMode.Zoom,
+                                    Image = image.ToBitmap(),
+                                    BackColor = Color.Black,
+                                });
+                                this.ShowChild(childForm);
                             }
-                            break;
-                        case EntryType.Audio:
+                        }
+                        break;
+                    case EntryType.Audio:
+                        {
+                            try
                             {
-                                try
+                                var audioStream = this.fsm.Resolve<AudioStream>(entry.Path) ?? (AudioStream)this.fsm.OpenRead(entry.Path);
+                                var childForm = new AudioPreviewForm(audioStream)
                                 {
-                                    var audioStream = this.fsm.Resolve<AudioStream>(entry.Path) ?? (AudioStream)this.fsm.OpenRead(entry.Path);
-                                    var childForm = new AudioPreviewForm(audioStream)
-                                    {
-                                        Text = this.fsm.GetFileName(entry.Path),
-                                    };
-                                    this.ShowChild(childForm);
-                                }
-                                catch (Exception ex)
-                                {
-                                    MessageBox.Show(this, $"Failed to play audio: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                }
+                                    Text = this.fsm.GetFileName(entry.Path),
+                                };
+                                this.ShowChild(childForm);
                             }
-                            break;
-                        case EntryType.Model:
+                            catch (Exception ex)
                             {
-                                if (this.fsm.Resolve<RenderableScene>(entry.Path) is RenderableScene scene)
-                                {
-                                    var childForm = new Form
-                                    {
-                                        Text = this.fsm.GetFileName(entry.Path),
-                                        StartPosition = FormStartPosition.CenterParent,
-                                        FormBorderStyle = FormBorderStyle.SizableToolWindow,
-                                    };
-                                    childForm.Controls.Add(new ModelRendererControl(entry.Path, this.fsm, scene)
-                                    {
-                                        Dock = DockStyle.Fill,
-                                    });
-                                    this.ShowChild(childForm);
-                                }
+                                MessageBox.Show(this, $"Failed to play audio: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
-                            break;
-                    }
+                        }
+                        break;
+                    case EntryType.Model:
+                        {
+                            if (this.fsm.Resolve<RenderableScene>(entry.Path) is RenderableScene scene)
+                            {
+                                var childForm = new Form
+                                {
+                                    Text = this.fsm.GetFileName(entry.Path),
+                                    StartPosition = FormStartPosition.CenterParent,
+                                    FormBorderStyle = FormBorderStyle.SizableToolWindow,
+                                };
+                                childForm.Controls.Add(new ModelRendererControl(entry.Path, this.fsm, scene)
+                                {
+                                    Dock = DockStyle.Fill,
+                                });
+                                this.ShowChild(childForm);
+                            }
+                        }
+                        break;
                 }
             }
         }
@@ -294,24 +312,30 @@ namespace Codec.UI.WinForms
 
         private void EntryList_SelectedIndexChanged(object sender, EventArgs e)
         {
-            this.previewToolStripMenuItem.Enabled = this.entryList.SelectedItems.Count == 1;
-            this.previewToolStripMenuItem.Text = this.entryList.SelectedItems.Cast<ListViewItem>().Any(i => i.Tag is Entry { CanEnumerateEntries: true }) ? "Open" : "Preview...";
-            this.copyPathToolStripMenuItem.Enabled = this.entryList.SelectedItems.Count >= 1;
-            this.saveAsToolStripMenuItem.Enabled = this.saveButton.Enabled = this.entryList.SelectedItems.Count >= 1 && this.entryList.SelectedItems.Cast<ListViewItem>().All(i => i.Tag is Entry { CanOpen: true });
+            this.UpdateContextMenu();
+        }
+
+        private void UpdateContextMenu()
+        {
+            var selectedEntries = this.SelectedEntries;
+            this.previewToolStripMenuItem.Enabled = selectedEntries.Count == 1;
+            this.previewToolStripMenuItem.Text = selectedEntries.Any(e => e.CanEnumerateEntries) ? "Open" : "Preview...";
+            this.copyPathToolStripMenuItem.Enabled = selectedEntries.Count >= 1;
+            this.saveAsToolStripMenuItem.Enabled = this.saveButton.Enabled = selectedEntries.Count >= 1 && selectedEntries.All(e => e.CanOpen);
         }
 
         private void CopyPathToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            var paths = string.Join(Environment.NewLine, this.entryList.SelectedItems.Cast<ListViewItem>().Select(e => ((Entry)e.Tag).Path));
+            var paths = string.Join(Environment.NewLine, this.SelectedEntries.Select(e => e.Path));
             Clipboard.SetText(paths);
         }
 
         private async void SaveButton_Click(object sender, EventArgs e)
         {
-            if (this.entryList.SelectedItems.Count == 1)
+            var selectedEntries = this.SelectedEntries;
+            if (selectedEntries.Count == 1)
             {
-                var entry = (Entry)this.entryList.SelectedItems[0]?.Tag!;
-
+                var entry = selectedEntries[0];
                 await this.exportService.SaveSingleAsync(entry, (suggestedFileName, type, supportedPatterns) =>
                 {
                     this.saveSelectedDialog.Filter = supportedPatterns is string supportedTypes
@@ -323,12 +347,10 @@ namespace Codec.UI.WinForms
                     return Task.FromResult(result == DialogResult.OK ? this.saveSelectedDialog.FileName : null);
                 });
             }
-            else if (this.entryList.SelectedItems.Count >= 0)
+            else if (selectedEntries.Count >= 0)
             {
-                var entries = this.entryList.SelectedItems.Cast<ListViewItem>().Select(i => (Entry)i.Tag).ToList();
-
                 await this.exportService.SaveMultipleAsync(
-                    entries,
+                    selectedEntries,
                     () =>
                     {
                         this.saveToFolderDialog.SelectedPath = string.Empty;
@@ -341,6 +363,19 @@ namespace Codec.UI.WinForms
                         return Task.FromResult(overwriteResult == DialogResult.Yes);
                     });
             }
+        }
+
+        private void EntryContextMenu_Closed(object sender, ToolStripDropDownClosedEventArgs e)
+        {
+            // Defer untill after the click message has pumped.
+            this.BeginInvoke(() =>
+            {
+                if (this.contextEntries.Count > 0)
+                {
+                    this.contextEntries.Clear();
+                    this.UpdateContextMenu();
+                }
+            });
         }
     }
 }

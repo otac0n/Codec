@@ -115,7 +115,8 @@
             this.entryContextMenu.ImageScalingSize = new Size(24, 24);
             this.entryContextMenu.Items.AddRange(new ToolStripItem[] { this.previewToolStripMenuItem, this.saveAsToolStripMenuItem, this.copyPathToolStripMenuItem });
             this.entryContextMenu.Name = "entryContextMenu";
-            this.entryContextMenu.Size = new Size(174, 100);
+            this.entryContextMenu.Size = new Size(249, 133);
+            this.entryContextMenu.Closed += this.EntryContextMenu_Closed;
             // 
             // previewToolStripMenuItem
             // 
@@ -137,7 +138,7 @@
             // 
             this.copyPathToolStripMenuItem.Image = Properties.Resources.FontAwesome_SignsPostSolid_20x20;
             this.copyPathToolStripMenuItem.Name = "copyPathToolStripMenuItem";
-            this.copyPathToolStripMenuItem.Size = new Size(173, 32);
+            this.copyPathToolStripMenuItem.Size = new Size(248, 32);
             this.copyPathToolStripMenuItem.Text = "Copy Path";
             this.copyPathToolStripMenuItem.Click += this.CopyPathToolStripMenuItem_Click;
             // 

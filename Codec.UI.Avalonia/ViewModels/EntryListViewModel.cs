@@ -7,7 +7,6 @@
     using System.Threading;
     using System.Threading.Tasks;
     using global::Avalonia.Controls;
-    using global::Avalonia.Input.Platform;
     using Codec.Archives;
     using Codec.Services;
     using Codec.UI.Avalonia.Models;
@@ -33,7 +32,14 @@
             this.thumbnails ??= [.. this.Entries.Where(e => e.EntryType == EntryType.Image).Select(e => new ThumbnailItemViewModel(e, this.imageLoader, this.cts.Token))];
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(ContextEntries))]
         private ObservableCollection<EntryItem> selectedEntries = [];
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(ContextEntries))]
+        private EntryItem? contextEntry = null;
+
+        private IList<EntryItem> ContextEntries => this.ContextEntry is EntryItem entry ? [entry] : this.SelectedEntries;
 
         [ObservableProperty]
         private ViewMode currentViewMode = ViewMode.List;
@@ -61,13 +67,20 @@
             this.detector = detector;
             this.fileSaveService = fileSaveService;
             this.imageLoader = imageLoader;
-            this.SelectedEntries.CollectionChanged += (_, _) =>
-            {
-                this.CanPreview = this.SelectedEntries.Count == 1;
-                this.PreviewIsOpen = this.SelectedEntries.Any(i => i.Entry.CanEnumerateEntries);
-                this.CanCopyPath = this.SelectedEntries.Count >= 1;
-                this.CanSave = this.SelectedEntries.Count >= 1 && this.SelectedEntries.All(i => i.Entry.CanOpen);
-            };
+            this.SelectedEntries.CollectionChanged += this.ContextChanged;
+        }
+
+        partial void OnContextEntryChanged(EntryItem? value)
+        {
+            this.ContextChanged(this, EventArgs.Empty);
+        }
+
+        private void ContextChanged(object? sender, EventArgs e)
+        {
+            this.CanPreview = this.ContextEntries.Count == 1;
+            this.PreviewIsOpen = this.ContextEntries.Any(i => i.Entry.CanEnumerateEntries);
+            this.CanCopyPath = this.ContextEntries.Count >= 1;
+            this.CanSave = this.ContextEntries.Count >= 1 && this.ContextEntries.All(i => i.Entry.CanOpen);
         }
 
         public void LoadEntries(Entry directory)
@@ -90,7 +103,7 @@
         [RelayCommand]
         internal void CopyPath(Window owner)
         {
-            var paths = string.Join(Environment.NewLine, this.SelectedEntries.Select(e => e.Entry.Path));
+            var paths = string.Join(Environment.NewLine, this.ContextEntries.Select(e => e.Entry.Path));
             var clipboard = TopLevel.GetTopLevel(owner)?.Clipboard;
             clipboard?.SetTextAsync(paths);
         }
@@ -98,19 +111,19 @@
         [RelayCommand]
         internal void Preview()
         {
-            EntryActivated?.Invoke(this, this.SelectedEntries);
+            EntryActivated?.Invoke(this, this.ContextEntries);
         }
 
         [RelayCommand(CanExecute = nameof(CanSave))]
         private async Task SaveAsync(Window owner)
         {
-            if (this.SelectedEntries is [EntryItem item])
+            if (this.ContextEntries is [EntryItem item])
             {
                 await this.fileSaveService.SaveSingleAsync(owner, item).ConfigureAwait(false);
             }
             else
             {
-                await this.fileSaveService.SaveMultipleAsync(owner, this.SelectedEntries).ConfigureAwait(false);
+                await this.fileSaveService.SaveMultipleAsync(owner, this.ContextEntries).ConfigureAwait(false);
             }
         }
 

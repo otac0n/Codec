@@ -12,45 +12,44 @@
     <conv:FileIconEntryConverter x:Key="FileIconEntryConverter" />
     <conv:ViewModeConverter x:Key="ViewModeConverter" />
     <conv:BoolToStringConverter x:Key="BoolToOpenTextConverter" TrueValue="Open" FalseValue="Preview..." />
+    <ContextMenu x:Key="EntryContextMenu" Closed="OnEntryContextMenuClosed">
+      <MenuItem Header="{Binding PreviewIsOpen, Converter={StaticResource BoolToOpenTextConverter}}" IsEnabled="{Binding CanPreview}" Command="{Binding PreviewCommand}">
+        <MenuItem.Icon>
+          <iconPacks:PackIconFontAwesome
+            Kind="EyeSolid"
+            Width="{Binding $parent[TemplatedControl].FontSize}"
+            Height="{Binding $parent[TemplatedControl].FontSize}"/>
+        </MenuItem.Icon>
+      </MenuItem>
+      <MenuItem Header="Save As..." IsEnabled="{Binding CanSave}" Command="{Binding SaveCommand}" CommandParameter="{Binding $parent[Window]}">
+        <MenuItem.Icon>
+          <iconPacks:PackIconFontAwesome
+            Kind="FloppyDiskSolid"
+            Width="{Binding $parent[TemplatedControl].FontSize}"
+            Height="{Binding $parent[TemplatedControl].FontSize}"/>
+        </MenuItem.Icon>
+      </MenuItem>
+      <MenuItem Header="Copy Path" IsEnabled="{Binding CanCopyPath}" Command="{Binding CopyPath}" CommandParameter="{Binding $parent[Window]}">
+        <MenuItem.Icon>
+          <iconPacks:PackIconFontAwesome
+            Kind="SignsPostSolid"
+            Width="{Binding $parent[TemplatedControl].FontSize}"
+            Height="{Binding $parent[TemplatedControl].FontSize}"/>
+        </MenuItem.Icon>
+      </MenuItem>
+    </ContextMenu>
   </UserControl.Resources>
   <Panel>
     <ListBox
       ItemsSource="{Binding Entries}"
       SelectionMode="Multiple"
       SelectedItems="{Binding SelectedEntries}"
+      ContextMenu="{StaticResource EntryContextMenu}"
       IsVisible="{Binding CurrentViewMode, Converter={StaticResource ViewModeConverter}, ConverterParameter={x:Static models:ViewMode.List}}"
       DoubleTapped="ListBox_DoubleTapped">
       <ListBox.KeyBindings>
         <KeyBinding Command="{Binding PreviewCommand}" Gesture="Enter" />
       </ListBox.KeyBindings>
-      <ListBox.ContextMenu>
-        <ContextMenu>
-          <MenuItem Header="{Binding PreviewIsOpen, Converter={StaticResource BoolToOpenTextConverter}}" IsEnabled="{Binding CanPreview}" Command="{Binding PreviewCommand}">
-            <MenuItem.Icon>
-              <iconPacks:PackIconFontAwesome
-                Kind="EyeSolid"
-                Width="{Binding $parent[TemplatedControl].FontSize}"
-                Height="{Binding $parent[TemplatedControl].FontSize}"/>
-            </MenuItem.Icon>
-          </MenuItem>
-          <MenuItem Header="Save As..." IsEnabled="{Binding CanSave}" Command="{Binding SaveCommand}" CommandParameter="{Binding $parent[Window]}">
-            <MenuItem.Icon>
-              <iconPacks:PackIconFontAwesome
-                Kind="FloppyDiskSolid"
-                Width="{Binding $parent[TemplatedControl].FontSize}"
-                Height="{Binding $parent[TemplatedControl].FontSize}"/>
-            </MenuItem.Icon>
-          </MenuItem>
-          <MenuItem Header="Copy Path" IsEnabled="{Binding CanCopyPath}" Command="{Binding CopyPath}" CommandParameter="{Binding $parent[Window]}">
-              <MenuItem.Icon>
-                <iconPacks:PackIconFontAwesome
-                  Kind="SignsPostSolid"
-                  Width="{Binding $parent[TemplatedControl].FontSize}"
-                  Height="{Binding $parent[TemplatedControl].FontSize}"/>
-              </MenuItem.Icon>
-          </MenuItem>
-        </ContextMenu>
-      </ListBox.ContextMenu>
       <ListBox.ItemTemplate>
         <DataTemplate DataType="models:EntryItem">
           <StackPanel Orientation="Horizontal" Spacing="4">
@@ -64,14 +63,16 @@
         </DataTemplate>
       </ListBox.ItemTemplate>
     </ListBox>
-    <ScrollViewer IsVisible="{Binding CurrentViewMode, Converter={StaticResource ViewModeConverter}, ConverterParameter={x:Static models:ViewMode.ImagePreview}}">
+    <ScrollViewer
+      ContextMenu="{StaticResource EntryContextMenu}"
+      IsVisible="{Binding CurrentViewMode, Converter={StaticResource ViewModeConverter}, ConverterParameter={x:Static models:ViewMode.ImagePreview}}">
       <ItemsRepeater ItemsSource="{Binding Thumbnails}">
         <ItemsRepeater.Layout>
           <UniformGridLayout MinItemWidth="96" MinItemHeight="96" ItemsStretch="Fill" />
         </ItemsRepeater.Layout>
         <ItemsRepeater.ItemTemplate>
           <DataTemplate DataType="vm:ThumbnailItemViewModel">
-            <views:ThumbnailCell />
+            <views:ThumbnailCell ContextRequested="OnThumbnailContextRequested" />
           </DataTemplate>
         </ItemsRepeater.ItemTemplate>
       </ItemsRepeater>
