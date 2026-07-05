@@ -6,6 +6,7 @@
     <NeutralLanguage>en-US</NeutralLanguage>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
+    <IsPublishable>false</IsPublishable>
   </PropertyGroup>
   <PropertyGroup>
     <WarningsAsErrors>CA1416</WarningsAsErrors>

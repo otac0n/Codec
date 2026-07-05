@@ -6,7 +6,7 @@
     <PublishSingleFile>true</PublishSingleFile>
     <EnableCompressionInSingleFile>$(SelfContained)</EnableCompressionInSingleFile>
     <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))</RepoRoot>
-    <PublishDir Condition="'$(TargetFrameworks)' == ''">$(RepoRoot)publish\$(MSBuildProjectName)-$(Platform)-$(Configuration)\</PublishDir>
+    <PublishDir Condition="'$(TargetFrameworks)' == ''">$(RepoRoot)publish\$(MSBuildProjectName)-$(Platform)-$(Configuration)-$(RuntimeIdentifier)\</PublishDir>
     <PublishDir Condition="'$(PublishDir)' == ''">$(RepoRoot)publish\$(MSBuildProjectName)-$(Platform)-$(Configuration)\$(TargetFramework)\</PublishDir>
   </PropertyGroup>
   <Target Name="ExcludePdbFromPublish" AfterTargets="ComputeFilesToPublish">
@@ -15,7 +15,7 @@
       <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.Extension)' == '.xml'" />
     </ItemGroup>
   </Target>
-  <Target Name="RenamePublishExe" AfterTargets="Publish">
+  <Target Name="RenamePublishExe" AfterTargets="Publish" Condition="Exists('$(PublishDir)$(AssemblyName).exe')">
     <Move SourceFiles="$(PublishDir)$(AssemblyName).exe" DestinationFiles="$(PublishDir)codec.exe" />
   </Target>
 </Project>
