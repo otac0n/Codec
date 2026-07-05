@@ -2,11 +2,12 @@
 
 namespace Codec
 {
-    using System;
     using System.CommandLine;
     using System.CommandLine.Invocation;
     using System.IO;
+    using System.Linq;
     using System.Text.RegularExpressions;
+    using Codec.MGS;
     using Microsoft.Extensions.DependencyInjection;
 
     public partial class EnvironmentOptions
@@ -44,7 +45,10 @@ namespace Codec
 
         private static string GetDefaultSteamAppsPath()
         {
-            var defaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Steam\steamapps\");
+            var steamPaths = WellKnownPaths.SteamPaths;
+            var steam = steamPaths.FirstOrDefault(Directory.Exists) ?? steamPaths[0];
+            var defaultPath = Path.Combine(steam, "steamapps");
+
             try
             {
                 var library = File.ReadAllText(Path.Combine(defaultPath, "libraryfolders.vdf"));
