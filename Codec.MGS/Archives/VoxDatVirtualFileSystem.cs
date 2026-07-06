@@ -36,15 +36,15 @@
         }
 
         protected override string GetEntryName(Entry entry) =>
-            this.Path.Combine($"{entry.Bank}", GetFilename(entry.Slot));
+            $"{entry.Bank}{GetSuffix(entry.Slot)}";
 
-        private static string GetFilename(SlotCode slot) => slot switch
+        private static string GetSuffix(SlotCode slot) => slot switch
         {
-            SlotCode.Audio => $"audio.vag",
-            SlotCode.Caption => $"caption.cap",
-            SlotCode.Demo => $"demo.dat",
-            SlotCode.CaptionJP => $"caption_jp.cap",
-            _ => $"{slot}.bin",
+            SlotCode.Audio => ".vag",
+            SlotCode.Caption => ".cap",
+            SlotCode.Demo => ".demo",
+            SlotCode.CaptionJP => "_jp.cap",
+            _ => $"_{(byte)slot}.bin",
         };
 
         private static SlotCode MergeHeaderGroups(SlotCode slot) => slot switch
