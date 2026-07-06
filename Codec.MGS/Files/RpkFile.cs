@@ -11,9 +11,10 @@ namespace Codec.MGS.Files
     using Codec;
     using Codec.Archives;
     using Codec.Imaging;
+    using DiscUtils.Streams;
     using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;
-    using Entry = (int ImageIndex, int PaletteIndex);
+    using Entry = (int ImageIndex, int PaletteIndex, long Offset, long Length);
 
     internal class RpkFile
     {
@@ -22,7 +23,8 @@ namespace Codec.MGS.Files
             services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
                 if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".rpk", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(parent.Path.GetExtension(parentRelativePath), ".res", StringComparison.OrdinalIgnoreCase))
+                    string.Equals(parent.Path.GetExtension(parentRelativePath), ".res", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(parent.Path.GetExtension(parentRelativePath), ".r", StringComparison.OrdinalIgnoreCase))
                 {
                     using (var stream = parent.File.OpenRead(parentRelativePath))
                     {
@@ -35,9 +37,7 @@ namespace Codec.MGS.Files
                     }
 
                     return (fullPath, parentRelativePath, parent, parentPath) =>
-                    {
-                        return new RpkFileFileSystem(parentRelativePath, parent);
-                    };
+                        new RpkFileFileSystem(parentRelativePath, parent);
                 }
 
                 return null;
@@ -45,15 +45,18 @@ namespace Codec.MGS.Files
 
             services.AddSingleton<FileHandlerResolver<MagickImage>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
-                if (parent is RpkFileFileSystem)
+                if (parent is RpkFileFileSystem &&
+                    string.Equals(parent.Path.GetExtension(parentRelativePath), ".img", StringComparison.OrdinalIgnoreCase))
                 {
-                    return new((fullPath, parentRelativePath, parent, parentPath) =>
-                    {
-                        using var file = parent.File.OpenRead(parentRelativePath);
-                        var name = parent.Path.GetFileNameWithoutExtension(parentRelativePath).Split('_', 2);
-                        var entry = (int.Parse(name[0]), int.Parse(name[1]));
-                        return Load(file, entry);
-                    });
+                    return new(
+                        read: (fullPath, parentRelativePath, parent, parentPath) =>
+                        {
+                            var name = parent.Path.GetFileNameWithoutExtension(parentRelativePath).Split('_', 2);
+                            var entry = (ImageIndex: int.Parse(name[0]), PaletteIndex: int.Parse(name[1]));
+                            using var palette = parent.File.OpenRead($"{entry.PaletteIndex}.pal");
+                            using var file = parent.File.OpenRead(parentRelativePath);
+                            return Load(palette, file);
+                        });
                 }
 
                 return null;
@@ -69,60 +72,57 @@ namespace Codec.MGS.Files
                 var entries = header.PaletteCount + header.ImageCount;
                 var offsets = stream.ReadArrayLittleEndian<int>(entries);
                 var startOffset = Marshal.SizeOf<Header>() + (sizeof(int) * entries);
+                var descriptorSize = Marshal.SizeOf<ItemDescriptor>();
                 var paletteIndex = -1;
                 for (var i = 0; i < entries; i++)
                 {
-                    stream.Position = offsets[i] + startOffset;
+                    var offset = offsets[i] + startOffset;
+                    stream.Position = offset;
                     var desc = stream.ReadLittleEndian<ItemDescriptor>();
                     if (desc.Y == 0 && desc.W == 0 && desc.H == 0)
                     {
                         paletteIndex = i;
+                        yield return (i, paletteIndex, offset, desc.X * sizeof(ushort) + descriptorSize);
                     }
                     else
                     {
                         if (paletteIndex != -1)
                         {
-                            yield return (i, i switch
+                            var palette = i switch
                             {
                                 22 => 46,
                                 27 => 47,
                                 48 => 39,
                                 _ => paletteIndex,
-                            });
+                            };
+                            yield return (i, palette, offset, desc.W * desc.H * sizeof(byte) * 2 + descriptorSize);
                         }
                     }
                 }
             }
 
             protected override string GetEntryName(Entry entry) =>
-                $"{entry.ImageIndex}_{entry.PaletteIndex}.img";
+                entry.ImageIndex == entry.PaletteIndex
+                    ? $"{entry.ImageIndex}.pal"
+                    : $"{entry.ImageIndex}_{entry.PaletteIndex}.img";
 
             protected override Stream Open(Entry entry, FileStreamOptions parentOptions)
             {
-                // HACK: Each sub-file loads the whole file using the filename to locate the entry.
                 FileBase.EnsureReadOnly(parentOptions, "Writing to sub images in .txp files is not supported.");
-                return parent.File.Open(path, parentOptions);
+                var file = parent.File.Open(path, parentOptions);
+                return new OffsetStreamSpan(file, entry.Offset, entry.Length, Ownership.Dispose);
             }
         }
 
-        public static MagickImage? Load(Stream stream, Entry entry)
+        public static MagickImage? Load(Stream paletteStream, Stream imageStream)
         {
-            var header = stream.ReadLittleEndian<Header>();
-            var entries = header.PaletteCount + header.ImageCount;
-            var offsets = stream.ReadArrayLittleEndian<int>(entries);
-            var startOffset = Marshal.SizeOf<Header>() + (sizeof(int) * entries);
-
-            stream.Position = offsets[entry.ImageIndex] + startOffset;
-            var desc = stream.ReadLittleEndian<ItemDescriptor>();
-            var imageOffset = stream.Position;
-
-            stream.Position = offsets[entry.PaletteIndex] + startOffset;
-            var paletteDesc = stream.ReadLittleEndian<ItemDescriptor>();
+            var desc = imageStream.ReadLittleEndian<ItemDescriptor>();
+            var paletteDesc = paletteStream.ReadLittleEndian<ItemDescriptor>();
 
             var writer = new TgaWriter<int, byte>((ushort)(desc.W * 4), desc.H, paletteDesc.X, desc.X, desc.Y);
             for (var x = 0; x < paletteDesc.X; x++)
             {
-                var v = stream.ReadUInt16LittleEndian();
+                var v = paletteStream.ReadUInt16LittleEndian();
                 static int Expand5(int x) => (x << 3) | (x >> 2); // x * 255 / 31
                 writer.WriteColor(
                     ((v & 0x8000) != 0 ? 0xFF : 0x00) << 24 |
@@ -131,11 +131,10 @@ namespace Codec.MGS.Files
                     Expand5((v >> 10) & 0x1F) << 0);
             }
 
-            stream.Position = imageOffset;
             var count = desc.W * desc.H * 2;
             for (var x = 0; x < count; x++)
             {
-                var data = stream.ReadByte();
+                var data = imageStream.ReadByte();
                 writer.WriteIndex((byte)(data & 0x0F));
                 writer.WriteIndex((byte)(data >> 4));
             }
