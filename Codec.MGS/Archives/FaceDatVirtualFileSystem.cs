@@ -214,7 +214,7 @@ namespace Codec.MGS.Archives
 
             source.Seek(imageOffset, SeekOrigin.Begin);
             var dim = source.ReadLittleEndian<ImageDimensions>();
-            var tgaWriter = new TgaWriter<int, byte>((ushort)dim.W, (ushort)dim.H, PaletteCount);
+            var tgaWriter = new TgaWriter<int, byte>((ushort)dim.W, (ushort)dim.H, PaletteCount, dim.U, dim.V);
 
             var imgPosition = source.Position;
 

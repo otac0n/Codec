@@ -79,7 +79,7 @@
             for (var i = 0; i < palette.Length; i++)
             {
                 var v = palette[i];
-                static int Expand5(int x) => (x << 3) | (x >> 2);
+                static int Expand5(int x) => (x << 3) | (x >> 2); // x * 255 / 31
                 tgaWriter.WriteColor(
                     ((v & 0x8000) != 0 ? 0xFF : 0x00) << 24 |
                     Expand5((v >> 0) & 0x1F) << 16 |

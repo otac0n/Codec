@@ -159,7 +159,7 @@ namespace Codec.MGS.Files
 
                 pixelData = Unswizzle(pixelData, width, height, bpp);
 
-                var writer = new TgaWriter<Color, byte>(info.Width, info.Height, 256);
+                var writer = new TgaWriter<Color, byte>(info.Width, info.Height, 256, info.XOffset, info.YOffset);
                 for (var j = 0; j < 256; j++)
                 {
                     writer.WriteColor(colorTable[j]);

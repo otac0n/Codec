@@ -426,7 +426,7 @@ namespace Codec.MGS.Files
             var height = (int)rawH + (centerAddressed ? 1 : 0);
 
             var paletteLength = 1 << bitDepth;
-            var tgaWriter = new TgaWriter<int, byte>((ushort)width, (ushort)height, (ushort)paletteLength);
+            var tgaWriter = new TgaWriter<int, byte>((ushort)width, (ushort)height, (ushort)paletteLength, (short)u, (short)v);
 
             if (info.RegisterInfo2.CPSM != PixelStorageMode.PSMCT32)
             {

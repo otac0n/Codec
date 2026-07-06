@@ -13,12 +13,12 @@ namespace Codec.Imaging
         private static readonly int ColorSize = Marshal.SizeOf<TColor>();
         private static readonly int IndexSize = Marshal.SizeOf<TIndex>();
 
-        public TgaWriter(ushort width, ushort height, ushort paletteLength)
-            : this(new(width * height + paletteLength * ColorSize + Marshal.SizeOf<TgaHeader>()), width, height, paletteLength)
+        public TgaWriter(ushort width, ushort height, ushort paletteLength, short xOffset = 0, short yOffset = 0)
+            : this(new(width * height + paletteLength * ColorSize + Marshal.SizeOf<TgaHeader>()), width, height, paletteLength, xOffset, yOffset)
         {
         }
 
-        public TgaWriter(MemoryStream tgaStream, ushort width, ushort height, ushort paletteLength)
+        public TgaWriter(MemoryStream tgaStream, ushort width, ushort height, ushort paletteLength, short xOffset = 0, short yOffset = 0)
         {
             tgaStream.SetLength(tgaStream.Position + width * height + paletteLength * ColorSize + Marshal.SizeOf<TgaHeader>());
             tgaStream.WriteLittleEndian(new TgaHeader
@@ -27,6 +27,8 @@ namespace Codec.Imaging
                 ImageType = 1,
                 CMapLength = paletteLength,
                 CMapDepth = (byte)(ColorSize * 8),
+                XOffset = xOffset,
+                YOffset = yOffset,
                 Width = width,
                 Height = height,
                 PixelDepth = (byte)(IndexSize * 8),

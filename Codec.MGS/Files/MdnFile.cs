@@ -96,6 +96,7 @@
                         2 => TextureType.Specular,
                         3 => TextureType.Metalness,
                         4 => TextureType.Reflection,
+                        5 => TextureType.Emissive,
                     };
 
                     if (material.Texture[tx] < textures.Length)
@@ -551,7 +552,7 @@
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct MdnMaterial
         {
-            public MaterialFlags Flags;
+            public ushort Flags;
             public ushort Shader;
             public uint Id;
             public uint TextureCount;

@@ -119,11 +119,11 @@ namespace Codec.MGS.Files
             stream.Position = offsets[entry.PaletteIndex] + startOffset;
             var paletteDesc = stream.ReadLittleEndian<ItemDescriptor>();
 
-            var writer = new TgaWriter<int, byte>((ushort)(desc.W * 4), desc.H, paletteDesc.X);
+            var writer = new TgaWriter<int, byte>((ushort)(desc.W * 4), desc.H, paletteDesc.X, desc.X, desc.Y);
             for (var x = 0; x < paletteDesc.X; x++)
             {
                 var v = stream.ReadUInt16LittleEndian();
-                static int Expand5(int x) => (x << 3) | (x >> 2);
+                static int Expand5(int x) => (x << 3) | (x >> 2); // x * 255 / 31
                 writer.WriteColor(
                     ((v & 0x8000) != 0 ? 0xFF : 0x00) << 24 |
                     Expand5((v >> 0) & 0x1F) << 16 |
