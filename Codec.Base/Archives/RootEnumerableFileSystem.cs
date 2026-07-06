@@ -42,7 +42,11 @@
                     {
                         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                         {
-                            yield return "/";
+                            foreach (var p in base.EnumerateDirectories(this.FileSystem.Path.DirectorySeparatorChar.ToString()))
+                            {
+                                yield return p;
+                            }
+
                             yield break;
                         }
 

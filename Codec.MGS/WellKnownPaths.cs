@@ -2,6 +2,8 @@
 
 namespace Codec.MGS
 {
+    using System.IO;
+
     public static class WellKnownPaths
     {
         public static readonly string CDsPath = "system/roms";
@@ -10,8 +12,6 @@ namespace Codec.MGS
         public static readonly string VRCDPath = CDsPath + "/mgs-vr-missions-ripped-washed.bin";
         public static readonly string StageDirPath = @"MGS\STAGE.DIR";
         public static readonly string FaceDatPath = @"MGS\FACE.DAT";
-        public static readonly string AllDataBin = @"common\MGS1\windata\alldata.bin";
-        public static readonly string MGS2Texture = @"common\MGS2\textures\";
-        public static readonly string MGS2Assets = @"common\MGS2\assets\";
+        public static readonly string AllDataBin = Path.Combine("common", "MGS1", "windata", "alldata.bin");
     }
 }

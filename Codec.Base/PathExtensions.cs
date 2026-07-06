@@ -17,8 +17,15 @@ namespace Codec
         [GeneratedRegex(@"(?<=(?<![/\\])[/\\])[/\\]*(?!$)")]
         private static partial Regex SegmentSplitRegex();
 
-        public static string CombineIgnoringAbsolute(this IPath path, string prefix, string suffix) =>
-            path.Combine(prefix.TrimEnd(Separators), suffix.TrimStart(Separators));
+        public static string CombineIgnoringAbsolute(this IPath path, string prefix, string suffix)
+        {
+            if (string.IsNullOrEmpty(prefix))
+            {
+                return suffix;
+            }
+
+            return path.Combine(prefix.TrimEnd(Separators), suffix.TrimStart(Separators));
+        }
 
         public static string CombineWithSeparator(this IPath path, char separator, string prefix, string suffix)
         {
