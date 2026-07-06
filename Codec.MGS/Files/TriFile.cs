@@ -40,12 +40,12 @@ namespace Codec.MGS.Files
             {
                 if (parent is TriFileFileSystem)
                 {
-                    return (fullPath, parentRelativePath, parent, parentPath) =>
+                    return new((fullPath, parentRelativePath, parent, parentPath) =>
                     {
                         using var file = parent.File.OpenRead(parentRelativePath);
                         var id = Convert.ToUInt32(parent.Path.GetFileNameWithoutExtension(parentRelativePath), 16);
                         return Load(file, id);
-                    };
+                    });
                 }
 
                 return null;

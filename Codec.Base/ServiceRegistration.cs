@@ -40,7 +40,7 @@ namespace Codec
                where filter != null
                let resolver = filter(services, path, subPath, fs, fsPath)
                where resolver is not null
-               let resolved = resolver(path, subPath, fs, fsPath)
+               let resolved = resolver.Read(path, subPath, fs, fsPath)
                where resolved is not null
                select resolved).FirstOrDefault();
     }

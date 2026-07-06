@@ -21,11 +21,11 @@
             {
                 if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".kmd", StringComparison.OrdinalIgnoreCase))
                 {
-                    return (fullPath, parentRelativePath, parent, parentPath) =>
+                    return new((fullPath, parentRelativePath, parent, parentPath) =>
                     {
                         using var file = parent.File.OpenRead(parentRelativePath);
                         return (RenderableScene)FromStream(file);
-                    };
+                    });
                 }
 
                 return null;

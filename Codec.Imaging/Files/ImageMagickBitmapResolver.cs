@@ -46,11 +46,11 @@
 
                 if (fileInfo != null)
                 {
-                    return (fullPath, parentRelativePath, parent, parentPath) =>
+                    return new((fullPath, parentRelativePath, parent, parentPath) =>
                     {
                         using var input = parent.File.OpenRead(parentRelativePath);
                         return new MagickImage(input, readSettings);
-                    };
+                    });
                 }
 
                 return null;

@@ -25,7 +25,7 @@
                     var extension = parent.Path.GetExtension(parentRelativePath);
                     if (supportedExtensions.Contains(extension))
                     {
-                        return (fullPath, parentRelativePath, parent, parentPath) =>
+                        return new((fullPath, parentRelativePath, parent, parentPath) =>
                         {
                             using var context = new AssimpContext();
                             using var input = parent.File.OpenRead(parentRelativePath);
@@ -41,7 +41,7 @@
                             {
                                 return null;
                             }
-                        };
+                        });
                     }
 
                     return null;

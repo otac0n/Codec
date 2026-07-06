@@ -18,12 +18,12 @@
                 if (string.Equals(ext, ".cda", StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(ext, ".cdda", StringComparison.OrdinalIgnoreCase))
                 {
-                    return (fullPath, parentRelativePath, parent, parentPath) =>
+                    return new((fullPath, parentRelativePath, parent, parentPath) =>
                     {
                         var input = parent.File.OpenRead(parentRelativePath);
                         var headerStream = MakeHeader((int)input.Length);
                         return (AudioStream)new ConcatStream(Ownership.Dispose, MappedStream.FromStream(headerStream, Ownership.Dispose), MappedStream.FromStream(input, Ownership.Dispose));
-                    };
+                    });
                 }
 
                 return null;

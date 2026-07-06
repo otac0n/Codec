@@ -31,11 +31,11 @@
                         return null;
                     }
 
-                    return (fullPath, parentRelativePath, parent, parentPath) =>
+                    return new((fullPath, parentRelativePath, parent, parentPath) =>
                     {
                         using var file = parent.File.OpenRead(parentRelativePath);
                         return (RenderableScene)FromStream(serviceProvider.GetRequiredService<NestedFileSystemManager>(), fullPath, file);
-                    };
+                    });
                 }
 
                 return null;

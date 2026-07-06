@@ -19,11 +19,11 @@
             {
                 if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".pll", StringComparison.OrdinalIgnoreCase))
                 {
-                    return (fullPath, parentRelativePath, parent, parentPath) =>
+                    return new((fullPath, parentRelativePath, parent, parentPath) =>
                     {
                         using var file = parent.File.OpenRead(parentRelativePath);
                         return Load(file);
-                    };
+                    });
                 }
 
                 return null;

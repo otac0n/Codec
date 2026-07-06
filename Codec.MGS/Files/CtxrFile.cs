@@ -23,11 +23,11 @@ namespace Codec.MGS.Files
             {
                 if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".ctxr", StringComparison.OrdinalIgnoreCase))
                 {
-                    return (fullPath, parentRelativePath, parent, parentPath) =>
+                    return new((fullPath, parentRelativePath, parent, parentPath) =>
                     {
                         using var input = parent.File.OpenRead(parentRelativePath);
                         return Load(input);
-                    };
+                    });
                 }
 
                 return null;

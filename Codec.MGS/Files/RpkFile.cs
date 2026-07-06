@@ -47,13 +47,13 @@ namespace Codec.MGS.Files
             {
                 if (parent is RpkFileFileSystem)
                 {
-                    return (fullPath, parentRelativePath, parent, parentPath) =>
+                    return new((fullPath, parentRelativePath, parent, parentPath) =>
                     {
                         using var file = parent.File.OpenRead(parentRelativePath);
                         var name = parent.Path.GetFileNameWithoutExtension(parentRelativePath).Split('_', 2);
                         var entry = (int.Parse(name[0]), int.Parse(name[1]));
                         return Load(file, entry);
-                    };
+                    });
                 }
 
                 return null;
