@@ -9,6 +9,8 @@
     using Codec.UI.Avalonia.ViewModels;
     using Codec.UI.Avalonia.Views;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Logging;
+    using System.Diagnostics;
 
     sealed class Program
     {
@@ -27,6 +29,14 @@
             void Browse(InvocationContext context)
             {
                 var services = new ServiceCollection();
+                services.AddLogging(builder =>
+                {
+                    builder.AddConsole();
+                    if (Debugger.IsAttached)
+                    {
+                        builder.AddDebug();
+                    }
+                });
 
                 Codec.UI.ServiceRegistration.Register(context, services);
                 services.AddTransient<FileExportService>();
@@ -59,9 +69,6 @@
                 {
                     RenderingMode = [X11RenderingMode.Glx]
                 })
-#if DEBUG
-                .WithDeveloperTools()
-#endif
                 .WithInterFont()
                 .LogToTrace();
     }

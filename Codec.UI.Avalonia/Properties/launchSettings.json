@@ -1,0 +1,16 @@
+{
+  "profiles": {
+    "Codec.UI.Avalonia (Win64)": {
+      "commandName": "Project"
+    },
+    "Codec.UI.Avalonia (Ubuntu)": {
+      "commandName": "WSL2",
+      "distributionName": "Ubuntu",
+      "environmentVariables": {
+        "LIBGL_ALWAYS_SOFTWARE": "0",
+        "GALLIUM_DRIVER": "d3d12",
+        "MESA_D3D12_DEFAULT_TO_EXPERIMENTAL": "1"
+      }
+    }
+  }
+}
