@@ -110,6 +110,7 @@ namespace Codec.Archives
             count = (int)Math.Min(count, this.Length - this.position);
             this.underlying.Seek(this.position + this.offset, SeekOrigin.Begin);
             this.underlying.Write(buffer, offset, count);
+            this.position += count;
         }
     }
 }
