@@ -28,6 +28,7 @@ namespace Codec.MGS
             MgzFileSystemHandler.Register(services);
 
             BrfDatVirtualFileSystem.Register(services);
+            DarVirtualFileSystem.Register(services);
             DldVirtualFileSystem.Register(services);
             DlzVirtualFileSystem.Register(services);
             FaceDatVirtualFileSystem.Register(services);
