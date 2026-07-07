@@ -156,6 +156,16 @@
             return this.serviceProvider.Resolve<T>(path, parentRelativePath, parent, parentPath);
         }
 
+        public Action<T>? ResolveWriter<T>(string path)
+        {
+            if (!this.TryFindParentFileSystem(path, out var parentRelativePath, out var parent, out var parentPath))
+            {
+                return default;
+            }
+
+            return this.serviceProvider.ResolveWriter<T>(path, parentRelativePath, parent, parentPath);
+        }
+
         private IEnumerable<Entry> EnumerateEntries(string path)
         {
             if (this.TryFindParentFileSystem(path, out var parentRelativePath, out var parent, out var parentPath, asFile: false))
