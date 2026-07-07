@@ -44,6 +44,15 @@ To view Master Collection resources, you will need to have a copy of the game on
 |![MGS3](assets/mgs3.png)|![MGS4](assets/mgs4.png)|
 |![MG1](assets/mg1.png)|![MGSVR](assets/mgsvr.png)|
 
+Running on Linux
+----------------
+
+```bash
+sudo apt install -y libassimp-dev libmagickwand-dev mesa-utils
+sudo apt-get install -y dotnet-runtime-9.0
+chmod +x Codec.UI.Avalonia
+```
+
 Usage
 -----
 
