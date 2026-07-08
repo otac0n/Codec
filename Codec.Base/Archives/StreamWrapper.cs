@@ -2,7 +2,6 @@
 
 namespace Codec.Archives
 {
-    using System;
     using System.IO;
     using System.IO.Abstractions;
 
@@ -11,12 +10,9 @@ namespace Codec.Archives
     /// </summary>
     /// <param name="stream">The stream with a filename.</param>
     /// <param name="path">The path from which the file can (at one point) be acquired.</param>
-    /// <param name="handle">The file share handle.</param>
     /// <param name="isAsync">A value indicating whether or not the underlying stream was opened in an async mode.</param>
-    public class StreamWrapper(Stream stream, string path, IDisposable handle, bool isAsync)
+    public class StreamWrapper(Stream stream, string path, bool isAsync)
         : FileSystemStream(stream, path, isAsync)
     {
-        /// <inheritdoc/>
-        protected override void Dispose(bool disposing) => handle.Dispose();
     }
 }

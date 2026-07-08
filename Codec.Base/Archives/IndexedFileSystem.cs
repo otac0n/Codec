@@ -127,9 +127,10 @@
                         var @lock = this.locks.Acquire(entry, options.Access, options.Share);
                         var parentOptions = GetParentOptions(options);
                         return new StreamWrapper(
-                            parent.Open(entry, parentOptions),
+                            new DisposingStream(
+                                parent.Open(entry, parentOptions),
+                                @lock),
                             canonicalPath,
-                            @lock,
                             (options.Options & FileOptions.Asynchronous) == FileOptions.Asynchronous);
                     }
                 }

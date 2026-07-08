@@ -131,9 +131,10 @@
 
             public override FileSystemStream Open(string path, FileStreamOptions options) =>
                 new StreamWrapper(
-                    parent.underlying.OpenFile(path, options.Mode, options.Access),
+                    new DisposingStream(
+                        parent.underlying.OpenFile(path, options.Mode, options.Access),
+                        this.locks.Acquire(path, options.Access, options.Share)),
                     path,
-                    this.locks.Acquire(path, options.Access, options.Share),
                     (options.Options & FileOptions.Asynchronous) == FileOptions.Asynchronous);
 
             public override void SetAttributes(string path, FileAttributes fileAttributes) => parent.underlying.SetAttributes(path, fileAttributes);
