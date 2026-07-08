@@ -23,7 +23,7 @@
         public override bool CanSeek => true;
 
         /// <inheritdoc/>
-        public override bool CanWrite => false;
+        public override bool CanWrite => true;
 
         /// <inheritdoc/>
         public override long Length
@@ -129,12 +129,37 @@
         }
 
         /// <inheritdoc/>
-        public override void SetLength(long value) =>
-            throw new NotSupportedException($"{nameof(CachingSeekableStream)} is read-only.");
+        public override void SetLength(long value)
+        {
+            this.EnsureCachedTo(value);
+            this.innerExhausted = true;
+            knownLength = null;
+            this.cache.SetLength(value);
+            this.position = Math.Min(this.position, value);
+        }
 
         /// <inheritdoc/>
-        public override void Write(byte[] buffer, int offset, int count) =>
-            throw new NotSupportedException($"{nameof(CachingSeekableStream)} is read-only.");
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            ObjectDisposedException.ThrowIf(this.disposed, this);
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            if (offset < 0 || count < 0 || offset + count > buffer.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count));
+            }
+
+            if (count == 0)
+            {
+                return;
+            }
+
+            this.EnsureCachedTo(this.position + count);
+
+            this.cache.Position = this.position;
+            this.cache.Write(buffer, offset, count);
+            this.position += count;
+        }
 
         /// <summary>
         /// Reads from the inner stream, appending to the cache, until the cache holds at least
@@ -178,6 +203,17 @@
             }
 
             base.Dispose(disposing);
+        }
+
+        public static CachingSeekableStream Wrap(Stream stream) =>
+            stream is CachingSeekableStream cachingStream
+                ? cachingStream
+                : new CachingSeekableStream(stream);
+
+        public void ReleaseInnerStream()
+        {
+            this.EnsureFullyCached();
+            this.inner.Dispose();
         }
     }
 }
