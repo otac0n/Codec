@@ -10,9 +10,11 @@
     public abstract class IndexedFileSystem<TEntry> : FileSystemBase
         where TEntry : notnull
     {
+        protected Dictionary<string, TEntry>? index;
+
         private readonly StringComparison comparison;
 
-        protected Dictionary<string, TEntry> Index => field ??= this.ReadIndex().ToDictionary(e => this.CanonicalizePath(this.GetEntryName(e)), StringComparer.FromComparison(this.comparison));
+        protected Dictionary<string, TEntry> Index => index ??= this.ReadIndex().ToDictionary(e => this.CanonicalizePath(this.GetEntryName(e)), StringComparer.FromComparison(this.comparison));
 
         protected IndexedFileSystem(StringComparison comparison = StringComparison.Ordinal)
         {
@@ -118,6 +120,8 @@
 
             public override FileSystemStream Open(string path, FileStreamOptions options)
             {
+                ValidateArguments(options.Mode, options.Access, options.Share, options.BufferSize, options.Options, options.PreallocationSize);
+
                 if (!PathExtensions.EndsWithSlash(path))
                 {
                     var canonicalPath = parent.CanonicalizePath(path);
@@ -137,6 +141,115 @@
 
                 throw new FileNotFoundException($"File '{path}' not found in archive.");
             }
+        }
+
+        protected static void ValidateArguments(FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
+        {
+            var tempshare = share & ~FileShare.Inheritable;
+            ArgumentOutOfRangeException.ThrowIfLessThan((int)mode, (int)FileMode.CreateNew, nameof(mode));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((int)mode, (int)FileMode.Append, nameof(mode));
+            ArgumentOutOfRangeException.ThrowIfLessThan((int)access, (int)FileAccess.Read, nameof(access));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((int)access, (int)FileAccess.ReadWrite, nameof(access));
+            ArgumentOutOfRangeException.ThrowIfLessThan((int)tempshare, (int)FileShare.None, nameof(share));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((int)tempshare, (int)(FileShare.ReadWrite | FileShare.Delete), nameof(share));
+            ArgumentOutOfRangeException.ThrowIfLessThan(bufferSize, 0);
+            ArgumentOutOfRangeException.ThrowIfLessThan(preallocationSize, 0);
+
+            const FileOptions NoBuffering = (FileOptions)0x20000000;
+            const FileOptions BackupOrRestore = (FileOptions)0x02000000;
+            const FileOptions ValidFileOptions = FileOptions.WriteThrough | FileOptions.Asynchronous | FileOptions.RandomAccess
+                | FileOptions.DeleteOnClose | FileOptions.SequentialScan | FileOptions.Encrypted
+                | NoBuffering | BackupOrRestore;
+
+            if (options != FileOptions.None && (options & ~ValidFileOptions) != 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(options), "Invalid file options.");
+            }
+
+            if ((access & FileAccess.Write) == 0)
+            {
+                if (mode is FileMode.Truncate or FileMode.CreateNew or FileMode.Create or FileMode.Append)
+                {
+                    throw new ArgumentException("Invalid file mode and file access combination.", nameof(access));
+                }
+            }
+
+            if ((access & FileAccess.Read) != 0 && mode == FileMode.Append)
+            {
+                throw new ArgumentException("Invalid append mode with read access.", nameof(access));
+            }
+
+            if (preallocationSize > 0)
+            {
+                if ((access & FileAccess.Write) == 0)
+                {
+                    throw new ArgumentException("Invalid preallocation size with write access.", nameof(access));
+                }
+
+                if (mode is not FileMode.Create and not FileMode.CreateNew)
+                {
+                    throw new ArgumentException("Invalid preallocation size with existing file.", nameof(mode));
+                }
+            }
+        }
+
+        protected static Stream CreateStreamWrapper(FileStreamOptions parentOptions, Func<FileStreamOptions, Stream> value, Action<Stream> onClose)
+        {
+            // Assumes the file exists. Assume valid combinations of FileMode, FileAccess, and FileShare are passed in.
+            Stream? stream = null;
+            switch (parentOptions.Mode)
+            {
+                case FileMode.CreateNew:
+                    throw new IOException("File already exists.");
+
+                case FileMode.Open:
+                case FileMode.OpenOrCreate:
+                    stream = value(MakeReadOnly(parentOptions));
+                    if ((parentOptions.Access & FileAccess.Write) != 0)
+                    {
+                        var cached = CachingSeekableStream.Wrap(stream);
+                        stream = new DisposingStream(cached, x =>
+                        {
+                            cached.ReleaseInnerStream();
+                            onClose(x);
+                        });
+                    }
+
+                    break;
+
+                case FileMode.Create:
+                case FileMode.Truncate:
+                    stream = new MemoryStream((int)parentOptions.PreallocationSize);
+                    stream = new DisposingStream(stream, onClose);
+                    break;
+
+                case FileMode.Append:
+                    stream = value(parentOptions);
+                    stream.Position = stream.Length;
+                    break;
+            }
+
+            return stream!;
+        }
+
+        private static FileStreamOptions MakeReadOnly(FileStreamOptions parentOptions)
+        {
+            var newOptions = new FileStreamOptions()
+            {
+                Access = parentOptions.Access & ~FileAccess.Write,
+                Mode = parentOptions.Mode,
+                Share = parentOptions.Share,
+                BufferSize = parentOptions.BufferSize,
+                Options = parentOptions.Options,
+                PreallocationSize = parentOptions.PreallocationSize,
+            };
+
+            if (!OperatingSystem.IsWindows())
+            {
+                newOptions.UnixCreateMode = parentOptions.UnixCreateMode;
+            }
+
+            return newOptions;
         }
     }
 }
