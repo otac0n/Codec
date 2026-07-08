@@ -59,8 +59,31 @@ namespace Codec.MGS.Archives
 
         protected override Stream Open(Entry entry, FileStreamOptions parentOptions)
         {
-            FileBase.EnsureReadOnly(parentOptions, "Writing to sub files in .dar files is not currently supported.");
-            return new OffsetStreamSpan(parent.File.Open(parentRelativePath, parentOptions), entry.Offset, entry.Length, Ownership.Dispose);
+            return CreateStreamWrapper(
+                parentOptions,
+                options => new OffsetStreamSpan(parent.File.Open(parentRelativePath, options), entry.Offset, entry.Length, Ownership.Dispose),
+                updated =>
+                {
+                    using var parentStream = parent.File.Open(parentRelativePath, FileMode.Open, FileAccess.ReadWrite);
+
+                    // Read everything after this entry into tail.
+                    using var tail = new MemoryStream();
+                    var oldEnd = entry.Offset + entry.Length + 1;
+                    parentStream.Position = oldEnd;
+                    parentStream.CopyTo(tail);
+
+                    // Restore entry and tail at current entry location.
+                    parentStream.Position = entry.Offset - sizeof(uint);
+                    parentStream.Write(BitConverter.GetBytes(checked((uint)updated.Length)));
+                    updated.Position = 0;
+                    updated.CopyTo(parentStream);
+                    parentStream.WriteByte(0);
+                    tail.Position = 0;
+                    tail.CopyTo(parentStream);
+                    parentStream.SetLength(parentStream.Position);
+
+                    this.index = null;
+                });
         }
     }
 }
