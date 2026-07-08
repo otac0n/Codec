@@ -53,7 +53,7 @@
             public FileShare Share { get; } = share;
 
 #if DEBUG
-            public StackTrace Origin { get; } = new StackTrace();
+            public StackTrace Origin { get; } = new StackTrace(5);
 #endif
 
             public void Dispose()
