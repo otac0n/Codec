@@ -12,6 +12,8 @@ namespace Codec.Imaging
     {
         private static readonly int ColorSize = Marshal.SizeOf<TColor>();
         private static readonly int IndexSize = Marshal.SizeOf<TIndex>();
+        private readonly short xOffset;
+        private readonly short yOffset;
 
         public TgaWriter(ushort width, ushort height, ushort paletteLength, short xOffset = 0, short yOffset = 0)
             : this(new(width * height + paletteLength * ColorSize + Marshal.SizeOf<TgaHeader>()), width, height, paletteLength, xOffset, yOffset)
@@ -35,6 +37,8 @@ namespace Codec.Imaging
                 ImageDescriptor = 0x28,
             });
             this.TgaStream = tgaStream;
+            this.xOffset = xOffset;
+            this.yOffset = yOffset;
         }
 
         public MemoryStream TgaStream { get; }
@@ -52,7 +56,12 @@ namespace Codec.Imaging
         public MagickImage ToMagickImage()
         {
             this.TgaStream.Position = 0;
-            return new MagickImage(this.TgaStream, MagickFormat.Tga);
+            var image = new MagickImage(this.TgaStream, MagickFormat.Tga);
+            var page = image.Page;
+            page.X = this.xOffset;
+            page.Y = this.yOffset;
+            image.Page = page;
+            return image;
         }
     }
 
