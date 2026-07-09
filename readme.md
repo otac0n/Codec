@@ -11,14 +11,16 @@ Support for the following formats is implemented:
   - Generic
     - .iso Images
     - .bin/cue Images
-    - .zip Files
+    - .zip Files [read & write]
   - Metal Gear Specific
     - M2 Archive (Master Collection v1)
       - .psb.m Packaging Format
+    - .dar Archives (MGS1) [read & write]
     - .sdt Sound Packs (MGS2)
     - .sdx Sound Packs (MGS2)
     - STAGE.DAT Archive (MGS1 & MGSVR)
     - FACE.DAT Archive (MGS1)
+    - DEMO.DAT Archive (MGS1)
     - .brf Briefing Files (MGS1 & MGSVR)
     - .slot Data Files (MGS4)
 - Files
@@ -35,6 +37,8 @@ Support for the following formats is implemented:
     - .tri Texture Files (MGS2 & MGS3)
     - .ctxr Texture Files (MGS2 & MGS3)
     - .txp Texture Files (MGS PW)
+    - .mdn Model Files (MGS4)
+    - .rpk Texture Files (MGS1) [read & write]
 
 To view Master Collection resources, you will need to have a copy of the game on your system.  The tool will automatically detect the Steam location of the game, but you can browse to any location as desired.
 
