@@ -139,5 +139,53 @@ namespace Codec.Services
                 await input.CopyToAsync(output).ConfigureAwait(false);
             }
         }
+
+        public async Task ReplaceSingleAsync(Entry entry, Func<string, EntryType, string?, Task<string?>> pickReplacement)
+        {
+            var type = detector.Detect(entry);
+            var path = await pickReplacement(fsm.GetFileName(entry.Path), type, detector[type]).ConfigureAwait(false);
+            if (path is null)
+            {
+                return;
+            }
+
+            if (!string.Equals(Path.GetExtension(path), fsm.GetExtension(entry.Path), StringComparison.OrdinalIgnoreCase))
+            {
+                switch (detector.Detect(entry))
+                {
+                    case EntryType.Image:
+                        if (fsm.Resolve<MagickImage>(path) is MagickImage image)
+                        {
+                            if (fsm.ResolveWriter<MagickImage>(entry.Path) is Action<MagickImage> writer)
+                            {
+                                writer(image);
+                                return;
+                            }
+                        }
+
+                        break;
+
+                    case EntryType.Audio:
+                        {
+                        }
+
+                        break;
+
+                    case EntryType.Model:
+                        {
+                        }
+
+                        break;
+                }
+            }
+
+            using var input = File.OpenRead(path);
+            using var output = fsm.Open(path, new()
+            {
+                Mode = FileMode.Open,
+                Access = FileAccess.Write,
+            });
+            await input.CopyToAsync(output).ConfigureAwait(false);
+        }
     }
 }

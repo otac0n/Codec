@@ -29,6 +29,14 @@
             Height="{Binding $parent[TemplatedControl].FontSize}"/>
         </MenuItem.Icon>
       </MenuItem>
+      <MenuItem Header="Replace..." IsEnabled="{Binding CanReplace}" Command="{Binding ReplaceCommand}" CommandParameter="{Binding $parent[Window]}">
+        <MenuItem.Icon>
+          <iconPacks:PackIconFontAwesome
+            Kind="FileImportSolid"
+            Width="{Binding $parent[TemplatedControl].FontSize}"
+            Height="{Binding $parent[TemplatedControl].FontSize}"/>
+        </MenuItem.Icon>
+      </MenuItem>
       <MenuItem Header="Copy Path" IsEnabled="{Binding CanCopyPath}" Command="{Binding CopyPath}" CommandParameter="{Binding $parent[Window]}">
         <MenuItem.Icon>
           <iconPacks:PackIconFontAwesome

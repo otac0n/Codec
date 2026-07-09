@@ -36,6 +36,7 @@
             this.entryContextMenu = new ContextMenuStrip(this.components);
             this.previewToolStripMenuItem = new ToolStripMenuItem();
             this.saveAsToolStripMenuItem = new ToolStripMenuItem();
+            this.replaceToolStripMenuItem = new ToolStripMenuItem();
             this.copyPathToolStripMenuItem = new ToolStripMenuItem();
             this.fileTypes = new ImageList(this.components);
             this.topToolStrip = new ToolStrip();
@@ -50,6 +51,7 @@
             this.lowerStatusStrip = new StatusStrip();
             this.saveSelectedDialog = new SaveFileDialog();
             this.saveToFolderDialog = new FolderBrowserDialog();
+            this.openFileDialog = new OpenFileDialog();
             ((System.ComponentModel.ISupportInitialize)this.splitContainer).BeginInit();
             this.splitContainer.Panel1.SuspendLayout();
             this.splitContainer.Panel2.SuspendLayout();
@@ -113,9 +115,9 @@
             // entryContextMenu
             // 
             this.entryContextMenu.ImageScalingSize = new Size(24, 24);
-            this.entryContextMenu.Items.AddRange(new ToolStripItem[] { this.previewToolStripMenuItem, this.saveAsToolStripMenuItem, this.copyPathToolStripMenuItem });
+            this.entryContextMenu.Items.AddRange(new ToolStripItem[] { this.previewToolStripMenuItem, this.saveAsToolStripMenuItem, this.replaceToolStripMenuItem, this.copyPathToolStripMenuItem });
             this.entryContextMenu.Name = "entryContextMenu";
-            this.entryContextMenu.Size = new Size(249, 133);
+            this.entryContextMenu.Size = new Size(249, 165);
             this.entryContextMenu.Closed += this.EntryContextMenu_Closed;
             // 
             // previewToolStripMenuItem
@@ -133,6 +135,14 @@
             this.saveAsToolStripMenuItem.Size = new Size(248, 32);
             this.saveAsToolStripMenuItem.Text = "Save As...";
             this.saveAsToolStripMenuItem.Click += this.SaveButton_Click;
+            // 
+            // replaceToolStripMenuItem
+            // 
+            this.replaceToolStripMenuItem.Image = Properties.Resources.FontAwesome_FileImportSolid_20x20;
+            this.replaceToolStripMenuItem.Name = "replaceToolStripMenuItem";
+            this.replaceToolStripMenuItem.Size = new Size(248, 32);
+            this.replaceToolStripMenuItem.Text = "Replace...";
+            this.replaceToolStripMenuItem.Click += this.ReplaceToolStripMenuItem_Click;
             // 
             // copyPathToolStripMenuItem
             // 
@@ -248,6 +258,10 @@
             this.saveToFolderDialog.InitialDirectory = "%USERPROFILE%\\Downloads";
             this.saveToFolderDialog.RootFolder = Environment.SpecialFolder.MyComputer;
             // 
+            // openFileDialog
+            // 
+            this.openFileDialog.FileName = "openFileDialog";
+            // 
             // Browser
             // 
             this.AutoScroll = true;
@@ -291,5 +305,7 @@
         private ToolStripButton forwardButton;
         private ToolStripMenuItem previewToolStripMenuItem;
         private ToolStripMenuItem copyPathToolStripMenuItem;
+        private ToolStripMenuItem replaceToolStripMenuItem;
+        private OpenFileDialog openFileDialog;
     }
 }

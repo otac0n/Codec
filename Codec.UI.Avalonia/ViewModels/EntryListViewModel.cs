@@ -56,6 +56,10 @@
         private bool canSave;
 
         [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(ReplaceCommand))]
+        private bool canReplace;
+
+        [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(CopyPathCommand))]
         private bool canCopyPath;
 
@@ -77,10 +81,12 @@
 
         private void ContextChanged(object? sender, EventArgs e)
         {
+            var onlyFiles = this.ContextEntries.All(i => i.Entry.CanOpen);
             this.CanPreview = this.ContextEntries.Count == 1;
             this.PreviewIsOpen = this.ContextEntries.Any(i => i.Entry.CanEnumerateEntries);
             this.CanCopyPath = this.ContextEntries.Count >= 1;
-            this.CanSave = this.ContextEntries.Count >= 1 && this.ContextEntries.All(i => i.Entry.CanOpen);
+            this.CanSave = this.ContextEntries.Count >= 1 && onlyFiles;
+            this.CanReplace = this.ContextEntries.Count == 1 && onlyFiles;
         }
 
         public void LoadEntries(Entry directory)
@@ -124,6 +130,15 @@
             else
             {
                 await this.fileSaveService.SaveMultipleAsync(owner, this.ContextEntries).ConfigureAwait(false);
+            }
+        }
+
+        [RelayCommand(CanExecute = nameof(CanReplace))]
+        private async Task ReplaceAsync(Window owner)
+        {
+            if (this.ContextEntries is [EntryItem item])
+            {
+                await this.fileSaveService.ReplaceSingleAsync(owner, item).ConfigureAwait(false);
             }
         }
 

@@ -46,5 +46,24 @@
                 async _ => await new ConfirmOverwriteDialog().ShowDialog<bool?>(owner).ConfigureAwait(false) == true
             ).ConfigureAwait(false);
         }
+
+        public async Task ReplaceSingleAsync(Window owner, EntryItem item)
+        {
+            await exportService.ReplaceSingleAsync(item.Entry, async (suggestedFileName, type, supportedPatterns) =>
+            {
+                var allFiles = new FilePickerFileType("All Files") { Patterns = ["*.*"] };
+                var options = new FilePickerOpenOptions
+                {
+                    Title = "Open File",
+                    AllowMultiple = false,
+                    FileTypeFilter = supportedPatterns is string supportedTypes
+                        ? [new FilePickerFileType($"{type} Files") { Patterns = supportedTypes.Split(';') }, allFiles]
+                        : [allFiles],
+                };
+
+                var files = await owner.StorageProvider.OpenFilePickerAsync(options).ConfigureAwait(false);
+                return files?.SingleOrDefault()?.Path.LocalPath;
+            }).ConfigureAwait(false);
+        }
     }
 }

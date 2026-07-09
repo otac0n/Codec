@@ -280,6 +280,22 @@ namespace Codec.UI.WinForms
             }
         }
 
+        private async void ReplaceToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (this.SelectedEntries is [Entry entry])
+            {
+                await this.exportService.ReplaceSingleAsync(entry, (suggestedFileName, type, supportedPatterns) =>
+                {
+                    this.openFileDialog.Filter = supportedPatterns is string supportedTypes
+                        ? $"{type} Files|{supportedTypes}|All Files|*.*"
+                        : "All Files|*.*";
+
+                    var result = this.openFileDialog.ShowDialog();
+                    return Task.FromResult(result == DialogResult.OK ? this.openFileDialog.FileName : null);
+                });
+            }
+        }
+
         private void ShowChild(Form childForm)
         {
             childForm.Owner = this;
@@ -318,10 +334,12 @@ namespace Codec.UI.WinForms
         private void UpdateContextMenu()
         {
             var selectedEntries = this.SelectedEntries;
+            var onlyFiles = selectedEntries.All(e => e.CanOpen);
             this.previewToolStripMenuItem.Enabled = selectedEntries.Count == 1;
             this.previewToolStripMenuItem.Text = selectedEntries.Any(e => e.CanEnumerateEntries) ? "Open" : "Preview...";
             this.copyPathToolStripMenuItem.Enabled = selectedEntries.Count >= 1;
-            this.saveAsToolStripMenuItem.Enabled = this.saveButton.Enabled = selectedEntries.Count >= 1 && selectedEntries.All(e => e.CanOpen);
+            this.saveAsToolStripMenuItem.Enabled = this.saveButton.Enabled = selectedEntries.Count >= 1 && onlyFiles;
+            this.replaceToolStripMenuItem.Enabled = selectedEntries.Count == 1 && onlyFiles;
         }
 
         private void CopyPathToolStripMenuItem_Click(object sender, EventArgs e)
