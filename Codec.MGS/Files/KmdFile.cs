@@ -3,9 +3,11 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Numerics;
     using System.Runtime.InteropServices;
     using Assimp;
+    using Codec.Archives;
     using Codec.Files;
     using Codec.Geometry;
     using Codec.Services;
@@ -24,7 +26,7 @@
                     return new((fullPath, parentRelativePath, parent, parentPath) =>
                     {
                         using var file = parent.File.OpenRead(parentRelativePath);
-                        return (RenderableScene)FromStream(file);
+                        return (RenderableScene)FromStream(serviceProvider.GetRequiredService<NestedFileSystemManager>(), fullPath, file);
                     });
                 }
 
@@ -32,7 +34,7 @@
             });
         }
 
-        public static Scene FromStream(Stream stream)
+        public static Scene FromStream(NestedFileSystemManager fsm, string fullPath, Stream stream)
         {
             var buffer = new byte[stream.Length];
             var fileSpan = buffer.AsSpan();
@@ -45,12 +47,12 @@
             var vertexOffset = 0;
             var normalOffset = 0;
             var texCoordOffset = 0;
-            LoadKmdModel(fileSpan, 0, 0, scene, rootNode, ref vertexOffset, ref normalOffset, ref texCoordOffset);
+            LoadKmdModel(fsm, fullPath, fileSpan, 0, 0, scene, rootNode, ref vertexOffset, ref normalOffset, ref texCoordOffset);
 
             return scene;
         }
 
-        public static int LoadKmdModel(Span<byte> fileSpan, int headerOffset, int dataOffset, Scene scene, Node rootNode, ref int vertexOffset, ref int normalOffset, ref int texCoordOffset)
+        public static int LoadKmdModel(NestedFileSystemManager fsm, string fullPath, Span<byte> fileSpan, int headerOffset, int dataOffset, Scene scene, Node rootNode, ref int vertexOffset, ref int normalOffset, ref int texCoordOffset)
         {
             var header = MemoryMarshal.Cast<byte, Header>(fileSpan[headerOffset..])[0];
             var meshDefinitions = MemoryMarshal.Cast<byte, MeshDefinition>(fileSpan[(headerOffset + Marshal.SizeOf<Header>())..])[0..(int)header.MeshCount];
@@ -58,6 +60,7 @@
             var totalVertexCount = 0;
             var totalNormalCount = 0;
             var totalTexCoordCount = 0;
+            var textureCache = new Dictionary<ulong, string?>();
             var nodes = new List<Node>((int)header.MeshCount);
             for (var m = 0; m < header.MeshCount; m++)
             {
@@ -95,9 +98,10 @@
                 var meshIndices = new List<int>();
                 foreach (var (texId, faceGroup) in facesByTex)
                 {
+                    var texturePath = GetTexturePath(fsm, fullPath, textureCache, texId);
                     var assimpMesh = new Mesh($"mesh{m}_tex{texId}", PrimitiveType.Triangle)
                     {
-                        MaterialIndex = EnsureMaterial(scene, texId, flags),
+                        MaterialIndex = EnsureMaterial(scene, texturePath, texId, flags),
                     };
                     assimpMesh.UVComponentCount[0] = 2;
 
@@ -146,7 +150,43 @@
             return Marshal.SizeOf<Header>() + (int)header.MeshCount * Marshal.SizeOf<MeshDefinition>();
         }
 
-        private static int EnsureMaterial(Scene scene, ushort texId, DrawingFlags flags)
+        private static string? GetTexturePath(NestedFileSystemManager fsm, string modelPath, Dictionary<ulong, string?> textures, ulong textureId)
+        {
+            if (textures.TryGetValue(textureId, out var path))
+            {
+                return path;
+            }
+
+            var parentFolder = Path.GetDirectoryName(modelPath);
+
+            IEnumerable<string> SearchPaths(string parentFolder)
+            {
+                yield return parentFolder;
+                var upOneLevel = Path.GetDirectoryName(parentFolder);
+                foreach (var subDir in fsm.EnumerateEntries(upOneLevel).Where(e => e.CanEnumerateEntries))
+                {
+                    yield return subDir.Path;
+                }
+            }
+
+            foreach (var searchPath in SearchPaths(parentFolder).Distinct())
+            {
+                foreach (var pcx in fsm.EnumerateFiles(searchPath, "*.pcx"))
+                {
+                    var hash = StringCode.GetStrCode16(pcx.Path);
+                    if (hash == textureId)
+                    {
+                        path = Path.GetRelativePath(parentFolder, pcx.Path);
+                        break;
+                    }
+                }
+            }
+
+            path ??= $"{textureId:x4}.pcx";
+            return textures[textureId] = path;
+        }
+
+        private static int EnsureMaterial(Scene scene, string texturePath, ushort texId, DrawingFlags flags)
         {
             flags &= DrawingFlags.TwoSided | DrawingFlags.Transparent;
             var name = $"{texId:x4}_{(uint)flags:x6}";
@@ -162,7 +202,7 @@
             {
                 Name = name,
                 TextureDiffuse = new TextureSlot(
-                    filePath: $"../texture/{texId:x4}.pcx",
+                    filePath: texturePath,
                     typeSemantic: TextureType.Diffuse,
                     texIndex: 0,
                     mapping: TextureMapping.FromUV,

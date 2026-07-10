@@ -216,10 +216,10 @@
             var searchPath = Path.Combine(rootFolder, "tri", Path.GetFileName(parentFolder));
             foreach (var tri in fsm.EnumerateFiles(searchPath, "*.tri"))
             {
-                var hash = StringCode.GetStrCode(tri.Path);
+                var hash = StringCode.GetStrCode24(tri.Path);
                 if (hash == modelId)
                 {
-                    path = Path.Combine(tri.Path, textureId.ToString("x6", CultureInfo.InvariantCulture) + ".tm2x");
+                    path = Path.Combine(tri.Path, $"{textureId:x6}.tm2x");
                     if (fsm.FileExists(path))
                     {
                         path = Path.GetRelativePath(parentFolder, path);

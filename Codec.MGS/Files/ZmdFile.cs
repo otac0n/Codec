@@ -5,6 +5,7 @@
     using System.IO;
     using System.Runtime.InteropServices;
     using Assimp;
+    using Codec.Archives;
     using Codec.Files;
     using Codec.Services;
     using Microsoft.Extensions.DependencyInjection;
@@ -22,7 +23,7 @@
                     return new((fullPath, parentRelativePath, parent, parentPath) =>
                     {
                         using var file = parent.File.OpenRead(parentRelativePath);
-                        return (RenderableScene)FromStream(file);
+                        return (RenderableScene)FromStream(serviceProvider.GetRequiredService<NestedFileSystemManager>(), fullPath, file);
                     });
                 }
 
@@ -30,7 +31,7 @@
             });
         }
 
-        public static Scene FromStream(Stream stream)
+        public static Scene FromStream(NestedFileSystemManager fsm, string fullPath, Stream stream)
         {
             var buffer = new byte[stream.Length];
             var fileSpan = buffer.AsSpan();
@@ -55,7 +56,7 @@
                 var id = BitConverter.ToUInt32(buffer, offset);
                 var idRoot = new Node($"model{id}");
                 rootNode.Children.Add(idRoot);
-                var count = KmdFile.LoadKmdModel(fileSpan, offset + sizeof(uint), dataOffset, scene, idRoot, ref vertexOffset, ref normalOffset, ref texCoordOffset);
+                var count = KmdFile.LoadKmdModel(fsm, fullPath, fileSpan, offset + sizeof(uint), dataOffset, scene, idRoot, ref vertexOffset, ref normalOffset, ref texCoordOffset);
                 offset += count + sizeof(uint);
             }
 
