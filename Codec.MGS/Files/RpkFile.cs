@@ -182,12 +182,11 @@ namespace Codec.MGS.Files
             for (var x = 0; x < paletteDesc.X; x++)
             {
                 var v = paletteStream.ReadUInt16LittleEndian();
-                static int Expand5(int x) => (x << 3) | (x >> 2); // x * 255 / 31
                 writer.WriteColor(
                     ((v & 0x8000) != 0 ? 0xFF : 0x00) << 24 |
-                    Expand5((v >> 0) & 0x1F) << 16 |
-                    Expand5((v >> 5) & 0x1F) << 8 |
-                    Expand5((v >> 10) & 0x1F) << 0);
+                    ColorUtils.Expand5To8((v >> 0) & 0x1F) << 16 |
+                    ColorUtils.Expand5To8((v >> 5) & 0x1F) << 8 |
+                    ColorUtils.Expand5To8((v >> 10) & 0x1F) << 0);
             }
 
             var count = desc.W * desc.H * 2;
@@ -208,11 +207,10 @@ namespace Codec.MGS.Files
             for (var i = 0; i < paletteDesc.X; i++)
             {
                 var v = paletteToMatch.ReadUInt16LittleEndian();
-                static ushort Expand5(int x) => (ushort)(x * Quantum.Max / 31);
                 var a = (ushort)((v & 0x8000) != 0 ? Quantum.Max : 0x00);
-                var r = Expand5((v >> 0) & 0x1F);
-                var g = Expand5((v >> 5) & 0x1F);
-                var b = Expand5((v >> 10) & 0x1F);
+                var r = ColorUtils.Expand5To16((v >> 0) & 0x1F);
+                var g = ColorUtils.Expand5To16((v >> 5) & 0x1F);
+                var b = ColorUtils.Expand5To16((v >> 10) & 0x1F);
                 palette[i] = new MagickColor(r, g, b, a);
             }
 
@@ -252,7 +250,7 @@ namespace Codec.MGS.Files
                     for (var x = 0; x < image.Width; x++)
                     {
                         var color = pixels.GetPixel(x, y).ToColor() ?? MagickColors.Transparent;
-                        indices[i++] = FindClosestPaletteIndex(palette, color);
+                        indices[i++] = ColorUtils.FindClosestPaletteIndex(palette, color);
                     }
                 }
             }
@@ -265,28 +263,6 @@ namespace Codec.MGS.Files
             }
 
             outputStream.SetLength(outputStream.Position);
-        }
-
-        private static byte FindClosestPaletteIndex(MagickColor[] palette, IMagickColor<ushort> color)
-        {
-            var bestIndex = 0;
-            var bestDistance = long.MaxValue;
-            for (var i = 0; i < palette.Length; i++)
-            {
-                var p = palette[i];
-                var dr = (long)p.R - color.R;
-                var dg = (long)p.G - color.G;
-                var db = (long)p.B - color.B;
-                var da = (long)p.A - color.A;
-                var distance = (dr * dr) + (dg * dg) + (db * db) + (da * da);
-                if (distance < bestDistance)
-                {
-                    bestDistance = distance;
-                    bestIndex = i;
-                }
-            }
-
-            return (byte)bestIndex;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]

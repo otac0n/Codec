@@ -16,19 +16,12 @@ namespace Codec.MGS.Archives
     using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (int Group, ushort Id, bool IsAnimation, long Offset, long Size);
-    using ImageEntry = (int Index, long PaletteOffset, long ImageOffset);
+    using ImageEntry = (int Index, int PaletteIndex, long Offset, long Length, bool IsPalette);
 
-    public class FaceDatVirtualFileSystem : IndexedFileSystem<Entry>
+    public class FaceDatVirtualFileSystem(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
     {
-
-        private readonly string parentRelativePath;
-        private readonly IFileSystem parent;
-
-        public FaceDatVirtualFileSystem(string parentRelativePath, IFileSystem parent)
-        {
-            this.parentRelativePath = parentRelativePath;
-            this.parent = parent;
-        }
+        private static readonly int PaletteCount = 1 << 8;
+        private static readonly int PaletteSize = sizeof(ushort) * PaletteCount;
 
         public static void Register(IServiceCollection services)
         {
@@ -58,13 +51,36 @@ namespace Codec.MGS.Archives
 
                 return null;
             });
+
+            services.AddSingleton<FileHandlerResolver<MagickImage>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
+            {
+                if (parent is FaceFileSystem or AnimFileSystem &&
+                    string.Equals(parent.Path.GetExtension(parentRelativePath), ".img", StringComparison.OrdinalIgnoreCase))
+                {
+                    return new(
+                        read: (fullPath, parentRelativePath, parent, parentPath) =>
+                        {
+                            using var file = parent.File.OpenRead(parentRelativePath);
+                            using var palette = parent.File.OpenRead(GetPaletteFileName(parent, parentRelativePath));
+                            return Load(palette, file);
+                        },
+                        write: (image, fullPath, parentRelativePath, parent, parentPath) =>
+                        {
+                            using var file = parent.File.Open(parentRelativePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+                            using var palette = parent.File.OpenRead(GetPaletteFileName(parent, parentRelativePath));
+                            Write(palette, image, file);
+                        });
+                }
+
+                return null;
+            });
         }
 
         protected override IEnumerable<Entry> ReadIndex()
         {
             var index = new List<Entry>();
 
-            using var source = this.parent.File.OpenRead(this.parentRelativePath);
+            using var source = parent.File.OpenRead(parentRelativePath);
             for (var group = 0; source.Position < source.Length; group++)
             {
                 var total = source.ReadInt32LittleEndian();
@@ -94,7 +110,12 @@ namespace Codec.MGS.Archives
             this.Path.Combine($"{entry.Group}", $"{entry.Id:x4}.{(entry.IsAnimation ? "anim" : "face")}");
 
         protected override Stream Open(Entry entry, FileStreamOptions parentOptions) =>
-            new OffsetStreamSpan(this.parent.File.Open(this.parentRelativePath, parentOptions), entry.Offset, entry.Size, Ownership.Dispose);
+            new OffsetStreamSpan(parent.File.Open(parentRelativePath, parentOptions), entry.Offset, entry.Size, Ownership.Dispose);
+
+        private static string GetPaletteFileName(IFileSystem parent, string parentRelativePath) =>
+            parent is FaceFileSystem
+                ? "palette.pal"
+                : $"{parent.Path.GetFileNameWithoutExtension(parentRelativePath).Split('_', 2)[1]}.pal";
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct Header
@@ -122,124 +143,154 @@ namespace Codec.MGS.Archives
             public readonly sbyte H;
         }
 
-        private abstract class ImageFileSystem : IndexedFileSystem<ImageEntry>
+        private abstract class ImageFileSystem(string path, IFileSystem parent) : IndexedFileSystem<ImageEntry>
         {
-            protected readonly string parentRelativePath;
-            protected readonly IFileSystem parent;
-
-            public ImageFileSystem(string parentRelativePath, IFileSystem parent)
-            {
-                this.parentRelativePath = parentRelativePath;
-                this.parent = parent;
-            }
-
-            protected override Stream Open(ImageEntry entry, FileStreamOptions parentOptions)
-            {
-                FileBase.EnsureReadOnly(parentOptions, "Writing to sub images in FACE.DAT is not supported.");
-
-                using var source = this.parent.File.Open(this.parentRelativePath, parentOptions);
-                var dest = new MemoryStream();
-                var (_, _, img) = GetImage(source, entry.PaletteOffset, entry.ImageOffset);
-                img.Write(dest, MagickFormat.Png);
-                dest.Position = 0;
-                return dest;
-            }
+            protected override Stream Open(ImageEntry entry, FileStreamOptions parentOptions) =>
+                new OffsetStreamSpan(parent.File.Open(path, parentOptions), entry.Offset, entry.Length, Ownership.Dispose);
         }
 
-        private class FaceFileSystem : ImageFileSystem
+        private class FaceFileSystem(string path, IFileSystem parent) : ImageFileSystem(path, parent)
         {
             private static readonly string[] ImageKeys = ["base", "eyes-droop", "eyes-blink", "unknown", "mouth-e", "mouth-a"];
 
-            public FaceFileSystem(string parentRelativePath, IFileSystem parent)
-                : base(parentRelativePath, parent)
-            {
-            }
-
             protected override IEnumerable<ImageEntry> ReadIndex()
             {
-                var index = new List<ImageEntry>();
-
-                using var source = this.parent.File.OpenRead(this.parentRelativePath);
+                using var source = parent.File.OpenRead(path);
                 var paletteOffset = source.ReadUInt32LittleEndian();
                 var imageOffsets = source.ReadArrayLittleEndian<uint>(ImageKeys.Length);
+
+                var index = new List<ImageEntry>
+                {
+                    (-1, -1, paletteOffset, PaletteSize, true),
+                };
+
                 for (var i = 0; i < imageOffsets.Length; i++)
                 {
-                    if (imageOffsets[i] != 0)
+                    if (imageOffsets[i] == 0)
                     {
-                        index.Add((i, paletteOffset, imageOffsets[i]));
+                        continue;
                     }
+
+                    source.Position = imageOffsets[i];
+                    var dim = source.ReadLittleEndian<ImageDimensions>();
+                    var length = Marshal.SizeOf<ImageDimensions>() + (dim.W * dim.H);
+
+                    index.Add((i, -1, imageOffsets[i], length, false));
                 }
 
                 return index;
             }
 
             protected override string GetEntryName(ImageEntry entry) =>
-                ImageKeys[entry.Index] + ".img";
+                entry.IsPalette ? "palette.pal" : $"{ImageKeys[entry.Index]}.img";
         }
 
-        private class AnimFileSystem : ImageFileSystem
+        private class AnimFileSystem(string path, IFileSystem parent) : ImageFileSystem(path, parent)
         {
-            public AnimFileSystem(string parentRelativePath, IFileSystem parent)
-                : base(parentRelativePath, parent)
-            {
-            }
-
             protected override IEnumerable<ImageEntry> ReadIndex()
             {
+                using var source = parent.File.OpenRead(path);
+                var frameCount = source.ReadUInt32LittleEndian();
+                var frameHeaders = source.ReadArrayLittleEndian<FrameHeader>((int)frameCount);
+
+                var paletteIndices = new Dictionary<long, int>();
                 var index = new List<ImageEntry>();
 
-                using var source = this.parent.File.OpenRead(this.parentRelativePath);
-                var frames = source.ReadUInt32LittleEndian();
-                var frameHeaders = source.ReadArrayLittleEndian<FrameHeader>((int)frames);
                 for (var i = 0; i < frameHeaders.Length; i++)
                 {
                     var header = frameHeaders[i];
-                    if (header.PaletteOffset != 0 && header.FrameOffset != 0)
+                    if (header.PaletteOffset == 0 || header.FrameOffset == 0)
                     {
-                        index.Add((i, header.PaletteOffset, header.FrameOffset));
+                        continue;
                     }
+
+                    if (!paletteIndices.TryGetValue(header.PaletteOffset, out var paletteIndex))
+                    {
+                        paletteIndex = paletteIndices.Count;
+                        paletteIndices.Add(header.PaletteOffset, paletteIndex);
+                        index.Add((paletteIndex, paletteIndex, header.PaletteOffset, PaletteSize, true));
+                    }
+
+                    source.Position = header.FrameOffset;
+                    var dim = source.ReadLittleEndian<ImageDimensions>();
+                    var length = Marshal.SizeOf<ImageDimensions>() + (dim.W * dim.H);
+
+                    index.Add((i, paletteIndex, header.FrameOffset, length, false));
                 }
 
                 return index;
             }
 
             protected override string GetEntryName(ImageEntry entry) =>
-                entry.Index + ".img";
+                entry.IsPalette ? $"{entry.Index}.pal" : $"{entry.Index}_{entry.PaletteIndex}.img";
         }
 
-        static (int X, int Y, MagickImage Image) GetImage(Stream source, long paletteOffset, long imageOffset)
+        private static int Intensity(int c) =>
+            ((c & 0b00010000) >> 4) * 80 +
+            ((c & 0b00001000) >> 3) * 40 +
+            ((c & 0b00000100) >> 2) * 20 +
+            ((c & 0b00000010) >> 1) * 10 +
+            ((c & 0b00000001) >> 0) * 8 +
+            16;
+
+        public static MagickImage Load(Stream paletteStream, Stream imageStream)
         {
-            const int PaletteCount = 1 << 8; // 8BPP
-            const int PaletteSize = sizeof(ushort) * PaletteCount;
+            var dim = imageStream.ReadLittleEndian<ImageDimensions>();
+            var writer = new TgaWriter<int, byte>((ushort)dim.W, (ushort)dim.H, (ushort)PaletteCount, dim.U, dim.V);
 
-            source.Seek(imageOffset, SeekOrigin.Begin);
-            var dim = source.ReadLittleEndian<ImageDimensions>();
-            var tgaWriter = new TgaWriter<int, byte>((ushort)dim.W, (ushort)dim.H, PaletteCount, dim.U, dim.V);
-
-            var imgPosition = source.Position;
-
-            static int Intensity(int c) =>
-                ((c & 0b00010000) >> 4) * 80 +
-                ((c & 0b00001000) >> 3) * 40 +
-                ((c & 0b00000100) >> 2) * 20 +
-                ((c & 0b00000010) >> 1) * 10 +
-                ((c & 0b00000001) >> 0) * 8 +
-                16;
-
-            source.Seek(paletteOffset, SeekOrigin.Begin);
             for (var i = 0; i < PaletteCount; i++)
             {
-                var color = source.ReadUInt16LittleEndian();
-                tgaWriter.WriteColor(
+                var color = paletteStream.ReadUInt16LittleEndian();
+                writer.WriteColor(
                     ((color & 0x8000) != 0 ? 0xFF : 0x00) << 24 |
                     Intensity((color >> 0) & 0x001F) << 16 |
                     Intensity((color >> 5) & 0x001F) << 8 |
                     Intensity((color >> 10) & 0x001F) << 0);
             }
 
-            source.CopyTo(tgaWriter.TgaStream, imgPosition, SeekOrigin.Begin, dim.W * dim.H);
+            var count = dim.W * dim.H;
+            for (var i = 0; i < count; i++)
+            {
+                writer.WriteIndex((byte)imageStream.ReadByte());
+            }
 
-            return (dim.U, dim.V, tgaWriter.ToMagickImage());
+            return writer.ToMagickImage();
+        }
+
+        private static void Write(Stream paletteStream, MagickImage image, Stream outputStream)
+        {
+            var palette = new MagickColor[PaletteCount];
+            for (var i = 0; i < PaletteCount; i++)
+            {
+                var color = paletteStream.ReadUInt16LittleEndian();
+                var a = (byte)((color & 0x8000) != 0 ? 0xFF : 0x00);
+                var r = (byte)Intensity((color >> 0) & 0x001F);
+                var g = (byte)Intensity((color >> 5) & 0x001F);
+                var b = (byte)Intensity((color >> 10) & 0x001F);
+                palette[i] = new MagickColor(r, g, b, a);
+            }
+
+            var dim = outputStream.ReadLittleEndian<ImageDimensions>();
+            if (image.Width != dim.W || image.Height != dim.H)
+            {
+                throw new NotImplementedException($"Replacement image must be exactly {dim.W}x{dim.H} to avoid index rewrite. Found {image.Width}x{image.Height}.");
+            }
+
+            var indices = new byte[image.Width * image.Height];
+            using (var pixels = image.GetPixels())
+            {
+                var i = 0;
+                for (var y = 0; y < image.Height; y++)
+                {
+                    for (var x = 0; x < image.Width; x++)
+                    {
+                        var color = pixels.GetPixel(x, y).ToColor() ?? MagickColors.Transparent;
+                        indices[i++] = ColorUtils.FindClosestPaletteIndex(palette, color);
+                    }
+                }
+            }
+
+            outputStream.Write(indices, 0, indices.Length);
         }
     }
 }

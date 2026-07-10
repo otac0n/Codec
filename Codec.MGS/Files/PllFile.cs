@@ -33,9 +33,9 @@
         public static MagickImage Load(Stream stream)
         {
             var header = stream.ReadLittleEndian<Header>();
-            var divisor = header.flag0 >> 12;
+            var divisor = header.Flags >> 12;
             var condit = (uint)((1 << divisor) - 1);
-            var times = (header.flag0 >> 8) switch
+            var times = (header.Flags >> 8) switch
             {
                 0x82 => 4,
                 0x72 => 4,
@@ -47,7 +47,7 @@
                 0x12 => 32,
             };
 
-            var palette = stream.ReadArrayLittleEndian<ushort>(header.nColors);
+            var palette = stream.ReadArrayLittleEndian<ushort>(header.ColorsCount);
 
             stream.Align(4);
 
@@ -66,7 +66,7 @@
                 readed += a + b + c + d + 4;
                 bitmap.AddRange([(byte)(a + 1), (byte)(b + 1), (byte)(c + 1), (byte)(d + 1)]);
                 jump += 1;
-                if (readed >= header.width * header.height)
+                if (readed >= header.Width * header.Height)
                 {
                     break;
                 }
@@ -74,17 +74,16 @@
 
             stream.Align(4);
 
-            var tgaWriter = new TgaWriter<int, byte>(header.width, header.height, (ushort)palette.Length);
+            var tgaWriter = new TgaWriter<int, byte>(header.Width, header.Height, (ushort)palette.Length);
 
             for (var i = 0; i < palette.Length; i++)
             {
                 var v = palette[i];
-                static int Expand5(int x) => (x << 3) | (x >> 2); // x * 255 / 31
                 tgaWriter.WriteColor(
                     ((v & 0x8000) != 0 ? 0xFF : 0x00) << 24 |
-                    Expand5((v >> 0) & 0x1F) << 16 |
-                    Expand5((v >> 5) & 0x1F) << 8 |
-                    Expand5((v >> 10) & 0x1F) << 0);
+                    ColorUtils.Expand5To8((v >> 0) & 0x1F) << 16 |
+                    ColorUtils.Expand5To8((v >> 5) & 0x1F) << 8 |
+                    ColorUtils.Expand5To8((v >> 10) & 0x1F) << 0);
             }
 
             for (var loop = 0; loop <= bitmap.Count / times; loop++)
@@ -117,16 +116,16 @@
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct Header
         {
-            public ushort flag0;
-            public ushort nColors;
-            public ushort width;
-            public ushort height;
-            public ushort unknownA;
-            public ushort unknownB;
-            public ushort unknownC;
-            public ushort unknownD;
-            public ushort unknownE;
-            public ushort unknownF;
+            public ushort Flags;
+            public ushort ColorsCount;
+            public ushort Width;
+            public ushort Height;
+            public ushort UnknownA;
+            public ushort UnknownB;
+            public ushort UnknownC;
+            public ushort UnknownD;
+            public ushort UnknownE;
+            public ushort UnknownF;
         }
     }
 }
