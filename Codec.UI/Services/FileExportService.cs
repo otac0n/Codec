@@ -180,7 +180,7 @@ namespace Codec.Services
             }
 
             using var input = File.OpenRead(path);
-            using var output = fsm.Open(path, new()
+            using var output = fsm.Open(entry.Path, new()
             {
                 Mode = FileMode.Open,
                 Access = FileAccess.Write,
