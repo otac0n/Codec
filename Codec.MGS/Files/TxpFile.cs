@@ -15,6 +15,7 @@ namespace Codec.MGS.Files
     using Codec.Services;
     using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Logging;
 
     internal class TxpFile
     {
@@ -31,7 +32,8 @@ namespace Codec.MGS.Files
                         var header = stream.ReadLittleEndian<Header>();
                         if (header.Flags > 0xFFF || header.TextureCount > 0x400)
                         {
-                            Debug.WriteLine($"Unknown TXP. Flags: {header.Flags:x8}, Texture Count: {header.TextureCount}");
+                            serviceProvider.GetService<ILogger<TxpFileFileSystem>>()?
+                                .LogInformation("Unknown TXP. Flags: '{Flags:x8}', Texture Count: '{TextureCount}', Path: '{FullPath}'", header.Flags, header.TextureCount, fullPath);
                             return null;
                         }
                     }
@@ -89,7 +91,7 @@ namespace Codec.MGS.Files
             }
 
             protected override string GetEntryName(uint entry) =>
-                entry.ToString("x4") + ".txpx";
+                $"{entry:x4}.txpx";
 
             protected override Stream Open(uint entry, FileStreamOptions parentOptions)
             {
