@@ -236,7 +236,7 @@
         {
             var newOptions = new FileStreamOptions()
             {
-                Access = parentOptions.Access & ~FileAccess.Write,
+                Access = FileAccess.Read, // Even for write-only files we need to restore any unwritten byte ranges.
                 Mode = parentOptions.Mode,
                 Share = parentOptions.Share,
                 BufferSize = parentOptions.BufferSize,
