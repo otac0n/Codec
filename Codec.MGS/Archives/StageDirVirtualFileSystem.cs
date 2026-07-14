@@ -2,7 +2,6 @@
 
 namespace Codec.MGS.Archives
 {
-    using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.IO;
@@ -17,9 +16,9 @@ namespace Codec.MGS.Archives
 
     public class StageDirVirtualFileSystem(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
     {
-        private static readonly long SectorSize = 2048L;
+        private static readonly uint SectorSize = 0x800;
 
-        private static readonly ImmutableDictionary<byte, string> extensions = new Dictionary<byte, string>
+        private static readonly ImmutableDictionary<byte, string> Extensions = new Dictionary<byte, string>
         {
             [0x61] = "azm",
             [0x62] = "bin",
@@ -40,19 +39,20 @@ namespace Codec.MGS.Archives
             [0x7a] = "zmd",
         }.ToImmutableDictionary();
 
-        private static readonly ImmutableDictionary<byte, string> groups = new Dictionary<byte, string>
+        private static readonly ImmutableDictionary<byte, string> Groups = new Dictionary<byte, string>
         {
-            [0x63] = "model",
-            [0x6e] = "texture",
-            [0x72] = "player",
+            [0x63] = "cache",
+            [0x6e] = "nocache",
+            [0x72] = "resident",
             [0x73] = "sound",
         }.ToImmutableDictionary();
 
         public static void Register(IServiceCollection services)
         {
+            var glob = PathExtensions.GlobToRegex("*STAGE*.DIR");
             services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
-                if (string.Equals(parent.Path.GetFileName(parentRelativePath), "STAGE.DIR", StringComparison.OrdinalIgnoreCase))
+                if (glob.IsMatch(parent.Path.GetFileName(parentRelativePath)))
                 {
                     return static (fullPath, parentRelativePath, parent, parentPath) =>
                         new StageDirVirtualFileSystem(parentRelativePath, parent);
@@ -63,7 +63,7 @@ namespace Codec.MGS.Archives
         }
 
         protected override string GetEntryName(Entry entry) =>
-            $"{entry.Folder}/{groups[entry.Group]}/{entry.Id:x4}.{extensions[entry.Ext]}";
+            $"{entry.Folder}/{Groups[entry.Group]}/{entry.Id:x4}.{Extensions[entry.Ext]}";
 
         private static IEnumerable<Entry> ReadDar(Stream source, string folder, byte group, long offset, long length)
         {
@@ -82,7 +82,7 @@ namespace Codec.MGS.Archives
         {
             using var source = parent.File.OpenRead(parentRelativePath);
             var dataOffset = source.ReadUInt32LittleEndian();
-            var folders = source.ReadArrayLittleEndian<StageDirEntry>((int)dataOffset / Marshal.SizeOf<StageDirEntry>());
+            var folders = source.ReadArrayLittleEndian<FolderEntry>((int)dataOffset / Marshal.SizeOf<FolderEntry>());
             var entries = new List<Entry>();
             foreach (var folder in folders)
             {
@@ -157,7 +157,7 @@ namespace Codec.MGS.Archives
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct StageDirEntry
+        private struct FolderEntry
         {
             public Name8 Name;
             public uint Size;
