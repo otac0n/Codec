@@ -18,7 +18,8 @@ Support for the following formats is implemented:
     - .dar Archives (MGS1) [read & write]
     - .sdt Sound Packs (MGS2)
     - .sdx Sound Packs (MGS2)
-    - STAGE.DAT Archive (MGS1 & MGSVR)
+    - STAGE.DIR Archive (MGS1 & MGSVR)
+    - STAGE2.DAT Archive (MGS2)
     - FACE.DAT Archive (MGS1)
     - DEMO.DAT Archive (MGS1)
     - .brf Briefing Files (MGS1 & MGSVR)
@@ -103,7 +104,8 @@ OpenSource Info
 | [mgs_reversing](https://github.com/FoxdieTeam/mgs_reversing) | | Reference code |
 | [CtxrTool](https://github.com/Jayveer/CtxrTool) | [MIT](https://github.com/Jayveer/CtxrTool/blob/master/README.md) | Reference code |
 | [MGS-Master-Collection-Noesis](https://github.com/Jayveer/MGS-Master-Collection-Noesis) | | Reference code |
-| [Solideye](https://github.com/Jayveer/Solideye/tree/master) | | Reference code |
+| [Arsenal](https://github.com/Jayveer/Arsenal/tree/master) | MIT | Reference code |
+| [Solideye](https://github.com/Jayveer/Solideye/tree/master) | MIT | Reference code |
 | [MGS-MDP-Noesis](https://github.com/Jayveer/MGS-MDP-Noesis) | | Reference code |
 | [MGS2-Sound-Tools](https://github.com/Gaming-With-Portals/MGS2-Sound-Tools) | [MIT](https://github.com/Gaming-With-Portals/MGS2-Sound-Tools/blob/main/LICENSE) | Reference code |
 | [Metal Gear Master Collection](https://store.steampowered.com/app/2131630/METAL_GEAR_SOLID__Master_Collection_Version/) | Non-transferrable | You need your own license to this software, and your license may not cover this usage. |

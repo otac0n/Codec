@@ -6,22 +6,21 @@
 
     internal static partial class StringCode
     {
-        public static ulong Hash16(string s)
+        public static ushort Hash16(string s)
         {
-            var h = 0UL;
+            ushort h = 0;
 
             for (var c = 0; c < s.Length; c++)
             {
-                h = ((h << 0x05) | (h >> 0x0B)) + s[c];
-                h &= 0xffff;
+                h = (ushort)(((h << 0x05) | (h >> 0x0B)) + s[c]);
             }
 
             return h;
         }
 
-        public static ulong Hash24(string s)
+        public static uint Hash24(string s)
         {
-            var h = 0UL;
+            var h = 0U;
 
             for (var c = 0; c < s.Length; c++)
             {

@@ -33,6 +33,7 @@ namespace Codec.MGS
             DemoDatVirtualFileSystem.Register(services);
             DlzVirtualFileSystem.Register(services);
             FaceDatVirtualFileSystem.Register(services);
+            StageDatVirtualFileSystem.Register(services);
             StageDirVirtualFileSystem.Register(services);
             SlotVirtualFileSystem.Register(services);
             SdtVirtualFileSystem.Register(services);
