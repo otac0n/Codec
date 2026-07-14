@@ -62,8 +62,8 @@ Usage
 
 ```csharp
 // Setup
-var services = ServiceRegistration.RegisterHeadless(services);
-var fsm = serviceProvider.GetRequiredService<NestedFileSystemManager>(); // Grab the root filesystem.
+var services = Codec.UI.ServiceRegistration.RegisterHeadless();
+var fsm = services.GetRequiredService<NestedFileSystemManager>(); // Grab the root filesystem.
 
 // API
 fsm.EnumerateEntries(@"G:\Rip\Exp\METAL GEAR SOLID DISC 1.CUE\MGS\FACE.DAT/0/f73b.face").Dump();
