@@ -6,6 +6,7 @@ namespace Codec.MGS.Files
     using System.Collections.Generic;
     using System.IO;
     using System.IO.Abstractions;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using Codec;
     using Codec.Archives;
@@ -28,9 +29,7 @@ namespace Codec.MGS.Files
                 if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".tri", StringComparison.OrdinalIgnoreCase))
                 {
                     return (fullPath, parentRelativePath, parent, parentPath) =>
-                    {
-                        return new TriFileFileSystem(parentRelativePath, parent);
-                    };
+                        new TriFileFileSystem(parentRelativePath, parent);
                 }
 
                 return null;
@@ -38,13 +37,13 @@ namespace Codec.MGS.Files
 
             services.AddSingleton<FileHandlerResolver<MagickImage>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
-                if (parent is TriFileFileSystem)
+                if (parent is TriFileFileSystem triFileSystem)
                 {
                     return new((fullPath, parentRelativePath, parent, parentPath) =>
                     {
                         using var file = parent.File.OpenRead(parentRelativePath);
                         var id = Convert.ToUInt32(parent.Path.GetFileNameWithoutExtension(parentRelativePath), 16);
-                        return Load(file, id);
+                        return Load(file, id, triFileSystem.IsPadded);
                     });
                 }
 
@@ -57,10 +56,12 @@ namespace Codec.MGS.Files
             private readonly IFileSystem parent;
             private readonly string path;
 
+            public bool IsPadded { get; private set; }
+
             public TriFileFileSystem(string path, IFileSystem parent)
             {
-                this.parent = parent ?? new FileSystem();
                 this.path = path;
+                this.parent = parent ?? new FileSystem();
             }
 
             protected override IEnumerable<uint> ReadIndex()
@@ -71,12 +72,30 @@ namespace Codec.MGS.Files
                 stream.ReadExactly(span);
 
                 var header = MemoryMarshal.Cast<byte, Header>(span)[0];
-                var textureDefinitions = MemoryMarshal.Cast<byte, TextureInfo>(span[32..])[0..header.TextureCount];
                 var ids = new uint[header.TextureCount];
-                for (var t = 0; t < header.TextureCount; t++)
+
+                var padded = false;
+                var texture0 = MemoryMarshal.Cast<byte, TextureInfoPadded>(span[32..])[0];
+                padded = !((Span<uint>)texture0.Pad3).ContainsAnyExcept(0U);
+                this.IsPadded = padded;
+
+                if (padded)
                 {
-                    var info = textureDefinitions[t];
-                    ids[t] = info.Code;
+                    var textureDefinitions = MemoryMarshal.Cast<byte, TextureInfoPadded>(span[32..])[0..header.TextureCount];
+                    for (var t = 0; t < header.TextureCount; t++)
+                    {
+                        var info = textureDefinitions[t];
+                        ids[t] = info.Code;
+                    }
+                }
+                else
+                {
+                    var textureDefinitions = MemoryMarshal.Cast<byte, TextureInfo>(span[32..])[0..header.TextureCount];
+                    for (var t = 0; t < header.TextureCount; t++)
+                    {
+                        var info = textureDefinitions[t];
+                        ids[t] = info.Code;
+                    }
                 }
 
                 return ids;
@@ -372,7 +391,7 @@ namespace Codec.MGS.Files
             }
         }
 
-        public static MagickImage? Load(Stream stream, uint textureId, ILogger<TriFile>? logger = null)
+        public static MagickImage? Load(Stream stream, uint textureId, bool isPadded, ILogger<TriFile>? logger = null)
         {
             logger ??= NullLogger<TriFile>.Instance;
 
@@ -381,7 +400,31 @@ namespace Codec.MGS.Files
             stream.ReadExactly(span);
 
             var header = MemoryMarshal.Cast<byte, Header>(span)[0];
-            var textureDefinitions = MemoryMarshal.Cast<byte, TextureInfo>(span[32..])[0..header.TextureCount];
+            TextureInfo[] textureDefinitions;
+            if (isPadded)
+            {
+                var paddedDefinitions = MemoryMarshal.Cast<byte, TextureInfoPadded>(span[32..])[0..header.TextureCount].ToArray();
+                textureDefinitions = Array.ConvertAll(paddedDefinitions, p => new TextureInfo
+                {
+                    UOffset = p.UOffset,
+                    VOffset = p.VOffset,
+                    UScale = p.UScale,
+                    VScale = p.VScale,
+                    Code = p.Code,
+                    RegisterInfo = p.RegisterInfo,
+                    RegisterInfo2 = p.RegisterInfo2,
+                    U1 = p.U1,
+                    V1 = p.V1,
+                    U2 = p.U2,
+                    V2 = p.V2,
+                    U3 = p.U3,
+                    V3 = p.V3,
+                });
+            }
+            else
+            {
+                textureDefinitions = MemoryMarshal.Cast<byte, TextureInfo>(span[32..])[0..header.TextureCount].ToArray();
+            }
 
             var t = 0;
             for (; t < header.TextureCount; t++)
@@ -592,22 +635,14 @@ namespace Codec.MGS.Files
             public uint Pad0;
             public uint Pad1;
             public uint Pad2;
-            public uint Pad3;
-            public uint Pad4;
-            public uint Pad5;
-            public uint Pad6;
-            public uint Pad7;
-            public uint Pad8;
-            public uint Pad9;
-            public uint Pad10;
             public uint UnknownA;
             public uint UnknownB;
             public uint UnknownC;
-            public uint Pad11;
+            public uint Pad4;
             public uint UnknownD;
             public uint UnknownE;
             public uint UnknownF;
-            public uint Pad12;
+            public uint Pad5;
             public GsTex0 RegisterInfo;
             public uint UnknownG;
             public uint UnknownH;
@@ -628,8 +663,58 @@ namespace Codec.MGS.Files
             public float V2;
             public float U3;
             public float V3;
-            public uint Pad13;
-            public uint Pad14;
+            public uint Pad6;
+            public uint Pad7;
+        }
+
+        [InlineArray(8)]
+        private struct Pad8
+        {
+            public uint Pad0;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        private struct TextureInfoPadded
+        {
+            public float UOffset;
+            public float VOffset;
+            public float UScale;
+            public float VScale;
+            public uint Code;
+            public uint Pad0;
+            public uint Pad1;
+            public uint Pad2;
+            public Pad8 Pad3;
+            public uint UnknownA;
+            public uint UnknownB;
+            public uint UnknownC;
+            public uint Pad4;
+            public uint UnknownD;
+            public uint UnknownE;
+            public uint UnknownF;
+            public uint Pad5;
+            public GsTex0 RegisterInfo;
+            public uint UnknownG;
+            public uint UnknownH;
+            public GsTex0 RegisterInfo2;
+            public uint UnknownI;
+            public uint UnknownJ;
+            public uint UnknownK;
+            public uint UnknownL;
+            public uint UnknownM;
+            public uint UnknownN;
+            public uint UnknownO;
+            public uint UnknownP;
+            public uint UnknownQ;
+            public uint UnknownR;
+            public float U1;
+            public float V1;
+            public float U2;
+            public float V2;
+            public float U3;
+            public float V3;
+            public uint Pad6;
+            public uint Pad7;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
