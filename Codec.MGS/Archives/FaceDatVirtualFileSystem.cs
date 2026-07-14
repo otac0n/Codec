@@ -22,6 +22,7 @@ namespace Codec.MGS.Archives
     {
         private static readonly int PaletteCount = 1 << 8;
         private static readonly int PaletteSize = sizeof(ushort) * PaletteCount;
+        private static readonly int Alignment = 0x800;
 
         public static void Register(IServiceCollection services)
         {
@@ -99,7 +100,7 @@ namespace Codec.MGS.Archives
                 }
 
                 position += headers.Max(h => h.Offset + h.Size);
-                position = StreamExtensions.Align(position, 2048);
+                position = StreamExtensions.Align(position, Alignment);
                 source.Position = position;
             }
 
@@ -110,43 +111,151 @@ namespace Codec.MGS.Archives
             this.Path.Combine($"{entry.Group}", $"{entry.Id:x4}.{(entry.IsAnimation ? "anim" : "face")}");
 
         protected override Stream Open(Entry entry, FileStreamOptions parentOptions) =>
-            new OffsetStreamSpan(parent.File.Open(parentRelativePath, parentOptions), entry.Offset, entry.Size, Ownership.Dispose);
+            CreateStreamWrapper(
+                parentOptions,
+                options => new OffsetStreamSpan(parent.File.Open(parentRelativePath, options), entry.Offset, entry.Size, Ownership.Dispose),
+                updated => this.WriteEntry(entry, updated));
+
+        private void WriteEntry(Entry entry, Stream updated)
+        {
+            using var stream = parent.File.Open(parentRelativePath, FileMode.Open, FileAccess.ReadWrite);
+
+            var delta = updated.Length - entry.Size;
+            if (delta == 0)
+            {
+                stream.Position = entry.Offset;
+                updated.Position = 0;
+                updated.CopyTo(stream);
+                this.index = null;
+                return;
+            }
+
+            var (_, entriesBase, headers) = FindGroup(stream, entry.Group);
+            var headerIndex = Array.FindIndex(headers, h => entriesBase + h.Offset == entry.Offset);
+            if (headerIndex < 0)
+            {
+                throw new InvalidOperationException("Could not locate the entry to update; the archive may have changed since it was last indexed.");
+            }
+
+            var oldDataEnd = entriesBase + headers.Max(h => h.Offset + h.Size);
+            var oldAlignedEnd = StreamExtensions.Align(oldDataEnd, Alignment);
+
+            var oldHeader = headers[headerIndex];
+            var oldEntryAbsOffset = entriesBase + oldHeader.Offset;
+            var oldEntryAbsEnd = oldEntryAbsOffset + oldHeader.Size;
+
+            for (var i = 0; i < headers.Length; i++)
+            {
+                if (headers[i].Offset > oldHeader.Offset)
+                {
+                    headers[i].Offset = checked((uint)(headers[i].Offset + delta));
+                }
+            }
+
+            headers[headerIndex].Size = checked((uint)updated.Length);
+
+            var newDataEnd = oldDataEnd + delta;
+            var newAlignedEnd = StreamExtensions.Align(newDataEnd, Alignment);
+            var alignedDelta = newAlignedEnd - oldAlignedEnd;
+
+            if (alignedDelta != 0)
+            {
+                var originalLength = stream.Length;
+                if (alignedDelta > 0)
+                {
+                    stream.SetLength(originalLength + alignedDelta);
+                    ShiftRegion(stream, oldAlignedEnd, oldAlignedEnd + alignedDelta, originalLength - oldAlignedEnd);
+                }
+                else
+                {
+                    ShiftRegion(stream, oldAlignedEnd, oldAlignedEnd + alignedDelta, originalLength - oldAlignedEnd);
+                    stream.SetLength(originalLength + alignedDelta);
+                }
+            }
+
+            ShiftRegion(stream, oldEntryAbsEnd, oldEntryAbsOffset + updated.Length, oldDataEnd - oldEntryAbsEnd);
+
+            stream.Position = oldEntryAbsOffset;
+            updated.Position = 0;
+            updated.CopyTo(stream);
+
+            stream.Position = entriesBase;
+            stream.WriteArrayLittleEndian(headers);
+
+            this.index = null;
+        }
+
+        private static (long GroupStart, long EntriesBase, Header[] Headers) FindGroup(Stream source, int targetGroup)
+        {
+            for (var group = 0; source.Position < source.Length; group++)
+            {
+                var groupStart = source.Position;
+                var total = source.ReadInt32LittleEndian();
+                var entriesBase = source.Position;
+                var headers = source.ReadArrayLittleEndian<Header>(total);
+
+                if (group == targetGroup)
+                {
+                    return (groupStart, entriesBase, headers);
+                }
+
+                var dataEnd = entriesBase + headers.Max(h => h.Offset + h.Size);
+                source.Position = StreamExtensions.Align(dataEnd, Alignment);
+            }
+
+            throw new InvalidOperationException($"Group {targetGroup} was not found.");
+        }
+
+        private static void ShiftRegion(Stream stream, long readPosition, long writePosition, long length)
+        {
+            if (readPosition == writePosition || length <= 0)
+            {
+                return;
+            }
+
+            var buffer = new byte[Math.Min(8 * 1024, length)];
+            if (writePosition > readPosition)
+            {
+                var remaining = length;
+                while (remaining > 0)
+                {
+                    var chunk = (int)Math.Min(buffer.Length, remaining);
+                    stream.Position = readPosition + remaining - chunk;
+                    stream.ReadExactly(buffer, 0, chunk);
+                    stream.Position = writePosition + remaining - chunk;
+                    stream.Write(buffer, 0, chunk);
+                    remaining -= chunk;
+                }
+            }
+            else
+            {
+                var offset = 0L;
+                while (offset < length)
+                {
+                    var chunk = (int)Math.Min(buffer.Length, length - offset);
+                    stream.Position = readPosition + offset;
+                    stream.ReadExactly(buffer, 0, chunk);
+                    stream.Position = writePosition + offset;
+                    stream.Write(buffer, 0, chunk);
+                    offset += chunk;
+                }
+            }
+        }
 
         private static string GetPaletteFileName(IFileSystem parent, string parentRelativePath) =>
             parent is FaceFileSystem
                 ? "palette.pal"
                 : $"{parent.Path.GetFileNameWithoutExtension(parentRelativePath).Split('_', 2)[1]}.pal";
 
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct Header
-        {
-            public readonly ushort Animation;
-            public readonly ushort Id;
-            public readonly uint Size;
-            public readonly uint Offset;
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct FrameHeader
-        {
-            public readonly uint PaletteOffset;
-            public readonly uint FrameOffset;
-            public readonly uint Unknown;
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct ImageDimensions
-        {
-            public readonly sbyte U;
-            public readonly sbyte V;
-            public readonly sbyte W;
-            public readonly sbyte H;
-        }
-
         private abstract class ImageFileSystem(string path, IFileSystem parent) : IndexedFileSystem<ImageEntry>
         {
             protected override Stream Open(ImageEntry entry, FileStreamOptions parentOptions) =>
-                new OffsetStreamSpan(parent.File.Open(path, parentOptions), entry.Offset, entry.Length, Ownership.Dispose);
+                CreateStreamWrapper(
+                    parentOptions,
+                    options => new OffsetStreamSpan(parent.File.Open(path, options), entry.Offset, entry.Length, Ownership.Dispose),
+                    updated => this.WriteEntry(entry, updated));
+
+            protected abstract void WriteEntry(ImageEntry entry, Stream updated);
         }
 
         private class FaceFileSystem(string path, IFileSystem parent) : ImageFileSystem(path, parent)
@@ -183,6 +292,52 @@ namespace Codec.MGS.Archives
 
             protected override string GetEntryName(ImageEntry entry) =>
                 entry.IsPalette ? "palette.pal" : $"{ImageKeys[entry.Index]}.img";
+
+            protected override void WriteEntry(ImageEntry entry, Stream updated)
+            {
+                if (entry.IsPalette && updated.Length != PaletteSize)
+                {
+                    throw new ArgumentException($"A palette must be exactly {PaletteSize} bytes.", nameof(updated));
+                }
+
+                using var stream = parent.File.Open(path, FileMode.Open, FileAccess.ReadWrite);
+
+                var delta = updated.Length - entry.Length;
+                if (delta != 0)
+                {
+                    var originalLength = stream.Length;
+                    var oldEntryEnd = entry.Offset + entry.Length;
+                    ShiftRegion(stream, oldEntryEnd, oldEntryEnd + delta, originalLength - oldEntryEnd);
+                    stream.SetLength(originalLength + delta);
+
+                    stream.Position = 0;
+                    var paletteOffset = stream.ReadUInt32LittleEndian();
+                    var imageOffsets = stream.ReadArrayLittleEndian<uint>(ImageKeys.Length);
+
+                    if (paletteOffset > entry.Offset)
+                    {
+                        paletteOffset = checked((uint)(paletteOffset + delta));
+                    }
+
+                    for (var i = 0; i < imageOffsets.Length; i++)
+                    {
+                        if (imageOffsets[i] > entry.Offset)
+                        {
+                            imageOffsets[i] = checked((uint)(imageOffsets[i] + delta));
+                        }
+                    }
+
+                    stream.Position = 0;
+                    stream.WriteLittleEndian(paletteOffset);
+                    stream.WriteArrayLittleEndian(imageOffsets);
+                }
+
+                stream.Position = entry.Offset;
+                updated.Position = 0;
+                updated.CopyTo(stream);
+
+                this.index = null;
+            }
         }
 
         private class AnimFileSystem(string path, IFileSystem parent) : ImageFileSystem(path, parent)
@@ -223,6 +378,54 @@ namespace Codec.MGS.Archives
 
             protected override string GetEntryName(ImageEntry entry) =>
                 entry.IsPalette ? $"{entry.Index}.pal" : $"{entry.Index}_{entry.PaletteIndex}.img";
+
+            protected override void WriteEntry(ImageEntry entry, Stream updated)
+            {
+                if (entry.IsPalette && updated.Length != PaletteSize)
+                {
+                    throw new ArgumentException($"A palette must be exactly {PaletteSize} bytes.", nameof(updated));
+                }
+
+                using var stream = parent.File.Open(path, FileMode.Open, FileAccess.ReadWrite);
+
+                var delta = updated.Length - entry.Length;
+                if (delta != 0)
+                {
+                    var originalLength = stream.Length;
+                    var oldEntryEnd = entry.Offset + entry.Length;
+                    ShiftRegion(stream, oldEntryEnd, oldEntryEnd + delta, originalLength - oldEntryEnd);
+                    stream.SetLength(originalLength + delta);
+
+                    stream.Position = 0;
+                    var frameCount = stream.ReadUInt32LittleEndian();
+                    var frameHeaders = stream.ReadArrayLittleEndian<FrameHeader>((int)frameCount);
+
+                    for (var i = 0; i < frameHeaders.Length; i++)
+                    {
+                        var header = frameHeaders[i];
+                        if (header.PaletteOffset > entry.Offset)
+                        {
+                            header.PaletteOffset = checked((uint)(header.PaletteOffset + delta));
+                        }
+
+                        if (header.FrameOffset > entry.Offset)
+                        {
+                            header.FrameOffset = checked((uint)(header.FrameOffset + delta));
+                        }
+
+                        frameHeaders[i] = header;
+                    }
+
+                    stream.Position = sizeof(uint);
+                    stream.WriteArrayLittleEndian(frameHeaders);
+                }
+
+                stream.Position = entry.Offset;
+                updated.Position = 0;
+                updated.CopyTo(stream);
+
+                this.index = null;
+            }
         }
 
         private static int Intensity(int c) =>
@@ -271,10 +474,15 @@ namespace Codec.MGS.Archives
             }
 
             var dim = outputStream.ReadLittleEndian<ImageDimensions>();
-            if (image.Width != dim.W || image.Height != dim.H)
+
+            if (image.Page.X != 0 || image.Page.Y != 0)
             {
-                throw new NotImplementedException($"Replacement image must be exactly {dim.W}x{dim.H} to avoid index rewrite. Found {image.Width}x{image.Height}.");
+                dim.U = (sbyte)image.Page.X;
+                dim.V = (sbyte)image.Page.Y;
             }
+
+            dim.W = (sbyte)image.Width;
+            dim.H = (sbyte)image.Height;
 
             var indices = new byte[image.Width * image.Height];
             using (var pixels = image.GetPixels())
@@ -290,7 +498,36 @@ namespace Codec.MGS.Archives
                 }
             }
 
+            outputStream.Position = 0;
+            outputStream.WriteLittleEndian(dim);
             outputStream.Write(indices, 0, indices.Length);
+            outputStream.SetLength(outputStream.Position);
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        private struct Header
+        {
+            public ushort Animation;
+            public ushort Id;
+            public uint Size;
+            public uint Offset;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        private struct FrameHeader
+        {
+            public uint PaletteOffset;
+            public uint FrameOffset;
+            public uint Unknown;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        private struct ImageDimensions
+        {
+            public sbyte U;
+            public sbyte V;
+            public sbyte W;
+            public sbyte H;
         }
     }
 }
