@@ -72,9 +72,7 @@ namespace Codec.UI.WinForms
 
         private void Provider_EntryLogged(object? sender, NotifyingLoggerProvider.LogEntry e)
         {
-            this.InvokeIfRequired(() =>
-            {
-            });
+            this.InvokeIfRequired(() => this.errorListView.Items.Add(new ListViewItem([e.Severity.ToString(), e.Text, e.Location])));
         }
 
         private void TextureDisplay_Click(object? sender, MouseEventArgs e)
@@ -405,6 +403,11 @@ namespace Codec.UI.WinForms
                     this.UpdateContextMenu();
                 }
             });
+        }
+
+        private void ViewErrorsButton_CheckedChanged(object sender, EventArgs e)
+        {
+            this.errorListView.Visible = this.viewErrorsButton.Checked;
         }
     }
 }

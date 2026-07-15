@@ -22,6 +22,17 @@
       <Button Content="{iconPacks:FontAwesome Kind=ChevronRightSolid}" IsEnabled="{Binding CanGoForward}" Command="{Binding GoForwardCommand}" />
       <Button Content="{iconPacks:FontAwesome Kind=ArrowTurnUpSolid}" IsEnabled="{Binding CanGoUp}" Command="{Binding GoUpCommand}" />
       <Separator Height="NaN" Width="1" />
+      <Button Foreground="Red" Content="{iconPacks:FontAwesome Kind=TriangleExclamationSolid}" Command="{Binding ToggleErrorsCommand}">
+        <Button.Styles>
+          <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="TextBlock.Foreground" Value="Red" />
+          </Style>
+          <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="TextBlock.Foreground" Value="Red" />
+          </Style>
+        </Button.Styles>
+      </Button>
+      <Separator Height="NaN" Width="1" />
       <Button Content="{iconPacks:FontAwesome Kind=FloppyDiskSolid}" IsEnabled="{Binding List.CanSave}" Command="{Binding List.SaveCommand}" CommandParameter="{Binding $parent[Window]}" />
       <DropDownButton Content="{iconPacks:FontAwesome Kind=GearSolid}" VerticalAlignment="Center">
         <DropDownButton.Flyout>
@@ -48,7 +59,13 @@
         </TextBox.KeyBindings>
       </TextBox>
     </DockPanel>
-    <TextBlock DockPanel.Dock="Bottom" Text="{Binding StatusMessage}" Margin="4,2" />
+    <DataGrid DockPanel.Dock="Bottom" ItemsSource="{Binding Errors}" IsVisible="{Binding ShowErrors}" IsReadOnly="True" Height="200">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Severity" Binding="{Binding Severity}" Width="120" />
+        <DataGridTextColumn Header="Text" Binding="{Binding Text}" Width="600" />
+        <DataGridTextColumn Header="Location" Binding="{Binding Location}" Width="200" />
+      </DataGrid.Columns>
+    </DataGrid>
     <Grid ColumnDefinitions="1*,4,2*">
       <views:FileTreeView Grid.Column="0" DataContext="{Binding Tree}" />
       <GridSplitter Grid.Column="1" ResizeDirection="Columns" />

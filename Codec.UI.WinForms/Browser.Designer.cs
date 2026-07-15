@@ -48,10 +48,16 @@
             this.viewDrowDown = new ToolStripDropDownButton();
             this.listToolStripMenuItem = new ToolStripMenuItem();
             this.imagePreviewToolStripMenuItem = new ToolStripMenuItem();
+            this.toolStripSeparator2 = new ToolStripSeparator();
+            this.viewErrorsButton = new ToolStripButton();
             this.lowerStatusStrip = new StatusStrip();
             this.saveSelectedDialog = new SaveFileDialog();
             this.saveToFolderDialog = new FolderBrowserDialog();
             this.openFileDialog = new OpenFileDialog();
+            this.errorListView = new ListView();
+            this.severityColumnHeader = new ColumnHeader();
+            this.textColumnHeader = new ColumnHeader();
+            this.locationColumnHeader = new ColumnHeader();
             ((System.ComponentModel.ISupportInitialize)this.splitContainer).BeginInit();
             this.splitContainer.Panel1.SuspendLayout();
             this.splitContainer.Panel2.SuspendLayout();
@@ -83,7 +89,7 @@
             // splitContainer.Panel2
             // 
             this.splitContainer.Panel2.Controls.Add(this.entryList);
-            this.splitContainer.Size = new Size(1203, 702);
+            this.splitContainer.Size = new Size(1203, 556);
             this.splitContainer.SplitterDistance = 401;
             this.splitContainer.TabIndex = 1;
             // 
@@ -92,7 +98,7 @@
             this.fileTree.Dock = DockStyle.Fill;
             this.fileTree.Location = new Point(0, 0);
             this.fileTree.Name = "fileTree";
-            this.fileTree.Size = new Size(401, 702);
+            this.fileTree.Size = new Size(401, 556);
             this.fileTree.TabIndex = 0;
             this.fileTree.BeforeExpand += this.FileTree_BeforeExpand;
             this.fileTree.AfterSelect += this.FileTree_AfterSelect;
@@ -104,7 +110,7 @@
             this.entryList.LargeImageList = this.fileTypes;
             this.entryList.Location = new Point(0, 0);
             this.entryList.Name = "entryList";
-            this.entryList.Size = new Size(798, 702);
+            this.entryList.Size = new Size(798, 556);
             this.entryList.SmallImageList = this.fileTypes;
             this.entryList.TabIndex = 0;
             this.entryList.UseCompatibleStateImageBehavior = false;
@@ -117,14 +123,14 @@
             this.entryContextMenu.ImageScalingSize = new Size(24, 24);
             this.entryContextMenu.Items.AddRange(new ToolStripItem[] { this.previewToolStripMenuItem, this.saveAsToolStripMenuItem, this.replaceToolStripMenuItem, this.copyPathToolStripMenuItem });
             this.entryContextMenu.Name = "entryContextMenu";
-            this.entryContextMenu.Size = new Size(249, 165);
+            this.entryContextMenu.Size = new Size(174, 132);
             this.entryContextMenu.Closed += this.EntryContextMenu_Closed;
             // 
             // previewToolStripMenuItem
             // 
             this.previewToolStripMenuItem.Image = Properties.Resources.FontAwesome_EyeSolid_20x20;
             this.previewToolStripMenuItem.Name = "previewToolStripMenuItem";
-            this.previewToolStripMenuItem.Size = new Size(248, 32);
+            this.previewToolStripMenuItem.Size = new Size(173, 32);
             this.previewToolStripMenuItem.Text = "Preview...";
             this.previewToolStripMenuItem.Click += this.PreviewMenuItem_Click;
             // 
@@ -132,7 +138,7 @@
             // 
             this.saveAsToolStripMenuItem.Image = Properties.Resources.FontAwesome_FloppyDiskSolid_20x20;
             this.saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
-            this.saveAsToolStripMenuItem.Size = new Size(248, 32);
+            this.saveAsToolStripMenuItem.Size = new Size(173, 32);
             this.saveAsToolStripMenuItem.Text = "Save As...";
             this.saveAsToolStripMenuItem.Click += this.SaveButton_Click;
             // 
@@ -140,7 +146,7 @@
             // 
             this.replaceToolStripMenuItem.Image = Properties.Resources.FontAwesome_FileImportSolid_20x20;
             this.replaceToolStripMenuItem.Name = "replaceToolStripMenuItem";
-            this.replaceToolStripMenuItem.Size = new Size(248, 32);
+            this.replaceToolStripMenuItem.Size = new Size(173, 32);
             this.replaceToolStripMenuItem.Text = "Replace...";
             this.replaceToolStripMenuItem.Click += this.ReplaceToolStripMenuItem_Click;
             // 
@@ -148,7 +154,7 @@
             // 
             this.copyPathToolStripMenuItem.Image = Properties.Resources.FontAwesome_SignsPostSolid_20x20;
             this.copyPathToolStripMenuItem.Name = "copyPathToolStripMenuItem";
-            this.copyPathToolStripMenuItem.Size = new Size(248, 32);
+            this.copyPathToolStripMenuItem.Size = new Size(173, 32);
             this.copyPathToolStripMenuItem.Text = "Copy Path";
             this.copyPathToolStripMenuItem.Click += this.CopyPathToolStripMenuItem_Click;
             // 
@@ -161,7 +167,7 @@
             // topToolStrip
             // 
             this.topToolStrip.ImageScalingSize = new Size(24, 24);
-            this.topToolStrip.Items.AddRange(new ToolStripItem[] { this.backButton, this.forwardButton, this.goUpButton, this.toolStripSeparator1, this.saveButton, this.viewDrowDown });
+            this.topToolStrip.Items.AddRange(new ToolStripItem[] { this.backButton, this.forwardButton, this.goUpButton, this.toolStripSeparator1, this.viewErrorsButton, this.toolStripSeparator2, this.saveButton, this.viewDrowDown });
             this.topToolStrip.Location = new Point(0, 0);
             this.topToolStrip.Name = "topToolStrip";
             this.topToolStrip.Size = new Size(1203, 33);
@@ -240,6 +246,24 @@
             this.imagePreviewToolStripMenuItem.Text = "Image Preview";
             this.imagePreviewToolStripMenuItem.Click += this.ImagePreviewToolStripMenuItem_Click;
             // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new Size(6, 33);
+            // 
+            // viewErrorsButton
+            // 
+            this.viewErrorsButton.Checked = true;
+            this.viewErrorsButton.CheckOnClick = true;
+            this.viewErrorsButton.CheckState = CheckState.Checked;
+            this.viewErrorsButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            this.viewErrorsButton.Image = Properties.Resources.FontAwesome_TriangleExclamationSolid_20x20;
+            this.viewErrorsButton.ImageTransparentColor = Color.Magenta;
+            this.viewErrorsButton.Name = "viewErrorsButton";
+            this.viewErrorsButton.Size = new Size(34, 28);
+            this.viewErrorsButton.Text = "View Errors";
+            this.viewErrorsButton.CheckedChanged += this.ViewErrorsButton_CheckedChanged;
+            // 
             // lowerStatusStrip
             // 
             this.lowerStatusStrip.ImageScalingSize = new Size(24, 24);
@@ -262,14 +286,41 @@
             // 
             this.openFileDialog.FileName = "openFileDialog";
             // 
+            // errorListView
+            // 
+            this.errorListView.Columns.AddRange(new ColumnHeader[] { this.severityColumnHeader, this.textColumnHeader, this.locationColumnHeader });
+            this.errorListView.Dock = DockStyle.Bottom;
+            this.errorListView.Location = new Point(0, 620);
+            this.errorListView.Name = "errorListView";
+            this.errorListView.Size = new Size(1203, 146);
+            this.errorListView.TabIndex = 4;
+            this.errorListView.UseCompatibleStateImageBehavior = false;
+            this.errorListView.View = View.Details;
+            // 
+            // severityColumnHeader
+            // 
+            this.severityColumnHeader.Text = "Severity";
+            this.severityColumnHeader.Width = 120;
+            // 
+            // textColumnHeader
+            // 
+            this.textColumnHeader.Text = "Text";
+            this.textColumnHeader.Width = 600;
+            // 
+            // locationColumnHeader
+            // 
+            this.locationColumnHeader.Text = "Location";
+            this.locationColumnHeader.Width = 200;
+            // 
             // Browser
             // 
             this.AutoScroll = true;
             this.ClientSize = new Size(1203, 788);
             this.Controls.Add(this.splitContainer);
-            this.Controls.Add(this.lowerStatusStrip);
             this.Controls.Add(this.pathBox);
             this.Controls.Add(this.topToolStrip);
+            this.Controls.Add(this.errorListView);
+            this.Controls.Add(this.lowerStatusStrip);
             this.Name = "Browser";
             this.Text = "Codec";
             this.splitContainer.Panel1.ResumeLayout(false);
@@ -307,5 +358,11 @@
         private ToolStripMenuItem copyPathToolStripMenuItem;
         private ToolStripMenuItem replaceToolStripMenuItem;
         private OpenFileDialog openFileDialog;
+        private ListView errorListView;
+        private ColumnHeader severityColumnHeader;
+        private ColumnHeader textColumnHeader;
+        private ColumnHeader locationColumnHeader;
+        private ToolStripButton viewErrorsButton;
+        private ToolStripSeparator toolStripSeparator2;
     }
 }

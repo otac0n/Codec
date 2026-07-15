@@ -12,6 +12,7 @@
     using Codec.UI.Avalonia.Services;
     using CommunityToolkit.Mvvm.ComponentModel;
     using CommunityToolkit.Mvvm.Input;
+    using System.Collections.ObjectModel;
 
     public partial class BrowserViewModel : ObservableObject
     {
@@ -38,11 +39,13 @@
         [ObservableProperty]
         private string currentPath = string.Empty;
 
-        [ObservableProperty]
-        private string? statusMessage;
+        public ObservableCollection<NotifyingLoggerProvider.LogEntry> Errors { get; } = [];
 
         [ObservableProperty]
         private ViewMode currentViewMode = ViewMode.List;
+
+        [ObservableProperty]
+        private bool showErrors = true;
 
         public BrowserViewModel(
             IServiceProvider serviceProvider,
@@ -100,6 +103,12 @@
         private void GoUp()
         {
             this.Navigate(PathExtensions.GetDirectoryName(this.CurrentPath));
+        }
+
+        [RelayCommand]
+        private void ToggleErrors()
+        {
+            this.ShowErrors = !this.ShowErrors;
         }
 
         private void Navigate(string path)

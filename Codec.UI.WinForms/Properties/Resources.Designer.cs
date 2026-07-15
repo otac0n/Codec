@@ -241,6 +241,16 @@ namespace Codec.UI.WinForms.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap FontAwesome_TriangleExclamationSolid_20x20 {
+            get {
+                object obj = ResourceManager.GetObject("FontAwesome-TriangleExclamationSolid@20x20", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
         internal static System.Drawing.Icon Otacon {

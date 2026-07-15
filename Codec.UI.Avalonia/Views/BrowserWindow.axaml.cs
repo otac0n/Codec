@@ -27,9 +27,7 @@
 
         private void Provider_EntryLogged(object? sender, NotifyingLoggerProvider.LogEntry e)
         {
-            Dispatcher.UIThread.Invoke(() =>
-            {
-            });
+            Dispatcher.UIThread.Invoke(() => this.viewModel.Errors.Add(e));
         }
 
         private void OnAudioPreviewRequested(object? sender, BrowserViewModel.PreviewRequestedEventArgs<AudioStream> args)
