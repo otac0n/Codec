@@ -56,7 +56,7 @@
         [GeneratedRegex(@"^[a-f0-9]{4}(?=_|\.|$)")]
         private static partial Regex Hex16PrefixRegex();
 
-        [GeneratedRegex(@"^[a-f0-9]{8}(?=_|\.|$)")]
+        [GeneratedRegex(@"^[a-f0-9]{6,8}(?=_|\.|$)")]
         private static partial Regex Hex24PrefixRegex();
     }
 }

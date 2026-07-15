@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.IO;
     using System.Numerics;
     using System.Runtime.InteropServices;
@@ -26,7 +25,14 @@
                     return new((fullPath, parentRelativePath, parent, parentPath) =>
                     {
                         using var file = parent.File.OpenRead(parentRelativePath);
-                        return (RenderableScene)FromStream(serviceProvider.GetRequiredService<NestedFileSystemManager>(), fullPath, file);
+                        var header = file.ReadLittleEndian<Header>();
+                        var padded = header.Id == 0;
+                        file.Position = 0;
+
+                        return (RenderableScene)(
+                            padded
+                            ? FromStream<HeaderPadded, MeshDefinitionPadded, StripDefinitionPadded>(serviceProvider.GetRequiredService<NestedFileSystemManager>(), fullPath, file)
+                            : FromStream<Header, MeshDefinition, StripDefinition>(serviceProvider.GetRequiredService<NestedFileSystemManager>(), fullPath, file));
                     });
                 }
 
@@ -34,13 +40,16 @@
             });
         }
 
-        public static Scene FromStream(NestedFileSystemManager fsm, string fullPath, Stream stream)
+        public static Scene FromStream<THeader, TMesh, TStrip>(NestedFileSystemManager fsm, string fullPath, Stream stream)
+            where THeader : struct, IHeader
+            where TMesh : struct, IMesh
+            where TStrip : struct, IStrip
         {
             var bytes = new byte[stream.Length];
             var fileSpan = bytes.AsSpan();
             stream.ReadExactly(fileSpan);
-            var header = MemoryMarshal.Cast<byte, Header>(fileSpan)[0];
-            var meshDefinitions = MemoryMarshal.Cast<byte, MeshDefinition>(fileSpan[64..])[..(int)header.PartCount];
+            var header = MemoryMarshal.Cast<byte, THeader>(fileSpan)[0];
+            var meshDefinitions = MemoryMarshal.Cast<byte, TMesh>(fileSpan[64..])[..(int)header.PartCount];
 
             var scene = new Scene();
             var rootNode = new Node("root");
@@ -51,7 +60,7 @@
             {
                 var relativeNode = meshDefinitions[p].ParentIndex != -1 && !(meshDefinitions[p].ParentIndex == 0 && p == 0) ? nodes[meshDefinitions[p].ParentIndex] : rootNode;
 
-                var stripDefinitions = MemoryMarshal.Cast<byte, StripDefinition>(fileSpan[(int)meshDefinitions[p].DefinitionOffset..])[0..(int)meshDefinitions[p].MeshCount];
+                var stripDefinitions = MemoryMarshal.Cast<byte, TStrip>(fileSpan[(int)meshDefinitions[p].DefinitionOffset..])[0..(int)meshDefinitions[p].MeshCount];
                 var totalVertices = 0u;
                 for (var d = 0; d < stripDefinitions.Length; d++)
                 {
@@ -213,20 +222,27 @@
 
             var parentFolder = Path.GetDirectoryName(modelPath);
             var rootFolder = Path.GetDirectoryName(Path.GetDirectoryName(parentFolder));
-            var searchPath = Path.Combine(rootFolder, "tri", Path.GetFileName(parentFolder));
-            foreach (var tri in fsm.EnumerateFiles(searchPath, "*.tri"))
+            var searchPaths = new[]
             {
-                var hash = StringCode.GetStrCode24(tri.Path);
-                if (hash == modelId)
+                parentFolder,
+                Path.Combine(rootFolder, "tri", Path.GetFileName(parentFolder)),
+            };
+            foreach (var searchPath in searchPaths)
+            {
+                foreach (var tri in fsm.EnumerateFiles(searchPath, "*.tri"))
                 {
-                    path = Path.Combine(tri.Path, $"{textureId:x6}.tm2x");
-                    if (fsm.FileExists(path))
+                    var hash = StringCode.GetStrCode24(tri.Path);
+                    if (hash == modelId)
                     {
-                        path = Path.GetRelativePath(parentFolder, path);
-                        break;
-                    }
+                        path = Path.Combine(tri.Path, $"{textureId:x6}.tm2x");
+                        if (fsm.FileExists(path))
+                        {
+                            path = Path.GetRelativePath(parentFolder, path);
+                            break;
+                        }
 
-                    path = null;
+                        path = null;
+                    }
                 }
             }
 
@@ -266,7 +282,44 @@
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct StripDefinition
+        private struct StripDefinition : IStrip
+        {
+            public uint Flags;
+            public uint VertexCount;
+            public uint TextureId1;
+            public uint TextureId2;
+            public uint TextureId3;
+            public uint VertexOffset;
+            public uint NormalOffset;
+            public uint UV1Offset;
+            public uint UV2Offset;
+            public uint UV3Offset;
+            public uint Pad1;
+            public uint Pad2;
+
+            readonly uint IStrip.Flags => this.Flags;
+
+            readonly uint IStrip.VertexCount => this.VertexCount;
+
+            readonly ulong IStrip.TextureId1 => this.TextureId1;
+
+            readonly ulong IStrip.TextureId2 => this.TextureId2;
+
+            readonly ulong IStrip.TextureId3 => this.TextureId3;
+
+            readonly ulong IStrip.VertexOffset => this.VertexOffset;
+
+            readonly ulong IStrip.NormalOffset => this.NormalOffset;
+
+            readonly ulong IStrip.UV1Offset => this.UV1Offset;
+
+            readonly ulong IStrip.UV2Offset => this.UV2Offset;
+
+            readonly ulong IStrip.UV3Offset => this.UV3Offset;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        private struct StripDefinitionPadded : IStrip
         {
             public uint Flags;
             public uint VertexCount;
@@ -278,32 +331,154 @@
             public ulong UV1Offset;
             public ulong UV2Offset;
             public ulong UV3Offset;
-            public uint Pad1;
-            public uint Pad2;
-            public uint Pad3;
-            public uint Pad4;
-            public uint Pad5;
-            public uint Pad6;
+            public ulong Pad1;
+            public ulong Pad2;
+            public ulong Pad3;
+
+            readonly uint IStrip.Flags => this.Flags;
+
+            readonly uint IStrip.VertexCount => this.VertexCount;
+
+            readonly ulong IStrip.TextureId1 => this.TextureId1;
+
+            readonly ulong IStrip.TextureId2 => this.TextureId2;
+
+            readonly ulong IStrip.TextureId3 => this.TextureId3;
+
+            readonly ulong IStrip.VertexOffset => this.VertexOffset;
+
+            readonly ulong IStrip.NormalOffset => this.NormalOffset;
+
+            readonly ulong IStrip.UV1Offset => this.UV1Offset;
+
+            readonly ulong IStrip.UV2Offset => this.UV2Offset;
+
+            readonly ulong IStrip.UV3Offset => this.UV3Offset;
+        }
+
+        public interface IStrip
+        {
+            public uint Flags { get; }
+
+            public uint VertexCount { get; }
+
+            public ulong TextureId1 { get; }
+
+            public ulong TextureId2 { get; }
+
+            public ulong TextureId3 { get; }
+
+            public ulong VertexOffset { get; }
+
+            public ulong NormalOffset { get; }
+
+            public ulong UV1Offset { get; }
+
+            public ulong UV2Offset { get; }
+
+            public ulong UV3Offset { get; }
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct Header
+        private struct Header : IHeader
         {
             public uint Version;
             public uint PartCount;
             public uint BoneCount;
-            public uint Pad1;
-            public ulong Id;
+            public uint Id;
             public uint Unknown1;
             public uint Unknown2;
+            public uint Unknown3;
+            public Vector3 Min;
+            public Vector3 Max;
+            public uint Pad1;
+            public uint Pad2;
+
+            readonly uint IHeader.Version => this.Version;
+
+            readonly uint IHeader.PartCount => this.PartCount;
+
+            readonly ulong IHeader.BoneCount => this.BoneCount;
+
+            readonly ulong IHeader.Id => this.Id;
+
+            readonly Vector3 IHeader.Min => this.Min;
+
+            readonly Vector3 IHeader.Max => this.Max;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        private struct HeaderPadded : IHeader
+        {
+            public uint Version;
+            public uint PartCount;
+            public ulong BoneCount;
+            public ulong Id;
+            public uint Pad1;
             public Vector3 Min;
             public Vector3 Max;
             public uint Unknown3;
             public uint Unknown4;
+
+            readonly uint IHeader.Version => this.Version;
+
+            readonly uint IHeader.PartCount => this.PartCount;
+
+            readonly ulong IHeader.BoneCount => this.BoneCount;
+
+            readonly ulong IHeader.Id => this.Id;
+
+            readonly Vector3 IHeader.Min => this.Min;
+
+            readonly Vector3 IHeader.Max => this.Max;
+        }
+
+        public interface IHeader
+        {
+            public uint Version { get; }
+
+            public uint PartCount { get; }
+
+            public ulong BoneCount { get; }
+
+            public ulong Id { get; }
+
+            public Vector3 Min { get; }
+
+            public Vector3 Max { get; }
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct MeshDefinition
+        private struct MeshDefinition : IMesh
+        {
+            public uint Flags;
+            public uint MeshCount;
+            public Vector3 Min;
+            public Vector3 Max;
+            public Vector3 RelativeOrigin;
+            public int ParentIndex;
+            public uint DefinitionOffset;
+            public uint Unkown1;
+            public uint Unkown2;
+            public uint Unkown3;
+
+            readonly uint IMesh.Flags => this.Flags;
+
+            readonly uint IMesh.MeshCount => this.MeshCount;
+
+            readonly Vector3 IMesh.Min => this.Min;
+
+            readonly Vector3 IMesh.Max => this.Max;
+
+            readonly Vector3 IMesh.RelativeOrigin => this.RelativeOrigin;
+
+            readonly int IMesh.ParentIndex => this.ParentIndex;
+
+            readonly ulong IMesh.DefinitionOffset => this.DefinitionOffset;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        private struct MeshDefinitionPadded : IMesh
         {
             public uint Flags;
             public uint MeshCount;
@@ -312,12 +487,40 @@
             public Vector3 RelativeOrigin;
             public int ParentIndex;
             public ulong DefinitionOffset;
-            public uint Pad1;
-            public uint Pad2;
-            public uint Pad3;
-            public uint Pad4;
-            public uint Pad5;
-            public uint Pad6;
+            public ulong Unkown1;
+            public ulong Unkown2;
+            public ulong Unkown3;
+
+            readonly uint IMesh.Flags => this.Flags;
+
+            readonly uint IMesh.MeshCount => this.MeshCount;
+
+            readonly Vector3 IMesh.Min => this.Min;
+
+            readonly Vector3 IMesh.Max => this.Max;
+
+            readonly Vector3 IMesh.RelativeOrigin => this.RelativeOrigin;
+
+            readonly int IMesh.ParentIndex => this.ParentIndex;
+
+            readonly ulong IMesh.DefinitionOffset => this.DefinitionOffset;
+        }
+
+        public interface IMesh
+        {
+            public uint Flags { get; }
+
+            public uint MeshCount { get; }
+
+            public Vector3 Min { get; }
+
+            public Vector3 Max { get; }
+
+            public Vector3 RelativeOrigin { get; }
+
+            public int ParentIndex { get; }
+
+            public ulong DefinitionOffset { get; }
         }
     }
 }
