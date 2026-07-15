@@ -102,7 +102,7 @@ namespace Codec.MGS.Files
             }
 
             protected override string GetEntryName(uint entry) =>
-                entry.ToString("x4") + ".tm2x";
+                $"{entry:x6}.tm2x";
 
             protected override Stream Open(uint entry, FileStreamOptions parentOptions)
             {
