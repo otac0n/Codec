@@ -4,8 +4,11 @@ namespace Codec.UI
 {
     using System.CommandLine;
     using System.CommandLine.Invocation;
+    using System.Diagnostics;
     using Codec.Services;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.DependencyInjection.Extensions;
+    using Microsoft.Extensions.Logging;
 
     public class ServiceRegistration
     {
@@ -22,6 +25,19 @@ namespace Codec.UI
 
         public static void Register(InvocationContext context, IServiceCollection services)
         {
+            services.AddLogging(builder =>
+            {
+                builder.AddConsole();
+
+                var notifier = new NotifyingLoggerProvider();
+                builder.Services.AddSingleton(notifier);
+                builder.AddProvider(notifier);
+
+                if (Debugger.IsAttached)
+                {
+                    builder.AddDebug();
+                }
+            });
             Codec.ServiceRegistration.Register(services);
             Audio.ServiceRegistration.Register(services);
             Imaging.ServiceRegistration.Register(services);

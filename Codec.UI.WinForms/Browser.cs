@@ -16,12 +16,14 @@ namespace Codec.UI.WinForms
     using Codec.Services;
     using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Logging;
 
     internal partial class Browser : Form
     {
         private readonly EntryTypeDetector detector;
         private readonly NestedFileSystemManager fsm;
         private readonly FileExportService exportService;
+        private readonly NotifyingLoggerProvider provider;
         private readonly VirtualImageList<Entry> textureDisplay;
         private readonly List<Entry> history = [];
         private readonly List<Entry> contextEntries = [];
@@ -38,8 +40,10 @@ namespace Codec.UI.WinForms
             this.detector = serviceProvider.GetRequiredService<EntryTypeDetector>();
             this.fsm = serviceProvider.GetRequiredService<NestedFileSystemManager>();
             this.exportService = serviceProvider.GetRequiredService<FileExportService>();
+            this.provider = serviceProvider.GetRequiredService<NotifyingLoggerProvider>();
 
             this.InitializeComponent();
+            this.provider.EntryLogged += this.Provider_EntryLogged;
             this.Icon = Properties.Resources.Otacon;
             this.fileTypes.Images.AddRange([
                 Properties.Resources.FontAwesome_FolderOpenSolid_20x20,
@@ -64,6 +68,13 @@ namespace Codec.UI.WinForms
 
             this.fileTree.Nodes.Add(new TreeNode("root", 0, 0, [this.CreateExpanderDummy()]) { Tag = this.fsm.RootEntry });
             this.Navigate(Path.Combine(serviceProvider.GetRequiredService<EnvironmentOptions>().SteamApps, WellKnownPaths.AllDataBin, WellKnownPaths.CD1Path, WellKnownPaths.StageDirPath));
+        }
+
+        private void Provider_EntryLogged(object? sender, NotifyingLoggerProvider.LogEntry e)
+        {
+            this.InvokeIfRequired(() =>
+            {
+            });
         }
 
         private void TextureDisplay_Click(object? sender, MouseEventArgs e)

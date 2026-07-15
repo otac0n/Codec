@@ -5,11 +5,9 @@ namespace Codec.UI.WinForms
     using System;
     using System.CommandLine;
     using System.CommandLine.Invocation;
-    using System.Diagnostics;
     using System.Windows.Forms;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
-    using Microsoft.Extensions.Logging;
 
     internal static partial class Program
     {
@@ -33,15 +31,6 @@ namespace Codec.UI.WinForms
                 var builder = Host.CreateDefaultBuilder(args);
                 builder.ConfigureServices(services =>
                 {
-                    services.AddLogging(builder =>
-                    {
-                        builder.AddConsole();
-                        if (Debugger.IsAttached)
-                        {
-                            builder.AddDebug();
-                        }
-                    });
-
                     Codec.UI.ServiceRegistration.Register(context, services);
                     services.AddTransient<Browser>();
                 });

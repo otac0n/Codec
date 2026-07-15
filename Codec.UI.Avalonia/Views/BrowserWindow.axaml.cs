@@ -3,21 +3,33 @@
     using System;
     using global::Avalonia.Controls;
     using global::Avalonia.Media.Imaging;
+    using global::Avalonia.Threading;
     using Codec.Files;
     using Codec.UI.Avalonia.ViewModels;
+    using Microsoft.Extensions.Logging;
 
     public partial class BrowserWindow : Window
     {
         private readonly BrowserViewModel viewModel;
+        private readonly NotifyingLoggerProvider provider;
 
-        public BrowserWindow(BrowserViewModel viewModel)
+        public BrowserWindow(BrowserViewModel viewModel, NotifyingLoggerProvider provider)
         {
             this.InitializeComponent();
             viewModel.AudioPreviewRequested += this.OnAudioPreviewRequested;
             viewModel.ImagePreviewRequested += this.OnImagePreviewRequested;
             viewModel.ModelPreviewRequested += this.OnModelPreviewRequested;
+            provider.EntryLogged += this.Provider_EntryLogged;
             this.viewModel = viewModel;
+            this.provider = provider;
             this.DataContext = viewModel;
+        }
+
+        private void Provider_EntryLogged(object? sender, NotifyingLoggerProvider.LogEntry e)
+        {
+            Dispatcher.UIThread.Invoke(() =>
+            {
+            });
         }
 
         private void OnAudioPreviewRequested(object? sender, BrowserViewModel.PreviewRequestedEventArgs<AudioStream> args)
