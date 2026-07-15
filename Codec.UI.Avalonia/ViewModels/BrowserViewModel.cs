@@ -12,11 +12,13 @@
     using Codec.UI.Avalonia.Services;
     using CommunityToolkit.Mvvm.ComponentModel;
     using CommunityToolkit.Mvvm.Input;
+    using Microsoft.Extensions.Logging;
     using System.Collections.ObjectModel;
 
     public partial class BrowserViewModel : ObservableObject
     {
         private readonly IServiceProvider serviceProvider;
+        private readonly ILogger<BrowserViewModel> logger;
         private readonly NestedFileSystemManager fsm;
         private readonly ImageLoader imageLoader;
         private readonly List<Entry> history = [];
@@ -49,6 +51,7 @@
 
         public BrowserViewModel(
             IServiceProvider serviceProvider,
+            ILogger<BrowserViewModel> logger,
             NestedFileSystemManager fsm,
             FileTreeViewModel fileTreeViewModel,
             ImageLoader imageLoader,
@@ -56,6 +59,7 @@
             EnvironmentOptions env)
         {
             this.serviceProvider = serviceProvider;
+            this.logger = logger;
             this.fsm = fsm;
             this.imageLoader = imageLoader;
             this.currentPath = Path.Combine(
@@ -167,36 +171,38 @@
                 return;
             }
 
-            switch (item.EntryType)
+            try
             {
-                case EntryType.Audio:
-                    {
-                        var audioStream = this.fsm.Resolve<AudioStream>(item.Entry.Path) ?? (AudioStream)this.fsm.OpenRead(item.Entry.Path);
-                        this.AudioPreviewRequested?.Invoke(this, new(audioStream, item.Entry.Path, this.fsm));
-                    }
-                    break;
-                case EntryType.Image:
-                    try
-                    {
-                        var bmp = await this.imageLoader.LoadAsync(item.Entry).ConfigureAwait(true);
-                        if (bmp != null)
+                switch (item.EntryType)
+                {
+                    case EntryType.Audio:
                         {
-                            this.ImagePreviewRequested?.Invoke(this, new(bmp, item.Entry.Path, this.fsm));
+                            var audioStream = this.fsm.Resolve<AudioStream>(item.Entry.Path) ?? (AudioStream)this.fsm.OpenRead(item.Entry.Path);
+                            this.AudioPreviewRequested?.Invoke(this, new(audioStream, item.Entry.Path, this.fsm));
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        this.StatusMessage = $"Failed to load image: {ex.Message}";
-                    }
-                    break;
-                case EntryType.Model:
-                    {
-                        if (this.fsm.Resolve<RenderableScene>(item.Entry.Path) is RenderableScene model)
+                        break;
+                    case EntryType.Image:
                         {
-                            this.ModelPreviewRequested?.Invoke(this, new(model, item.Entry.Path, this.fsm));
+                            var bmp = await this.imageLoader.LoadAsync(item.Entry).ConfigureAwait(true);
+                            if (bmp != null)
+                            {
+                                this.ImagePreviewRequested?.Invoke(this, new(bmp, item.Entry.Path, this.fsm));
+                            }
                         }
-                    }
-                    break;
+                        break;
+                    case EntryType.Model:
+                        {
+                            if (this.fsm.Resolve<RenderableScene>(item.Entry.Path) is RenderableScene model)
+                            {
+                                this.ModelPreviewRequested?.Invoke(this, new(model, item.Entry.Path, this.fsm));
+                            }
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                this.logger.FailedToLoad(ex, item.Entry.Path);
             }
         }
 

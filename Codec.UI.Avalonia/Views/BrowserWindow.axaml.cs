@@ -12,8 +12,9 @@
     {
         private readonly BrowserViewModel viewModel;
         private readonly NotifyingLoggerProvider provider;
+        private readonly ILogger<BrowserWindow> logger;
 
-        public BrowserWindow(BrowserViewModel viewModel, NotifyingLoggerProvider provider)
+        public BrowserWindow(BrowserViewModel viewModel, NotifyingLoggerProvider provider, ILogger<BrowserWindow> logger)
         {
             this.InitializeComponent();
             viewModel.AudioPreviewRequested += this.OnAudioPreviewRequested;
@@ -22,6 +23,7 @@
             provider.EntryLogged += this.Provider_EntryLogged;
             this.viewModel = viewModel;
             this.provider = provider;
+            this.logger = logger;
             this.DataContext = viewModel;
         }
 
@@ -42,7 +44,7 @@
             }
             catch (Exception ex)
             {
-                this.viewModel.StatusMessage = $"Failed to play audio: {ex.Message}";
+                this.logger.FailedToLoad(ex, args.Path);
             }
         }
 

@@ -5,6 +5,7 @@
     using Codec.Archives;
     using Codec.Services;
     using CommunityToolkit.Mvvm.ComponentModel;
+    using Microsoft.Extensions.Logging;
 
     public sealed partial class FileTreeViewModel : ObservableObject
     {
@@ -15,10 +16,10 @@
         [ObservableProperty]
         private FileTreeNodeViewModel? selectedNode;
 
-        public FileTreeViewModel(NestedFileSystemManager fsm, EntryTypeDetector detector)
+        public FileTreeViewModel(NestedFileSystemManager fsm, EntryTypeDetector detector, ILogger<FileTreeViewModel> logger)
         {
             var root = fsm.RootEntry;
-            this.rootNodeViewModel = new FileTreeNodeViewModel(root, "(root)", fsm, detector);
+            this.rootNodeViewModel = new FileTreeNodeViewModel(root, "(root)", fsm, detector, logger);
             this.RootNodes = [this.rootNodeViewModel];
         }
 

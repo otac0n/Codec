@@ -13,6 +13,7 @@
     using Codec.UI.Avalonia.Services;
     using CommunityToolkit.Mvvm.ComponentModel;
     using CommunityToolkit.Mvvm.Input;
+    using Microsoft.Extensions.Logging;
 
     public sealed partial class EntryListViewModel : ObservableObject, IDisposable
     {
@@ -20,6 +21,7 @@
         private readonly EntryTypeDetector detector;
         private readonly FileSaveService fileSaveService;
         private readonly ImageLoader imageLoader;
+        private readonly ILogger<EntryListViewModel> logger;
         private CancellationTokenSource cts = new();
 
         [ObservableProperty]
@@ -65,12 +67,13 @@
 
         public event EventHandler<IList<EntryItem>>? EntryActivated;
 
-        public EntryListViewModel(NestedFileSystemManager fsm, EntryTypeDetector detector, FileSaveService fileSaveService, ImageLoader imageLoader)
+        public EntryListViewModel(NestedFileSystemManager fsm, EntryTypeDetector detector, FileSaveService fileSaveService, ImageLoader imageLoader, ILogger<EntryListViewModel> logger)
         {
             this.fsm = fsm;
             this.detector = detector;
             this.fileSaveService = fileSaveService;
             this.imageLoader = imageLoader;
+            this.logger = logger;
             this.SelectedEntries.CollectionChanged += this.ContextChanged;
         }
 
@@ -97,13 +100,27 @@
             this.SelectedEntries.Clear();
             this.DisposeThumbnails();
 
-            var entries = this.fsm.EnumerateEntries(directory.Path);
-
-            this.Entries = [.. entries.Select(entry =>
+            this.Entries = [.. this.LoadEntries(directory.Path).Select(entry =>
             {
                 var name = this.fsm.GetFileName(entry.Path) is { Length: > 0 } n ? n : entry.Path;
                 return new EntryItem(entry, name, this.detector.Detect(entry));
             })];
+        }
+
+        private IList<Entry> LoadEntries(string path)
+        {
+            IList<Entry> entries;
+            try
+            {
+                entries = [.. this.fsm.EnumerateEntries(path)];
+            }
+            catch (Exception ex)
+            {
+                this.logger.CouldNotEnumerateEntries(ex, path);
+                entries = [];
+            }
+
+            return entries;
         }
 
         [RelayCommand]

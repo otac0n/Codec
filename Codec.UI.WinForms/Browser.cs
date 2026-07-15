@@ -23,6 +23,7 @@ namespace Codec.UI.WinForms
         private readonly EntryTypeDetector detector;
         private readonly NestedFileSystemManager fsm;
         private readonly FileExportService exportService;
+        private readonly ILogger<Browser> logger;
         private readonly NotifyingLoggerProvider provider;
         private readonly VirtualImageList<Entry> textureDisplay;
         private readonly List<Entry> history = [];
@@ -40,6 +41,7 @@ namespace Codec.UI.WinForms
             this.detector = serviceProvider.GetRequiredService<EntryTypeDetector>();
             this.fsm = serviceProvider.GetRequiredService<NestedFileSystemManager>();
             this.exportService = serviceProvider.GetRequiredService<FileExportService>();
+            this.logger = serviceProvider.GetRequiredService<ILogger<Browser>>();
             this.provider = serviceProvider.GetRequiredService<NotifyingLoggerProvider>();
 
             this.InitializeComponent();
@@ -144,7 +146,7 @@ namespace Codec.UI.WinForms
             this.fileTree.SelectedNode = currentNode;
             currentNode.EnsureVisible();
 
-            var entries = this.fsm.EnumerateEntries(entry.Path);
+            var entries = this.LoadEntries(entry.Path);
             var items = entries
                 .Select(e => new ListViewItem(this.fsm.GetFileName(e.Path) switch { "" => e.Path, var x => x }, (int)this.detector.Detect(e)) { Tag = e })
                 .ToArray();
@@ -162,9 +164,25 @@ namespace Codec.UI.WinForms
             if (e.Node?.Tag is Entry entry && e.Node.Nodes is [TreeNode onlyChild] && onlyChild.Text == "...")
             {
                 e.Node.Nodes.Clear();
-                var entries = this.fsm.EnumerateEntries(entry.Path).Where(e => e.CanEnumerateEntries);
-                e.Node.Nodes.AddRange([.. entries.Select(e => new TreeNode(this.fsm.GetFileName(e.Path) switch { "" => e.Path, var x => x }, 0, 0, [this.CreateExpanderDummy()]) { Tag = e })]);
+                var entries = this.LoadEntries(entry.Path);
+                e.Node.Nodes.AddRange([.. entries.Where(e => e.CanEnumerateEntries).Select(e => new TreeNode(this.fsm.GetFileName(e.Path) switch { "" => e.Path, var x => x }, 0, 0, [this.CreateExpanderDummy()]) { Tag = e })]);
             }
+        }
+
+        private IList<Entry> LoadEntries(string path)
+        {
+            IList<Entry> entries;
+            try
+            {
+                entries = [.. this.fsm.EnumerateEntries(path)];
+            }
+            catch (Exception ex)
+            {
+                this.logger.CouldNotEnumerateEntries(ex, path);
+                entries = [];
+            }
+
+            return entries;
         }
 
         private void FileTree_AfterSelect(object sender, TreeViewEventArgs e)
@@ -227,32 +245,32 @@ namespace Codec.UI.WinForms
             }
             else
             {
-                switch (this.detector.Detect(entry))
+                try
                 {
-                    case EntryType.Image:
-                        {
-                            if (this.fsm.Resolve<MagickImage>(entry.Path) is MagickImage image)
+                    switch (this.detector.Detect(entry))
+                    {
+                        case EntryType.Image:
                             {
-                                var childForm = new Form
+                                if (this.fsm.Resolve<MagickImage>(entry.Path) is MagickImage image)
                                 {
-                                    Text = this.fsm.GetFileName(entry.Path),
-                                    StartPosition = FormStartPosition.CenterParent,
-                                    FormBorderStyle = FormBorderStyle.SizableToolWindow,
-                                };
-                                childForm.Controls.Add(new PictureBox
-                                {
-                                    Dock = DockStyle.Fill,
-                                    SizeMode = PictureBoxSizeMode.Zoom,
-                                    Image = image.ToBitmap(),
-                                    BackColor = Color.Black,
-                                });
-                                this.ShowChild(childForm);
+                                    var childForm = new Form
+                                    {
+                                        Text = this.fsm.GetFileName(entry.Path),
+                                        StartPosition = FormStartPosition.CenterParent,
+                                        FormBorderStyle = FormBorderStyle.SizableToolWindow,
+                                    };
+                                    childForm.Controls.Add(new PictureBox
+                                    {
+                                        Dock = DockStyle.Fill,
+                                        SizeMode = PictureBoxSizeMode.Zoom,
+                                        Image = image.ToBitmap(),
+                                        BackColor = Color.Black,
+                                    });
+                                    this.ShowChild(childForm);
+                                }
                             }
-                        }
-                        break;
-                    case EntryType.Audio:
-                        {
-                            try
+                            break;
+                        case EntryType.Audio:
                             {
                                 var audioStream = this.fsm.Resolve<AudioStream>(entry.Path) ?? (AudioStream)this.fsm.OpenRead(entry.Path);
                                 var childForm = new AudioPreviewForm(audioStream)
@@ -261,30 +279,30 @@ namespace Codec.UI.WinForms
                                 };
                                 this.ShowChild(childForm);
                             }
-                            catch (Exception ex)
+                            break;
+                        case EntryType.Model:
                             {
-                                MessageBox.Show(this, $"Failed to play audio: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            }
-                        }
-                        break;
-                    case EntryType.Model:
-                        {
-                            if (this.fsm.Resolve<RenderableScene>(entry.Path) is RenderableScene scene)
-                            {
-                                var childForm = new Form
+                                if (this.fsm.Resolve<RenderableScene>(entry.Path) is RenderableScene scene)
                                 {
-                                    Text = this.fsm.GetFileName(entry.Path),
-                                    StartPosition = FormStartPosition.CenterParent,
-                                    FormBorderStyle = FormBorderStyle.SizableToolWindow,
-                                };
-                                childForm.Controls.Add(new ModelRendererControl(entry.Path, this.fsm, scene)
-                                {
-                                    Dock = DockStyle.Fill,
-                                });
-                                this.ShowChild(childForm);
+                                    var childForm = new Form
+                                    {
+                                        Text = this.fsm.GetFileName(entry.Path),
+                                        StartPosition = FormStartPosition.CenterParent,
+                                        FormBorderStyle = FormBorderStyle.SizableToolWindow,
+                                    };
+                                    childForm.Controls.Add(new ModelRendererControl(entry.Path, this.fsm, scene)
+                                    {
+                                        Dock = DockStyle.Fill,
+                                    });
+                                    this.ShowChild(childForm);
+                                }
                             }
-                        }
-                        break;
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    this.logger.FailedToLoad(ex, entry.Path);
                 }
             }
         }
