@@ -14,7 +14,7 @@
 
         private readonly StringComparison comparison;
 
-        protected Dictionary<string, TEntry> Index => index ??= this.ReadIndex().ToDictionary(e => this.CanonicalizePath(this.GetEntryName(e)), StringComparer.FromComparison(this.comparison));
+        protected Dictionary<string, TEntry> Index => index ??= CreateIndex();
 
         protected IndexedFileSystem(StringComparison comparison = StringComparison.Ordinal)
         {
@@ -31,6 +31,31 @@
 
         private string CanonicalizePath(string? path) =>
             string.Join(this.Path.DirectorySeparatorChar, PathExtensions.SplitPath(path));
+
+        private Dictionary<string, TEntry>? CreateIndex()
+        {
+            var conflicts = new Dictionary<string, int>(StringComparer.FromComparison(this.comparison));
+            var newIndex = new Dictionary<string, TEntry>(StringComparer.FromComparison(this.comparison));
+            foreach (var entry in this.ReadIndex())
+            {
+                var path = this.CanonicalizePath(this.GetEntryName(entry));
+                while (true)
+                {
+                    conflicts.TryGetValue(path, out var c);
+                    conflicts[path] = c + 1;
+                    if (c == 0)
+                    {
+                        break;
+                    }
+
+                    path += $".{c + 1}";
+                }
+
+                newIndex[path] = entry;
+            }
+
+            return newIndex;
+        }
 
         private class IndexedDirectoryBase(IndexedFileSystem<TEntry> parent) : DirectoryBase(parent)
         {
