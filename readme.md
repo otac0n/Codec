@@ -12,6 +12,7 @@ Support for the following formats is implemented:
     - .iso Images
     - .bin/cue Images
     - .zip Files [read & write]
+    - .ciso GameCube images
   - Metal Gear Specific
     - M2 Archive (Master Collection v1)
       - .psb.m Packaging Format
@@ -19,7 +20,7 @@ Support for the following formats is implemented:
     - .sdt Sound Packs (MGS2)
     - .sdx Sound Packs (MGS2)
     - STAGE.DIR Archive (MGS1 & MGSVR)
-    - STAGE2.DAT Archive (MGS2)
+    - STAGE.DAT Archive (MGS2 & TTS)
     - FACE.DAT Archive (MGS1)
     - DEMO.DAT Archive (MGS1)
     - .brf Briefing Files (MGS1 & MGSVR)
@@ -102,6 +103,7 @@ OpenSource Info
 | [GMWare.M2](https://gitlab.com/modmyclassic/sega-mega-drive-mini/marchive-batch-tool) | [GPL 3.0](https://gitlab.com/modmyclassic/sega-mega-drive-mini/marchive-batch-tool/-/blob/master/COPYING) | M2 Archive format |
 | [metalgeardev/MGS1](https://github.com/metalgeardev/MGS1) | | Reference code |
 | [mgs_reversing](https://github.com/FoxdieTeam/mgs_reversing) | | Reference code |
+| [tools-mgs](https://github.com/Joy-Division/tools-mgs/) | [zlib](https://github.com/Joy-Division/tools-mgs/blob/master/LICENSE) | Reference code |
 | [CtxrTool](https://github.com/Jayveer/CtxrTool) | [MIT](https://github.com/Jayveer/CtxrTool/blob/master/README.md) | Reference code |
 | [MGS-Master-Collection-Noesis](https://github.com/Jayveer/MGS-Master-Collection-Noesis) | | Reference code |
 | [Arsenal](https://github.com/Jayveer/Arsenal/tree/master) | MIT | Reference code |
