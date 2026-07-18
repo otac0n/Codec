@@ -1,4 +1,6 @@
-﻿namespace Codec.Services
+﻿// Copyright © John Gietzen. All Rights Reserved. This source is subject to the MIT license. Please see license.md for more information.
+
+namespace Codec.Services
 {
     using System;
     using System.ComponentModel;
@@ -57,7 +59,6 @@
             this.start = this.reader.Position;
             this.waveOut.PlaybackStopped += this.WaveOut_PlaybackStopped;
         }
-
 
         private static bool TryDecodeWithVgmstream(AudioStream stream, MemoryStream destination)
         {

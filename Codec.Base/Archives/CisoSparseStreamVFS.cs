@@ -1,4 +1,6 @@
-﻿namespace Codec.Archives
+﻿// Copyright © John Gietzen. All Rights Reserved. This source is subject to the MIT license. Please see license.md for more information.
+
+namespace Codec.Archives
 {
     using System;
     using System.Collections.Generic;
@@ -82,23 +84,23 @@
         }
 
         [InlineArray(4)]
-        public struct Name4
+        private struct Name4
         {
             public byte Char0;
         }
 
         [InlineArray(0x8000 - sizeof(uint) - 4)]
-        public struct Map8000
+        private struct FreeSpaceBitMap
         {
             public byte Char0;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        struct CisoHeader
+        private struct CisoHeader
         {
             public Name4 Signature;
             public uint BlockSize;
-            public Map8000 Map;
+            public FreeSpaceBitMap Map;
         }
     }
 }
