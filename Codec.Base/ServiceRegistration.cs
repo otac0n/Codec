@@ -17,6 +17,8 @@ namespace Codec
         public static void Register(IServiceCollection services)
         {
             CueSheetVirtualFileSystem.Register(services);
+            CisoSparseStreamVFS.Register(services);
+            GameCubeIsoVFS.Register(services);
             ZipArchiveFileSystem.Register(services);
 
             services.AddSingleton<EntryTypeDetector>();
