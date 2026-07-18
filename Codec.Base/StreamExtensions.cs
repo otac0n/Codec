@@ -212,9 +212,9 @@ namespace Codec
             where T : struct =>
             ReadWithEndianness<T>(stream, swapEndianness: !BitConverter.IsLittleEndian);
 
-        public static T ReadSytemEndianness<T>(this Stream stream)
+        public static T ReadWithEndianness<T>(this Stream stream, Endianness endianness)
             where T : struct =>
-            ReadWithEndianness<T>(stream, false);
+            ReadWithEndianness<T>(stream, swapEndianness: ShouldSwap(endianness));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static T ReadWithEndianness<T>(this Stream stream, bool swapEndianness)
@@ -239,9 +239,9 @@ namespace Codec
             where T : struct =>
             ReadArrayLittleEndian<T>(stream, checked((int)count));
 
-        public static T[] ReadArraySystemEndianness<T>(this Stream stream, uint count)
+        public static T[] ReadArrayWithEndianness<T>(this Stream stream, uint count, Endianness endianness)
             where T : struct =>
-            ReadArraySystemEndianness<T>(stream, checked((int)count));
+            ReadArrayWithEndianness<T>(stream, checked((int)count), endianness);
 
         public static T[] ReadArrayBigEndian<T>(this Stream stream, int count)
             where T : struct =>
@@ -251,9 +251,9 @@ namespace Codec
             where T : struct =>
             ReadArrayWithEndianness<T>(stream, count, swapEndianness: !BitConverter.IsLittleEndian);
 
-        public static T[] ReadArraySystemEndianness<T>(this Stream stream, int count)
+        public static T[] ReadArrayWithEndianness<T>(this Stream stream, int count, Endianness endianness)
             where T : struct =>
-            ReadArrayWithEndianness<T>(stream, count, swapEndianness: false);
+            ReadArrayWithEndianness<T>(stream, count, swapEndianness: ShouldSwap(endianness));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static T[] ReadArrayWithEndianness<T>(this Stream stream, int count, bool swapEndianness)
@@ -283,9 +283,9 @@ namespace Codec
             where T : struct =>
             stream.WriteWithEndianness(value, swapEndianness: !BitConverter.IsLittleEndian);
 
-        public static void WriteSystemEndianness<T>(this Stream stream, T value)
+        public static void WriteWithEndianness<T>(this Stream stream, T value, Endianness endianness)
             where T : struct =>
-            stream.WriteWithEndianness(value, swapEndianness: false);
+            stream.WriteWithEndianness(value, swapEndianness: ShouldSwap(endianness));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WriteWithEndianness<T>(this Stream stream, T value, bool swapEndianness)
@@ -310,9 +310,18 @@ namespace Codec
             where T : struct =>
             stream.WriteArrayWithEndianness(values, swapEndianness: !BitConverter.IsLittleEndian);
 
-        public static void WriteArraySystemEndianness<T>(this Stream stream, T[] values)
+        public static void WriteArrayWithEndianness<T>(this Stream stream, T[] values, Endianness endianness)
             where T : struct =>
-            stream.WriteArrayWithEndianness(values, swapEndianness: false);
+            stream.WriteArrayWithEndianness(values, swapEndianness: ShouldSwap(endianness));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        private static bool ShouldSwap(Endianness endianness) =>
+            endianness switch
+            {
+                Endianness.LittleEndian => !BitConverter.IsLittleEndian,
+                Endianness.BigEndian => BitConverter.IsLittleEndian,
+                _ => false,
+            };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WriteArrayWithEndianness<T>(this Stream stream, T[] values, bool swapEndianness)
@@ -332,6 +341,22 @@ namespace Codec
             }
 
             stream.Write(buffer);
+        }
+
+        public static Span<T> CastWithEndianness<T>(this Span<byte> buffer, Endianness endianness)
+            where T : struct
+        {
+            if (ShouldSwap(endianness))
+            {
+                buffer = buffer.ToArray().AsSpan();
+                var elementSize = Marshal.SizeOf<T>();
+                for (var offset = 0; offset + elementSize <= buffer.Length; offset += elementSize)
+                {
+                    SwapFields(buffer.Slice(offset, elementSize), typeof(T));
+                }
+            }
+
+            return MemoryMarshal.Cast<byte, T>(buffer);
         }
 
         private static void SwapFields(Span<byte> buffer, Type type)
