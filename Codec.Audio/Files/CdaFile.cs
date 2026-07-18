@@ -22,7 +22,9 @@
                     {
                         var input = parent.File.OpenRead(parentRelativePath);
                         var headerStream = MakeHeader((int)input.Length);
-                        return (AudioStream)new ConcatStream(Ownership.Dispose, MappedStream.FromStream(headerStream, Ownership.Dispose), MappedStream.FromStream(input, Ownership.Dispose));
+                        return new AudioStream(
+                            new ConcatStream(Ownership.Dispose, MappedStream.FromStream(headerStream, Ownership.Dispose), MappedStream.FromStream(input, Ownership.Dispose)),
+                            fullPath);
                     });
                 }
 

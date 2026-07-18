@@ -7,6 +7,7 @@
     using System.Threading.Tasks;
     using Codec.Files;
     using NAudio.Wave;
+    using VgmSharp;
 
     public sealed class AudioPlayer : IDisposable, INotifyPropertyChanged
     {
@@ -29,9 +30,17 @@
             var ms = new MemoryStream();
             try
             {
-                using var reader = new StreamMediaFoundationReader(stream);
+                if (!TryDecodeWithVgmstream(stream, ms))
+                {
+                    if (stream.Stream.CanSeek)
+                    {
+                        stream.Stream.Position = 0;
+                    }
 
-                WaveFileWriter.WriteWavFileToStream(ms, reader);
+                    using var reader = new StreamMediaFoundationReader(stream);
+                    WaveFileWriter.WriteWavFileToStream(ms, reader);
+                }
+
                 ms.Seek(0, SeekOrigin.Begin);
             }
             finally
@@ -47,6 +56,34 @@
             this.waveOut.Init(this.reader);
             this.start = this.reader.Position;
             this.waveOut.PlaybackStopped += this.WaveOut_PlaybackStopped;
+        }
+
+
+        private static bool TryDecodeWithVgmstream(AudioStream stream, MemoryStream destination)
+        {
+            if (string.IsNullOrEmpty(stream.FileName) || !stream.Stream.CanSeek)
+            {
+                return false;
+            }
+
+            try
+            {
+                using var vgm = VgmStreamReader.Open(
+                    stream.Stream,
+                    stream.FileName,
+                    config: VgmStreamConfig.PlayOnceNoLoop());
+
+                vgm.DecodeTo(destination);
+                return true;
+            }
+            catch (VgmStreamException)
+            {
+                return false;
+            }
+            catch (Exception ex) when (ex is DllNotFoundException or BadImageFormatException or EntryPointNotFoundException)
+            {
+                return false;
+            }
         }
 
         public Task<bool> PlayAsync()
