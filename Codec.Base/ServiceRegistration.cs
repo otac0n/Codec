@@ -10,6 +10,7 @@ namespace Codec
     using Codec.Services;
     using DiscUtils.Complete;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Logging;
 
     public static class ServiceRegistration
     {
@@ -20,12 +21,7 @@ namespace Codec
 
             services.AddSingleton<EntryTypeDetector>();
             services.AddSingleton<RootEnumerableFileSystem>();
-
-            services.AddSingleton(s =>
-            {
-                var handlers = s.GetServices<FileSystemResolver>().Select(r => new FileSystemHandler((a, b, c, d) => r(s, a, b, c, d))).ToArray();
-                return new NestedFileSystemManager(s, s.GetRequiredService<RootEnumerableFileSystem>(), handlers);
-            });
+            services.AddSingleton<NestedFileSystemManager>();
 
             SetupHelper.SetupComplete();
         }
@@ -56,5 +52,44 @@ namespace Codec
                where resolver is not null && resolver.CanWrite
                let write = resolver.Write
                select new Action<T>(image => write(image, path, subPath, fs, fsPath))).FirstOrDefault();
+
+        public static FileSystemFactory? GetDeferredFactory(this IServiceProvider services, string path, string subPath, IFileSystem fs, string fsPath, ILogger? logger = null)
+        {
+            var factories = services.GetServices<FileSystemResolver>().Select(r =>
+            {
+                try
+                {
+                    return r(services, path, subPath, fs, fsPath);
+                }
+                catch (Exception ex)
+                {
+                    logger?.LogWarning(ex, "Skipping file system resolver due to execption.");
+                    return null;
+                }
+            }).ToList();
+            factories.RemoveAll(f => f == null);
+
+            return factories switch
+            {
+                [] => null,
+                [var factory] => factory,
+                _ => (fullPath, parentRelativePath, parent, parentPath) =>
+                {
+                    foreach (var f in factories)
+                    {
+                        try
+                        {
+                            return f!(fullPath, parentRelativePath, parent, parentPath);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger?.LogWarning(ex, "Skipping file system resolver due to execption.");
+                        }
+                    }
+
+                    return null;
+                },
+            };
+        }
     }
 }

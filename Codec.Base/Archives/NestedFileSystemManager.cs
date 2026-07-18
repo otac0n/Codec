@@ -6,6 +6,8 @@
     using System.IO;
     using System.IO.Abstractions;
     using System.Linq;
+    using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Logging;
 
     public class NestedFileSystemManager
     {
@@ -13,17 +15,17 @@
         private readonly Dictionary<string, FileSystemFactory?> nestedFactories;
         private readonly Dictionary<string, IFileSystem> fileSystems;
         private readonly IServiceProvider serviceProvider;
-        private readonly FileSystemHandler[] handlers;
+        private readonly ILogger<NestedFileSystemManager> logger;
 
-        public NestedFileSystemManager(IServiceProvider serviceProvider, IFileSystem fs, params FileSystemHandler[] handlers)
+        public NestedFileSystemManager(IServiceProvider serviceProvider)
         {
             this.serviceProvider = serviceProvider;
-            this.handlers = handlers;
+            this.logger = serviceProvider.GetRequiredService<ILogger<NestedFileSystemManager>>();
             this.comparer = new();
             this.nestedFactories = new(this.comparer);
             this.fileSystems = new(this.comparer)
             {
-                [string.Empty] = fs,
+                [string.Empty] = serviceProvider.GetRequiredService<RootEnumerableFileSystem>(),
             };
             this.RootEntry = new(string.Empty, false, false);
         }
@@ -55,7 +57,16 @@
                 {
                     if (parent.File.Exists(parentRelativePath))
                     {
-                        var newParent = factory(path, parentRelativePath, parent, parentPath);
+                        IFileSystem newParent = null;
+                        try
+                        {
+                            newParent = factory(path, parentRelativePath, parent, parentPath);
+                        }
+                        catch (Exception ex)
+                        {
+                            this.logger.CouldNotOpenFileSystem(ex, parentRelativePath);
+                        }
+
                         this.fileSystems.Add(path, newParent);
                         this.nestedFactories.Remove(path);
                         if (newParent != null && !asFile)
@@ -207,7 +218,7 @@
         }
 
         private FileSystemFactory? GetNestedFactory(string fullPath, string parentRelativePath, IFileSystem parent, string parentPath) =>
-            this.handlers.Select(h => h(fullPath, parentRelativePath, parent, parentPath)).FirstOrDefault(f => f is not null);
+            this.serviceProvider.GetDeferredFactory(fullPath, parentRelativePath, parent, parentPath, this.logger);
 
         public bool TryGetEntry(string path, out Entry entry)
         {
