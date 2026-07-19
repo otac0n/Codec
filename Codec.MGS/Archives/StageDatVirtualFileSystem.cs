@@ -52,6 +52,7 @@ namespace Codec.MGS.Archives
             [StageDatVariant.Tts] = new()
             {
                 [0x0A] = "kmy",
+                [0x13] = "tpl",
             },
         };
 
