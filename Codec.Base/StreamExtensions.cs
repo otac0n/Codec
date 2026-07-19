@@ -343,13 +343,14 @@ namespace Codec
             stream.Write(buffer);
         }
 
-        public static Span<T> CastWithEndianness<T>(this Span<byte> buffer, Endianness endianness)
+        public static Span<T> CastWithEndianness<T>(this Span<byte> buffer, int itemCount, Endianness endianness)
             where T : struct
         {
+            var elementSize = Marshal.SizeOf<T>();
+            buffer = buffer[..(itemCount * elementSize)];
             if (ShouldSwap(endianness))
             {
                 buffer = buffer.ToArray().AsSpan();
-                var elementSize = Marshal.SizeOf<T>();
                 for (var offset = 0; offset + elementSize <= buffer.Length; offset += elementSize)
                 {
                     SwapFields(buffer.Slice(offset, elementSize), typeof(T));

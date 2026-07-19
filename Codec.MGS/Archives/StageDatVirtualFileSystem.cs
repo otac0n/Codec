@@ -51,9 +51,7 @@ namespace Codec.MGS.Archives
             },
             [StageDatVariant.Tts] = new()
             {
-                [0x0A] = "kms",
-                [0x13] = "tri",
-                [0x19] = "zms",
+                [0x0A] = "kmy",
             },
         };
 
