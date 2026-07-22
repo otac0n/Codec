@@ -12,8 +12,8 @@
     <PackageProjectUrl>https://github.com/otac0n/Codec</PackageProjectUrl>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Magick.NET.SystemDrawing" Version="8.0.22" />
-    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.13.1" />
+    <PackageReference Include="Magick.NET.SystemDrawing" Version="8.0.24" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.15.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Codec.Base\Codec.Base.csproj" />

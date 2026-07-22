@@ -2,10 +2,12 @@
 
 namespace Codec.Imaging
 {
+    using System;
     using System.IO;
     using System.Runtime.InteropServices;
     using ImageMagick;
 
+    // This file can be removed with https://github.com/dlemstra/Magick.NET/issues/2057
     public class TgaWriter<TColor, TIndex>
         where TColor : struct
         where TIndex : struct
@@ -57,10 +59,13 @@ namespace Codec.Imaging
         {
             this.TgaStream.Position = 0;
             var image = new MagickImage(this.TgaStream, MagickFormat.Tga);
+
+            // https://github.com/ImageMagick/ImageMagick/issues/8847
             var page = image.Page;
             page.X = this.xOffset;
             page.Y = this.yOffset;
             image.Page = page;
+
             return image;
         }
     }
