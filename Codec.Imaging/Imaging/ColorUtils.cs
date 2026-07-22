@@ -2,6 +2,7 @@
 
 namespace Codec.Imaging
 {
+    using System;
     using ImageMagick;
 
     public static class ColorUtils
@@ -11,6 +12,9 @@ namespace Codec.Imaging
 
         public static ushort Expand5To16(int x) =>
             (ushort)(x * Quantum.Max / 31);
+
+        public static ushort Expand8To16(int x) =>
+            (ushort)(x * Quantum.Max / 255);
 
         public static byte FindClosestPaletteIndex(MagickColor[] palette, IMagickColor<ushort> color)
         {

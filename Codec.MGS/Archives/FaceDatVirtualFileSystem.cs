@@ -36,18 +36,16 @@ namespace Codec.MGS.Archives
                         new FaceDatVirtualFileSystem(parentRelativePath, parent);
                 }
 
-                if (parent is FaceDatVirtualFileSystem faceDatVFS)
+                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".face", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".face", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return static (fullPath, parentRelativePath, parent, parentPath) =>
-                            new FaceFileSystem(parentRelativePath, parent);
-                    }
-                    else if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".anim", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return static (fullPath, parentRelativePath, parent, parentPath) =>
-                            new AnimFileSystem(parentRelativePath, parent);
-                    }
+                    return static (fullPath, parentRelativePath, parent, parentPath) =>
+                        new FaceFileSystem(parentRelativePath, parent);
+                }
+
+                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".anim", StringComparison.OrdinalIgnoreCase))
+                {
+                    return static (fullPath, parentRelativePath, parent, parentPath) =>
+                        new AnimFileSystem(parentRelativePath, parent);
                 }
 
                 return null;
@@ -470,7 +468,11 @@ namespace Codec.MGS.Archives
                 var r = (byte)Intensity((color >> 0) & 0x001F);
                 var g = (byte)Intensity((color >> 5) & 0x001F);
                 var b = (byte)Intensity((color >> 10) & 0x001F);
-                palette[i] = new MagickColor(r, g, b, a);
+                palette[i] = new MagickColor(
+                    ColorUtils.Expand8To16(r),
+                    ColorUtils.Expand8To16(g),
+                    ColorUtils.Expand8To16(b),
+                    ColorUtils.Expand8To16(a));
             }
 
             var dim = outputStream.ReadLittleEndian<ImageDimensions>();
