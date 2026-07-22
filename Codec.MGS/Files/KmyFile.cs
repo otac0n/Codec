@@ -3,7 +3,6 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Numerics;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
@@ -15,10 +14,6 @@
 
     public class KmyFile
     {
-        private const float PositionScale = 1f / 16f;
-        private const float NormalScale = 1f / 127f;
-        private const float TexCoordScale = 1f / 4096f;
-
         public static void Register(IServiceCollection services)
         {
             services.AddSingleton(new EntryTypeMatcher(EntryType.Model, "*.kmy"));
@@ -45,263 +40,369 @@
             stream.ReadExactly(fileSpan);
 
             var header = fileSpan.CastWithEndianness<Header>(1, Endianness.BigEndian)[0];
-            var meshDef = fileSpan[(int)header.BaseOffset..].CastWithEndianness<MeshDef>(1, Endianness.BigEndian)[0];
+            var meshDefs = fileSpan[(int)header.BaseOffset..].CastWithEndianness<MeshDef>(header.MeshCount, Endianness.BigEndian);
+            var boneDefs = fileSpan[Marshal.SizeOf<Header>()..].CastWithEndianness<BoneDef>(((int)header.BaseOffset - Marshal.SizeOf<Header>()) / Marshal.SizeOf<BoneDef>(), Endianness.BigEndian);
 
-            var tableHeaders = fileSpan[(int)(header.BaseOffset + meshDef.MeshTableOffset)..].CastWithEndianness<TableHeader>(meshDef.MeshTable1Count, Endianness.BigEndian);
-            var vertices = fileSpan[(int)(header.BaseOffset + header.VertexOffset)..].CastWithEndianness<Short3>(header.VertexCount, Endianness.BigEndian);
-            var normals = fileSpan[(int)(header.BaseOffset + header.NormalOffset)..].CastWithEndianness<SByte3>(header.NormalCount, Endianness.BigEndian);
-            var texCoords = fileSpan[(int)(header.BaseOffset + header.TexCoordOffset)..].CastWithEndianness<Short2>(header.TexCoordCount, Endianness.BigEndian);
+            var vertexData = fileSpan[(int)(header.BaseOffset + header.VertexOffset)..].CastWithEndianness<Short3>(header.VertexCount, Endianness.BigEndian);
+            var normalData = fileSpan[(int)(header.BaseOffset + header.NormalOffset)..].CastWithEndianness<SByte3>(header.NormalCount, Endianness.BigEndian);
+            var textureCoordData1 = fileSpan[(int)(header.BaseOffset + header.TexCoordOffset)..].CastWithEndianness<Short2>(header.TexCoordCount, Endianness.BigEndian);
+            var weightData = fileSpan[(int)(header.BaseOffset + header.SkinOffset)..].CastWithEndianness<BoneWeight>(header.SkinCount, Endianness.BigEndian);
 
             var scene = new Scene();
             var rootNode = new Node("root");
             scene.RootNode = rootNode;
-            for (var t = 0; t < meshDef.MeshTable1Count; t++)
+
+            var bones = new Node[boneDefs.Length];
+            if (boneDefs.Length > 0)
             {
-                var tableHeader = tableHeaders[t];
-                var entries = fileSpan[(int)(header.BaseOffset + tableHeader.EntryOffset)..].CastWithEndianness<TableEntry>(tableHeader.EntryCount, Endianness.BigEndian);
-                var meshesByTexture = new Dictionary<uint, (Mesh Mesh, Dictionary<(ushort Position, ushort Normal, ushort TexCoord), int> Remap)>();
-                for (var i = 0; i < tableHeader.EntryCount; i++)
+                var skeletonNode = new Node("skeleton");
+                rootNode.Children.Add(skeletonNode);
+                for (var b = 0; b < boneDefs.Length; b++)
                 {
-                    var mesh = entries[i];
-                    if (!meshesByTexture.TryGetValue(mesh.TextureId, out var entry))
+                    var boneDef = boneDefs[b];
+                    var relativeNode = boneDef.ParentIndex != -1 && !(boneDef.ParentIndex == 0 && b == 0) ? bones[boneDef.ParentIndex] : skeletonNode;
+                    relativeNode.Children.Add(bones[b] = new Node($"bone{b}")
                     {
-                        var assimpMesh = new Mesh($"part{t}_tex{mesh.TextureId:x6}", PrimitiveType.Triangle)
+                        // Hypothesis: bones are translation-only joints (no rotation data found in BoneDef).
+                        Transform = Matrix4x4.Transpose(Matrix4x4.CreateTranslation(boneDef.LocalOffset)),
+                    });
+                }
+            }
+
+            var materialCache = new Dictionary<(uint NormalTextureId, uint DiffuseTextureId, uint SpecularTextureId), int>();
+            for (var m = 0; m < header.MeshCount; m++)
+            {
+                var meshDef = meshDefs[m];
+                var meshNode = new Node($"mesh{m}");
+                rootNode.Children.Add(meshNode);
+                var nodes = new List<Node>(meshDef.ObjectCount);
+                var objectDefs = fileSpan[(int)(header.BaseOffset + meshDef.ObjectTableOffset)..].CastWithEndianness<ObjectDef>(meshDef.ObjectCount, Endianness.BigEndian);
+                for (var p = 0; p < objectDefs.Length; p++)
+                {
+                    var objectDef = objectDefs[p];
+                    var submeshes = fileSpan[(int)(header.BaseOffset + objectDef.SubmeshTableOffset)..].CastWithEndianness<SubmeshDef>(objectDef.SubmeshCount, Endianness.BigEndian);
+                    var meshIndices = new List<int>();
+                    foreach (var submesh in submeshes)
+                    {
+                        var faceDefs = fileSpan[(int)(header.BaseOffset + submesh.FaceTableOffset)..].CastWithEndianness<FaceDef>(submesh.FaceCount, Endianness.BigEndian);
+                        var totalVertices = 0u;
+                        for (var d = 0; d < faceDefs.Length; d++)
                         {
-                            MaterialIndex = EnsureMaterial(scene, mesh.TextureId),
-                        };
-                        assimpMesh.UVComponentCount[0] = 2;
-                        entry = (assimpMesh, new Dictionary<(ushort, ushort, ushort), int>());
-                        meshesByTexture[mesh.TextureId] = entry;
+                            totalVertices += faceDefs[d].VertexCount;
+                        }
+
+                        var vertices = new Vector3[totalVertices];
+                        var normals = new Vector3[totalVertices];
+                        var textureCoords = new Vector2[totalVertices];
+                        var vertexBoneWeights = new List<(int BoneIndex, float Weight)>?[totalVertices];
+                        var trisByMaterial = new Dictionary<(uint NormalTextureId, uint DiffuseTextureId, uint SpecularTextureId), List<(int A, int B, int C)>>();
+                        var vertexOutputOffset = 0u;
+                        for (var d = 0; d < faceDefs.Length; d++)
+                        {
+                            var faceDef = faceDefs[d];
+                            var vertexCount = faceDef.VertexCount;
+                            var vertexIndexData = fileSpan[(int)(header.BaseOffset + faceDef.VertexIndexBufferOffset)..].CastWithEndianness<ushort>(vertexCount, Endianness.BigEndian);
+                            for (var v = 0; v < vertexCount; v++)
+                            {
+                                vertices[v + vertexOutputOffset] = new Vector3(
+                                    vertexData[vertexIndexData[v]].X,
+                                    vertexData[vertexIndexData[v]].Y,
+                                    vertexData[vertexIndexData[v]].Z);
+                            }
+
+                            if (faceDef.NormalIndexBufferOffset != 0)
+                            {
+                                var normalIndexData = fileSpan[(int)(header.BaseOffset + faceDef.NormalIndexBufferOffset)..].CastWithEndianness<ushort>(vertexCount, Endianness.BigEndian);
+                                for (var v = 0; v < vertexCount; v++)
+                                {
+                                    normals[v + vertexOutputOffset] = new(
+                                        normalData[normalIndexData[v]].X / 64f,
+                                        normalData[normalIndexData[v]].Y / 64f,
+                                        normalData[normalIndexData[v]].Z / 64f);
+                                }
+                            }
+
+                            if (faceDef.TexCoordBufferOffset != 0 && submesh.TexCoordOffset1 != 0)
+                            {
+                                var textureCoordIndexData = fileSpan[(int)(header.BaseOffset + faceDef.TexCoordBufferOffset)..].CastWithEndianness<ushort>(vertexCount, Endianness.BigEndian);
+                                for (var v = 0; v < vertexCount; v++)
+                                {
+                                    var textureCoordData2 = fileSpan[(int)(header.BaseOffset + submesh.TexCoordOffset1 + (uint)textureCoordIndexData[v] * sizeof(ushort))..].CastWithEndianness<ushort>(1, Endianness.BigEndian)[0];
+                                    textureCoords[vertexOutputOffset + v] = new(
+                                        textureCoordData1[textureCoordData2].U / 4096f,
+                                        1 - textureCoordData1[textureCoordData2].V / 4096f);
+                                }
+                            }
+
+                            if (faceDef.BonePaletteIndexOffset != 0 && faceDef.SkinRecordIndexOffset != 0 && weightData.Length > 0)
+                            {
+                                // BonePaletteIndices: per-vertex, LOCAL index into this face's own list of distinct
+                                // weight records (BoneAttachmentCount long) - not a direct global weight index.
+                                var bonePaletteIndexData = fileSpan[(int)(header.BaseOffset + faceDef.BonePaletteIndexOffset)..].CastWithEndianness<ushort>(vertexCount, Endianness.BigEndian);
+
+                                // SkinRecordIndexOffset: the face's local list of distinct weight records, each
+                                // entry a global index into the header-level weightData ("Thing"/BoneWeight) table.
+                                var thingIndexData = fileSpan[(int)(header.BaseOffset + faceDef.SkinRecordIndexOffset)..].CastWithEndianness<ushort>(faceDef.BoneAttachmentCount, Endianness.BigEndian);
+
+                                for (var v = 0; v < vertexCount; v++)
+                                {
+                                    var localThingIndex = bonePaletteIndexData[v];
+                                    if (localThingIndex >= thingIndexData.Length)
+                                    {
+                                        continue;
+                                    }
+
+                                    var globalWeightIndex = thingIndexData[localThingIndex];
+                                    if (globalWeightIndex >= weightData.Length)
+                                    {
+                                        continue;
+                                    }
+
+                                    var record = weightData[globalWeightIndex];
+                                    List<(int BoneIndex, float Weight)>? weights = null;
+                                    for (var k = 0; k < 4; k++)
+                                    {
+                                        var boneIndex = record.Indices[k];
+                                        var weight = record.Weights[k];
+                                        if (boneIndex < 0 || weight == 0 || boneIndex >= boneDefs.Length)
+                                        {
+                                            continue;
+                                        }
+
+                                        weights ??= [];
+                                        weights.Add((boneIndex, weight / 128f));
+                                    }
+
+                                    vertexBoneWeights[v + vertexOutputOffset] = weights;
+                                }
+                            }
+
+                            var matKey = (submesh.NormalTextureId, submesh.DiffuseTextureId, submesh.SpecularTextureId);
+                            if (!trisByMaterial.TryGetValue(matKey, out var tris))
+                            {
+                                trisByMaterial[matKey] = tris = [];
+                            }
+
+                            ExpandStrip(tris, (int)vertexOutputOffset, vertexCount);
+
+                            vertexOutputOffset += faceDef.VertexCount;
+                        }
+
+                        foreach (var (matKey, tris) in trisByMaterial)
+                        {
+                            if (tris.Count == 0)
+                            {
+                                continue;
+                            }
+
+                            var assimpMesh = new Mesh($"{header.ModelId:x}_node{p}_{matKey.NormalTextureId:x6}_{matKey.DiffuseTextureId:x6}_{matKey.SpecularTextureId:x6}", PrimitiveType.Triangle)
+                            {
+                                MaterialIndex = EnsureMaterial(scene, header.TexturePackageId, matKey, materialCache),
+                            };
+                            assimpMesh.UVComponentCount[0] = 2;
+
+                            var indexRemap = new Dictionary<int, int>();
+                            var boneMap = new Dictionary<int, Bone>();
+                            var fallbackBoneIndex = objectDef.ParentIndex >= 0 && objectDef.ParentIndex < boneDefs.Length ? objectDef.ParentIndex : -1;
+                            foreach (var (i0, i1, i2) in tris)
+                            {
+                                assimpMesh.Faces.Add(new Face([
+                                    RemapVertex(indexRemap, i0, vertices, normals, textureCoords, vertexBoneWeights, boneMap, boneDefs, bones, fallbackBoneIndex, assimpMesh),
+                                RemapVertex(indexRemap, i1, vertices, normals, textureCoords, vertexBoneWeights, boneMap, boneDefs, bones, fallbackBoneIndex, assimpMesh),
+                                RemapVertex(indexRemap, i2, vertices, normals, textureCoords, vertexBoneWeights, boneMap, boneDefs, bones, fallbackBoneIndex, assimpMesh),
+                            ]));
+                            }
+
+                            assimpMesh.Bones.AddRange(boneMap.Values);
+
+                            scene.Meshes.Add(assimpMesh);
+                            meshIndices.Add(scene.Meshes.Count - 1);
+                        }
                     }
 
-                    var faces = fileSpan[(int)(header.BaseOffset + mesh.FacesTableOffset)..].CastWithEndianness<FaceEntry>(mesh.FaceCount, Endianness.BigEndian);
-                    for (var j = 0; j < mesh.FaceCount; j++)
+                    // Skinning now carries all positional data (vertices are stored in raw world/file space).
+                    // Keep object nodes flat with identity transforms so their global transform contributes
+                    // nothing extra to the glTF skin math (see inverse(meshNodeGlobalTransform) in the spec).
+                    var node = new Node($"node{p}")
                     {
-                        AddFace(fileSpan, bytes.Length, header.BaseOffset, mesh, faces[j], vertices, normals, texCoords, entry.Remap, entry.Mesh);
-                    }
-                }
-
-                var node = new Node($"part{t}");
-                foreach (var entry in meshesByTexture.Values)
-                {
-                    if (entry.Mesh.Faces.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    scene.Meshes.Add(entry.Mesh);
-                    node.MeshIndices.Add(scene.Meshes.Count - 1);
-                }
-
-                if (node.MeshIndices.Count > 0)
-                {
-                    rootNode.Children.Add(node);
+                        Transform = Matrix4x4.Identity,
+                    };
+                    node.MeshIndices.AddRange(meshIndices);
+                    nodes.Add(node);
+                    meshNode.Children.Add(node);
                 }
             }
 
             return scene;
         }
 
-        private static void AddFace(
-            Span<byte> fileSpan,
-            int fileLength,
-            uint baseOffset,
-            TableEntry mesh,
-            FaceEntry face,
-            Span<Short3> vertices,
-            Span<SByte3> normals,
-            Span<Short2> texCoords,
-            Dictionary<(ushort Position, ushort Normal, ushort TexCoord), int> vertexRemap,
-            Mesh assimpMesh)
+        private static void ExpandStrip(List<(int A, int B, int C)> triangles, int offset, int length)
         {
-            if (face.VertexCount < 3)
+            for (var i = 0; i < length - 2; i++)
             {
-                return;
-            }
+                var a = offset + i;
+                var b = offset + i + 1;
+                var c = offset + i + 2;
 
-            var posIndices = ExpandStripIndices(fileSpan, baseOffset + face.IndexBufferOffset, face.VertexCount);
-            var normIndices = ExpandStripIndices(fileSpan, baseOffset + face.NormalIndexBufferOffset, face.VertexCount);
-            var uvIndices = GetTexCoordIndices(fileSpan, fileLength, baseOffset, mesh, face);
-
-            var triangleCount = Math.Min(posIndices.Count, Math.Min(normIndices.Count, uvIndices.Count));
-            for (var k = 0; k + 2 < triangleCount; k += 3)
-            {
-                if (!TryRemapVertex(vertexRemap, posIndices[k], normIndices[k], uvIndices[k], vertices, normals, texCoords, assimpMesh, out var a) ||
-                    !TryRemapVertex(vertexRemap, posIndices[k + 1], normIndices[k + 1], uvIndices[k + 1], vertices, normals, texCoords, assimpMesh, out var b) ||
-                    !TryRemapVertex(vertexRemap, posIndices[k + 2], normIndices[k + 2], uvIndices[k + 2], vertices, normals, texCoords, assimpMesh, out var c))
+                if (i % 2 != 0)
                 {
-                    continue;
-                }
-
-                assimpMesh.Faces.Add(new Face([a, b, c]));
-            }
-        }
-
-        private static List<ushort> ExpandStripIndices(Span<byte> fileSpan, uint offset, ushort count)
-        {
-            var raw = fileSpan[(int)offset..].CastWithEndianness<ushort>(count, Endianness.BigEndian);
-            var output = new List<ushort>(count < 3 ? count : 3 + ((count - 3) * 3));
-            for (var i = 0; i < count; i++)
-            {
-                if (i < 3)
-                {
-                    output.Add(raw[i]);
+                    triangles.Add((a, b, c));
                 }
                 else
                 {
-                    var last = output.Count - 1;
-                    output.Add(output[last - 1]);
-                    output.Add(output[last]);
-                    output.Add(raw[i]);
+                    triangles.Add((b, a, c));
                 }
             }
-
-            return output;
         }
 
-        private static List<ushort> GetTexCoordIndices(Span<byte> fileSpan, int fileLength, uint baseOffset, TableEntry mesh, FaceEntry face)
+        private static int RemapVertex(
+            Dictionary<int, int> map,
+            int globalIdx,
+            Vector3[] verts,
+            Vector3[] norms,
+            Vector2[] uvs,
+            List<(int BoneIndex, float Weight)>?[] vertexBoneWeights,
+            Dictionary<int, Bone> boneMap,
+            ReadOnlySpan<BoneDef> boneDefs,
+            Node[] boneNodes,
+            int fallbackBoneIndex,
+            Mesh mesh)
         {
-            var output = new List<ushort>();
-
-            if (face.TexCoordBufferOffset != 0)
+            if (map.TryGetValue(globalIdx, out var local))
             {
-                var nodeIndices = ExpandStripIndices(fileSpan, baseOffset + face.TexCoordBufferOffset, face.VertexCount);
-                foreach (var nodeIndex in nodeIndices)
-                {
-                    var nodeOffset = baseOffset + mesh.TexCoordOffset1 + ((uint)nodeIndex * sizeof(ushort));
-                    output.Add(fileSpan[(int)nodeOffset..].CastWithEndianness<ushort>(1, Endianness.BigEndian)[0]);
-                }
-            }
-            else
-            {
-                var nodeOffset = baseOffset + mesh.TexCoordOffset1;
-                var uvIndex = fileSpan[(int)nodeOffset..].CastWithEndianness<ushort>(1, Endianness.BigEndian)[0];
-                var repeatCount = Math.Max(0, (face.VertexCount - 2) * 3);
-                for (var k = 0; k < repeatCount; k++)
-                {
-                    output.Add(uvIndex);
-                }
+                return local;
             }
 
-            return output;
+            local = mesh.Vertices.Count;
+            mesh.Vertices.Add(verts[globalIdx]);
+            mesh.Normals.Add(norms[globalIdx]);
+            mesh.TextureCoordinateChannels[0].Add(new Vector3(uvs[globalIdx], 0));
+            map[globalIdx] = local;
+
+            // Vertices with no resolved weight would otherwise get a zero skin matrix (collapse to origin) -
+            // fall back to full rigid weight on the object's own parent bone so they render in place at bind pose.
+            var weights = vertexBoneWeights[globalIdx];
+            if (weights == null && fallbackBoneIndex >= 0)
+            {
+                weights = [(fallbackBoneIndex, 1f)];
+            }
+
+            if (weights != null)
+            {
+                foreach (var (boneIndex, weight) in weights)
+                {
+                    if (!boneMap.TryGetValue(boneIndex, out var bone))
+                    {
+                        // Bones are translation-only joints and mesh nodes are now identity-transformed
+                        // (vertices stored in world/file space), so mesh-space -> bone-space reduces to
+                        // a plain inverse translation: OffsetMatrix = Translate(-boneDef.GlobalOffset).
+                        var boneDef = boneDefs[boneIndex];
+                        boneMap[boneIndex] = bone = new Bone
+                        {
+                            Name = boneNodes[boneIndex].Name,
+                            OffsetMatrix = Matrix4x4.Transpose(Matrix4x4.CreateTranslation(-boneDef.GlobalOffset)),
+                        };
+                    }
+
+                    bone.VertexWeights.Add(new VertexWeight(local, weight));
+                }
+            }
+
+            return local;
         }
 
-        private static bool TryRemapVertex(
-            Dictionary<(ushort Position, ushort Normal, ushort TexCoord), int> map,
-            ushort positionIndex,
-            ushort normalIndex,
-            ushort texCoordIndex,
-            Span<Short3> vertices,
-            Span<SByte3> normals,
-            Span<Short2> texCoords,
-            Mesh assimpMesh,
-            out int index)
+        private static int EnsureMaterial(
+            Scene scene,
+            uint texturePackageId,
+            (uint NormalTextureId, uint DiffuseTextureId, uint SpecularTextureId) key,
+            Dictionary<(uint NormalTextureId, uint DiffuseTextureId, uint SpecularTextureId), int> materialCache)
         {
-            if (positionIndex >= vertices.Length || normalIndex >= normals.Length || texCoordIndex >= texCoords.Length)
+            if (materialCache.TryGetValue(key, out var existing))
             {
-                index = -1;
-                return false;
-            }
-
-            var key = (positionIndex, normalIndex, texCoordIndex);
-            if (map.TryGetValue(key, out index))
-            {
-                return true;
-            }
-
-            index = assimpMesh.Vertices.Count;
-
-            var pos = vertices[positionIndex];
-            assimpMesh.Vertices.Add(new Vector3(pos[0], pos[1], pos[2]) * PositionScale);
-
-            var norm = normals[normalIndex];
-            assimpMesh.Normals.Add(new Vector3(norm[0], -norm[1], norm[2]) * NormalScale);
-
-            var uv = texCoords[texCoordIndex];
-            assimpMesh.TextureCoordinateChannels[0].Add(new Vector3(uv[0] * TexCoordScale, 1f - (uv[1] * TexCoordScale), 0));
-
-            map[key] = index;
-            return true;
-        }
-
-        private static int EnsureMaterial(Scene scene, uint textureId)
-        {
-            var name = $"{textureId:x6}";
-            for (var i = 0; i < scene.Materials.Count; i++)
-            {
-                if (scene.Materials[i].Name == name)
-                {
-                    return i;
-                }
+                return existing;
             }
 
             var mat = new Material
             {
-                Name = name,
-                IsTwoSided = true,
+                Name = $"{key.NormalTextureId:x6}_{key.DiffuseTextureId:x6}_{key.SpecularTextureId:x6}",
+                TextureDiffuse = MakeTextureSlot(GetTexturePath(texturePackageId, key.DiffuseTextureId)!, TextureType.Diffuse),
             };
 
-            var texturePath = $"{textureId:x6}.tpl";
-            if (texturePath is not null)
+            if (key.NormalTextureId != 0)
             {
-                mat.TextureDiffuse = new TextureSlot(
-                    filePath: texturePath,
-                    typeSemantic: TextureType.Diffuse,
-                    texIndex: 0,
-                    mapping: TextureMapping.FromUV,
-                    uvIndex: 0,
-                    blendFactor: 1f,
-                    texOp: TextureOperation.Add,
-                    wrapModeU: TextureWrapMode.Wrap,
-                    wrapModeV: TextureWrapMode.Wrap,
-                    flags: (int)TextureFlags.UseAlpha);
+                mat.TextureNormal = MakeTextureSlot(GetTexturePath(texturePackageId, key.NormalTextureId)!, TextureType.Normals);
+            }
+
+            if (key.SpecularTextureId != 0)
+            {
+                mat.TextureSpecular = MakeTextureSlot(GetTexturePath(texturePackageId, key.SpecularTextureId)!, TextureType.Specular);
             }
 
             scene.Materials.Add(mat);
-            return scene.Materials.Count - 1;
+            var index = scene.Materials.Count - 1;
+            materialCache[key] = index;
+            return index;
         }
 
-        private static bool InBounds(int fileLength, long offset, long size) =>
-            offset >= 0 && size >= 0 && offset + size <= fileLength;
+        private static string? GetTexturePath(uint texturePackageId, uint textureId) =>
+            $"{texturePackageId:x6}.tpl/{textureId:x6}.tplx";
 
-        [InlineArray(3)]
+        private static TextureSlot MakeTextureSlot(string path, TextureType type) =>
+            new(
+                filePath: path,
+                typeSemantic: type,
+                texIndex: 0,
+                mapping: TextureMapping.FromUV,
+                uvIndex: 0,
+                blendFactor: 1f,
+                texOp: TextureOperation.Add,
+                wrapModeU: TextureWrapMode.Wrap,
+                wrapModeV: TextureWrapMode.Wrap,
+                flags: type == TextureType.Diffuse ? (int)TextureFlags.UseAlpha : 0);
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct Short3
         {
-            public short Axis0;
+            public short X;
+            public short Y;
+            public short Z;
         }
 
-        [InlineArray(2)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct Short2
         {
-            public short Axis0;
+            public short U;
+            public short V;
         }
 
-        [InlineArray(3)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct SByte3
         {
-            public sbyte Axis0;
+            public sbyte X;
+            public sbyte Y;
+            public sbyte Z;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct Header
         {
-            public uint Unknown1;
-            public uint PartCount;
-            public uint BoneCount;
-            public uint Unknown2;
-            public uint Id;
-            public uint Unknown3;
+            public uint Sentinel1;
+            public uint UnknownCount1;
+            public uint FirstMeshObjectCount;
+            public uint TexturePackageId;
+            public uint ModelId;
+            public uint UnknownCount2;
             public Vector3 Min;
             public Vector3 Max;
             public Vector3 Origin;
-            public ushort PartCountAlmost;
-            public ushort BoneCountAlmost;
-            public ushort UnknownCount;
+            public ushort SkinCount;
+            public ushort UnknownCount3;
+            public ushort MeshCount;
             public ushort VertexCount;
             public ushort NormalCount;
             public ushort TexCoordCount;
             public uint Pad;
-            public uint UnknownOffset;
+            public uint SkinOffset;
             public uint VertexOffset;
             public uint NormalOffset;
             public uint TexCoordOffset;
@@ -309,68 +410,92 @@
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        private struct BoneDef
+        {
+            public uint Flags;
+            public int ParentIndex;
+            public Vector3 LocalOffset;
+            public Vector3 GlobalOffset;
+            public Vector3 Min;
+            public float Padding1;
+            public Vector3 Max;
+            public float Padding2;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct MeshDef
         {
             public uint Unknown1;
             public uint Unknown2;
-            public ushort MeshTable1Count;
-            public ushort MeshTable2Count;
-            public uint UnknownCount;
-            public uint MeshTableOffset;
+            public ushort ObjectCount;
+            public ushort TotalSubmeshCount;
+            public uint UnknownCount1;
+            public uint ObjectTableOffset;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct TableHeader
+        private struct ObjectDef
         {
-            public uint Unknown1;
-            public uint Unknown2;
-            public uint Unknown3;
-            public uint Unknown4;
-            public uint Unknown5;
-            public uint Unknown6;
-            public uint Unknown7;
-            public uint Unknown8;
-            public uint Unknown9;
-            public uint Unknown10;
-            public uint Unknown11;
-            public uint Unknown12;
-            public uint Unknown13;
-            public uint Unknown14;
-            public ushort EntryCount;
-            public ushort Unknown15;
-            public uint Unknown16;
-            public ushort UnknownCount;
-            public ushort Unknown18;
-            public uint EntryOffset;
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct TableEntry
-        {
-            public uint UnknownOffset;
-            public uint TextureId;
-            public uint Unknown1;
-            public uint Unknown2;
-            public ushort FaceCount;
+            public uint Flags;
+            public uint Padding1;
+            public Vector3 Min;
+            public Vector3 Max;
+            public Vector3 LocalOffset;
+            public Vector3 GlobalOffset;
+            public ushort SubmeshCount;
+            public short ParentIndex;
+            public uint Sentinel1;
             public ushort NodeCount;
+            public short OverrideIndex;
+            public uint SubmeshTableOffset;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        private struct SubmeshDef
+        {
+            public uint Unknown1;
+            public uint NormalTextureId;
+            public uint DiffuseTextureId;
+            public uint SpecularTextureId;
+            public ushort FaceCount;
+            public ushort UnknownCount1;
             public uint TexCoordOffset1;
             public uint TexCoordOffset2;
-            public uint UnknownCount;
-            public uint FacesTableOffset;
+            public uint UnknownCount2;
+            public uint FaceTableOffset;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct FaceEntry
+        private struct FaceDef
         {
-            public uint IndexBufferOffset;
+            public uint VertexIndexBufferOffset;
             public uint TexCoordBufferOffset;
             public uint NormalIndexBufferOffset;
-            public uint Unknown1;
-            public uint Unknown2;
-            public uint Unknown3;
-            public uint Unknown4;
+            public uint TangentIndexOffset;
+            public uint BinormalIndexOffset;
+            public uint SkinRecordIndexOffset;
+            public uint BonePaletteIndexOffset;
             public ushort VertexCount;
-            public ushort Unknown5;
+            public ushort BoneAttachmentCount;
+        }
+
+        [InlineArray(4)]
+        private struct Weight4
+        {
+            public byte Weight0;
+        }
+
+        [InlineArray(4)]
+        private struct Index4
+        {
+            public sbyte ID0;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        private struct BoneWeight
+        {
+            public Weight4 Weights;
+            public Index4 Indices;
         }
     }
 }
