@@ -164,9 +164,9 @@
             {
                 var fileName = ReadString(stream);
                 stream.Align(0x004);
-                var fileSize = stream.ReadUInt32LittleEndian();
+                var fileSize = stream.ReadUInt32LittleEndian() + 1;
                 yield return new(folderId.ToString("x8", CultureInfo.InvariantCulture), fileName, stream.Position, fileSize);
-                stream.Seek(fileSize + 1, SeekOrigin.Current);
+                stream.Seek(fileSize, SeekOrigin.Current);
             }
         }
 
