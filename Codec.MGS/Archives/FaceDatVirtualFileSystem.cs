@@ -437,14 +437,6 @@ namespace Codec.MGS.Archives
             }
         }
 
-        private static int Intensity(int c) =>
-            ((c & 0b00010000) >> 4) * 80 +
-            ((c & 0b00001000) >> 3) * 40 +
-            ((c & 0b00000100) >> 2) * 20 +
-            ((c & 0b00000010) >> 1) * 10 +
-            ((c & 0b00000001) >> 0) * 8 +
-            16;
-
         public static MagickImage Load(Stream paletteStream, Stream imageStream)
         {
             var dim = imageStream.ReadLittleEndian<ImageDimensions>();
@@ -483,11 +475,15 @@ namespace Codec.MGS.Archives
             for (var i = 0; i < PaletteCount; i++)
             {
                 var color = paletteStream.ReadUInt16LittleEndian();
+                var a = (color & 0x8000) != 0 ? 0xFF : 0;
+                var r = ColorUtils.Expand5To8((color >> 0) & 0x001F);
+                var g = ColorUtils.Expand5To8((color >> 5) & 0x001F);
+                var b = ColorUtils.Expand5To8((color >> 10) & 0x001F);
                 writer.WriteColor(
-                    ((color & 0x8000) != 0 ? 0xFF : 0x00) << 24 |
-                    Intensity((color >> 0) & 0x001F) << 16 |
-                    Intensity((color >> 5) & 0x001F) << 8 |
-                    Intensity((color >> 10) & 0x001F) << 0);
+                    a << 24 |
+                    r << 16 |
+                    g << 8 |
+                    b << 0);
             }
         }
 
@@ -497,15 +493,11 @@ namespace Codec.MGS.Archives
             for (var i = 0; i < PaletteCount; i++)
             {
                 var color = paletteStream.ReadUInt16LittleEndian();
-                var a = (byte)((color & 0x8000) != 0 ? 0xFF : 0x00);
-                var r = (byte)Intensity((color >> 0) & 0x001F);
-                var g = (byte)Intensity((color >> 5) & 0x001F);
-                var b = (byte)Intensity((color >> 10) & 0x001F);
-                palette[i] = new MagickColor(
-                    ColorUtils.Expand8To16(r),
-                    ColorUtils.Expand8To16(g),
-                    ColorUtils.Expand8To16(b),
-                    ColorUtils.Expand8To16(a));
+                var a = (color & 0x8000) != 0 ? Quantum.Max : (ushort)0;
+                var r = ColorUtils.Expand5To16((color >> 0) & 0x001F);
+                var g = ColorUtils.Expand5To16((color >> 5) & 0x001F);
+                var b = ColorUtils.Expand5To16((color >> 10) & 0x001F);
+                palette[i] = new MagickColor(r, g, b, a);
             }
 
             var dim = outputStream.ReadLittleEndian<ImageDimensions>();
