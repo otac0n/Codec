@@ -34,12 +34,25 @@ namespace Codec
         public static Action<T>? ResolveWriter<T>(this IServiceProvider services, string path, string subPath, IFileSystem fs, string fsPath) =>
             services.ResolveWriter(services.GetServices<FileHandlerResolver<T>>(), path, subPath, fs, fsPath);
 
+        private static FileHandler<T>? Try<T>(FileHandlerResolver<T> filter, IServiceProvider services, string path, string subPath, IFileSystem fs, string fsPath)
+        {
+            try
+            {
+                return filter(services, path, subPath, fs, fsPath);
+            }
+            catch
+            {
+                // TODO: Log warnings or throw aggregate exception for error?
+                return null;
+            }
+        }
+
         public static T? Resolve<T>(this IServiceProvider services, IEnumerable<FileHandlerResolver<T>> resolvers, string path, string subPath, IFileSystem fs, string fsPath) =>
             !fs.File.Exists(subPath)
             ? default
             : (from filter in resolvers
                where filter != null
-               let resolver = filter(services, path, subPath, fs, fsPath)
+               let resolver = Try(filter, services, path, subPath, fs, fsPath)
                where resolver is not null
                let resolved = resolver.Read(path, subPath, fs, fsPath)
                where resolved is not null
@@ -50,7 +63,7 @@ namespace Codec
             ? default
             : (from filter in resolvers
                where filter != null
-               let resolver = filter(services, path, subPath, fs, fsPath)
+               let resolver = Try(filter, services, path, subPath, fs, fsPath)
                where resolver is not null && resolver.CanWrite
                let write = resolver.Write
                select new Action<T>(image => write(image, path, subPath, fs, fsPath))).FirstOrDefault();

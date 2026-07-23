@@ -20,7 +20,7 @@ namespace Codec.MGS.Archives
 
     public class FaceDatVirtualFileSystem(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
     {
-        private static readonly int PaletteCount = 1 << 8;
+        private static readonly ushort PaletteCount = 1 << 8;
         private static readonly int PaletteSize = sizeof(ushort) * PaletteCount;
         private static readonly int Alignment = 0x800;
 
@@ -68,6 +68,17 @@ namespace Codec.MGS.Archives
                             using var file = parent.File.Open(parentRelativePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
                             using var palette = parent.File.OpenRead(GetPaletteFileName(parent, parentRelativePath));
                             Write(palette, image, file);
+                        });
+                }
+
+                if (parent is FaceFileSystem or AnimFileSystem &&
+                    string.Equals(parent.Path.GetExtension(parentRelativePath), ".pal", StringComparison.OrdinalIgnoreCase))
+                {
+                    return new(
+                        read: (fullPath, parentRelativePath, parent, parentPath) =>
+                        {
+                            using var palette = parent.File.OpenRead(GetPaletteFileName(parent, parentRelativePath));
+                            return LoadPaletteImage(palette);
                         });
                 }
 
@@ -437,8 +448,38 @@ namespace Codec.MGS.Archives
         public static MagickImage Load(Stream paletteStream, Stream imageStream)
         {
             var dim = imageStream.ReadLittleEndian<ImageDimensions>();
-            var writer = new TgaWriter<int, byte>((ushort)dim.W, (ushort)dim.H, (ushort)PaletteCount, dim.U, dim.V);
+            var writer = new TgaWriter<int, byte>((ushort)dim.W, (ushort)dim.H, PaletteCount, dim.U, dim.V);
 
+            ReadPalette(paletteStream, writer);
+
+            var count = dim.W * dim.H;
+            for (var i = 0; i < count; i++)
+            {
+                writer.WriteIndex((byte)imageStream.ReadByte());
+            }
+
+            return writer.ToMagickImage();
+        }
+
+        public static MagickImage LoadPaletteImage(Stream paletteStream)
+        {
+            var w = PaletteCount;
+            ushort h = 1;
+            var writer = new TgaWriter<int, byte>(w, h, PaletteCount);
+
+            ReadPalette(paletteStream, writer);
+
+            var count = w * h;
+            for (var i = 0; i < count; i++)
+            {
+                writer.WriteIndex((byte)i);
+            }
+
+            return writer.ToMagickImage();
+        }
+
+        private static void ReadPalette(Stream paletteStream, TgaWriter<int, byte> writer)
+        {
             for (var i = 0; i < PaletteCount; i++)
             {
                 var color = paletteStream.ReadUInt16LittleEndian();
@@ -448,14 +489,6 @@ namespace Codec.MGS.Archives
                     Intensity((color >> 5) & 0x001F) << 8 |
                     Intensity((color >> 10) & 0x001F) << 0);
             }
-
-            var count = dim.W * dim.H;
-            for (var i = 0; i < count; i++)
-            {
-                writer.WriteIndex((byte)imageStream.ReadByte());
-            }
-
-            return writer.ToMagickImage();
         }
 
         private static void Write(Stream paletteStream, MagickImage image, Stream outputStream)
