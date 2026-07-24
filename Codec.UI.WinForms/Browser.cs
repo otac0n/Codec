@@ -13,6 +13,7 @@ namespace Codec.UI.WinForms
     using Codec.Archives;
     using Codec.Files;
     using Codec.MGS;
+    using Codec.Rendering.Input;
     using Codec.Services;
     using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +21,7 @@ namespace Codec.UI.WinForms
 
     internal partial class Browser : Form
     {
+        private readonly IServiceProvider serviceProvider;
         private readonly EntryTypeDetector detector;
         private readonly NestedFileSystemManager fsm;
         private readonly FileExportService exportService;
@@ -38,6 +40,7 @@ namespace Codec.UI.WinForms
 
         public Browser(IServiceProvider serviceProvider)
         {
+            this.serviceProvider = serviceProvider;
             this.detector = serviceProvider.GetRequiredService<EntryTypeDetector>();
             this.fsm = serviceProvider.GetRequiredService<NestedFileSystemManager>();
             this.exportService = serviceProvider.GetRequiredService<FileExportService>();
@@ -290,7 +293,7 @@ namespace Codec.UI.WinForms
                                         StartPosition = FormStartPosition.CenterParent,
                                         FormBorderStyle = FormBorderStyle.SizableToolWindow,
                                     };
-                                    childForm.Controls.Add(new ModelRendererControl(entry.Path, this.fsm, scene)
+                                    childForm.Controls.Add(new ModelRendererControl(entry.Path, this.fsm, this.serviceProvider.GetRequiredService<ControlChangeTracker>(), scene)
                                     {
                                         Dock = DockStyle.Fill,
                                     });

@@ -12,6 +12,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="HIDDevices" Version="4.0.2" />
+    <PackageReference Include="HIDDevices.Usages" Version="4.0.5" />
     <PackageReference Include="Silk.NET.OpenGL" Version="2.23.0" />
   </ItemGroup>
   <ItemGroup>

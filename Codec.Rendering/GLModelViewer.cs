@@ -9,6 +9,8 @@
     using Assimp;
     using Codec.Archives;
     using Codec.Files;
+    using Codec.Rendering.Input;
+    using DevDecoder.HIDDevices.Usages;
     using ImageMagick;
     using Silk.NET.OpenGL;
 
@@ -17,20 +19,24 @@
         private readonly Scene scene;
         private readonly string path;
         private readonly NestedFileSystemManager fsm;
+        private readonly ControlChangeTracker controlChangeTracker;
         private readonly Dictionary<(string, bool), TextureHandle?> textures = [];
         private readonly List<MeshGpuData> gpuMeshes = [];
         private GL gl;
         private Stopwatch T;
+        private TimeSpan lastFrame;
         private Vector3 center;
         private float size;
         private ShaderHandle<Vector3> shader;
+        private bool flying;
 
         private sealed record MeshGpuData(uint Vao, uint Vbo, uint Ebo, int IndexCount, Material Material);
 
-        public GLModelViewer(string path, NestedFileSystemManager fsm, RenderableScene? scene = null)
+        public GLModelViewer(string path, NestedFileSystemManager fsm, ControlChangeTracker changeTracker, RenderableScene? scene = null)
         {
             this.path = path;
             this.fsm = fsm;
+            this.controlChangeTracker = changeTracker;
             this.scene = scene ?? this.fsm.Resolve<RenderableScene>(this.path)!;
         }
 
@@ -107,12 +113,80 @@
 
         public unsafe void Render(int width, int height)
         {
-            var a = Math.Tau * this.T.Elapsed.TotalSeconds / 5;
-            var (x, z) = Math.SinCos(a);
-            var t = Math.Sin(a / 3);
-            var p = new Vector3((float)(this.size * x), (float)(this.size / 10 * t), (float)(this.size * z));
-            this.Camera.Position = this.center + p;
-            this.Camera.Direction = -p;
+            var now = this.T.Elapsed;
+            var elapsed = now - this.lastFrame;
+            this.lastFrame = now;
+
+            var moveVector = Vector3.Zero;
+            var right = 0.0;
+            var up = 0.0;
+
+            var bindings = new Bindings<Action<double>>();
+            bindings.BindCurrent(
+                [(c => c.Usages.Any(u => u == (uint)GenericDesktopPage.X), v => (v - 0.5) * 2)],
+                v => moveVector.X += (float)v);
+            bindings.BindCurrent(
+                [(c => c.Usages.Any(u => u == (uint)GenericDesktopPage.Y), v => (v - 0.5) * 2)],
+                v => moveVector.Y += (float)v);
+            bindings.BindCurrent(
+                [(c => c.Usages.Any(u => u == (uint)GenericDesktopPage.Ry), v => (v - 0.5) * 2)],
+                v => up -= v);
+            bindings.BindCurrent(
+                [(c => c.Usages.Any(u => u == (uint)GenericDesktopPage.Rx), v => (v - 0.5) * 2)],
+                v => right -= v);
+
+            bindings.BindEach(
+                [c => c.Usages.Any(u => u == (uint)ButtonPage.Button1)],
+                v => this.flying = false);
+
+            this.controlChangeTracker.ProcessChanges(bindings);
+
+            var moveLength = moveVector.Length();
+            if (moveLength > 0.1)
+            {
+                this.flying = true;
+
+                var scale = moveLength >= 1
+                    ? 1f / moveLength
+                    : (moveLength - 0.1f) / (0.9f * moveLength);
+
+                moveVector *= scale;
+                this.Camera.Position += (this.Camera.Right * moveVector.X - this.Camera.Direction * moveVector.Y / 2) * (float)(elapsed.TotalSeconds * this.size);
+            }
+
+            if (Math.Abs(right) > 0.1)
+            {
+                this.flying = true;
+
+                right *= elapsed.TotalSeconds / 5 * Math.Tau;
+
+                var (sin, cos) = Math.SinCos(right);
+                var v = this.Camera.Direction;
+                var k = this.Camera.Up;
+                this.Camera.Direction = v * (float)cos + Vector3.Cross(k, v) * (float)sin + k * Vector3.Dot(k, v) * (float)(1 - cos);
+            }
+
+            if (Math.Abs(up) > 0.1)
+            {
+                this.flying = true;
+
+                up *= elapsed.TotalSeconds / 5 * Math.Tau;
+
+                var (sin, cos) = Math.SinCos(up);
+                var v = this.Camera.Direction;
+                var k = this.Camera.Right;
+                this.Camera.Direction = v * (float)cos + Vector3.Cross(k, v) * (float)sin + k * Vector3.Dot(k, v) * (float)(1 - cos);
+            }
+
+            if (!this.flying)
+            {
+                var a = Math.Tau * now.TotalSeconds / 5;
+                var (x, z) = Math.SinCos(a);
+                var t = Math.Sin(a / 3);
+                var p = new Vector3((float)(this.size * x), (float)(this.size / 10 * t), (float)(this.size * z));
+                this.Camera.Position = this.center + p;
+                this.Camera.Direction = -p;
+            }
 
             this.Camera.Width = width;
             this.Camera.Height = height;

@@ -42,6 +42,7 @@ namespace Codec.UI
             Audio.ServiceRegistration.Register(services);
             Imaging.ServiceRegistration.Register(services);
             Geometry.ServiceRegistration.Register(services);
+            Rendering.ServiceRegistration.Register(services);
             M2.ServiceRegistration.Register(services);
             MGS.ServiceRegistration.Register(services);
             EnvironmentOptions.Bind(context, services);

@@ -7,23 +7,28 @@
     using Codec.Files;
     using Codec.UI.Avalonia.ViewModels;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.DependencyInjection;
+    using Codec.Rendering.Input;
 
     public partial class BrowserWindow : Window
     {
         private readonly BrowserViewModel viewModel;
+        private readonly IServiceProvider serviceProvider;
         private readonly NotifyingLoggerProvider provider;
         private readonly ILogger<BrowserWindow> logger;
 
-        public BrowserWindow(BrowserViewModel viewModel, NotifyingLoggerProvider provider, ILogger<BrowserWindow> logger)
+        public BrowserWindow(BrowserViewModel viewModel, IServiceProvider serviceProvider)
         {
             this.InitializeComponent();
             viewModel.AudioPreviewRequested += this.OnAudioPreviewRequested;
             viewModel.ImagePreviewRequested += this.OnImagePreviewRequested;
             viewModel.ModelPreviewRequested += this.OnModelPreviewRequested;
+            var provider = serviceProvider.GetRequiredService<NotifyingLoggerProvider>();
             provider.EntryLogged += this.Provider_EntryLogged;
             this.viewModel = viewModel;
+            this.serviceProvider = serviceProvider;
             this.provider = provider;
-            this.logger = logger;
+            this.logger = serviceProvider.GetRequiredService<ILogger<BrowserWindow>>();
             this.DataContext = viewModel;
         }
 
@@ -59,7 +64,7 @@
 
         private void OnModelPreviewRequested(object? sender, BrowserViewModel.PreviewRequestedEventArgs<RenderableScene> args)
         {
-            var preview = new ModelPreviewWindow(args.Path, args.Parent, args.Item)
+            var preview = new ModelPreviewWindow(args.Path, args.Parent, this.serviceProvider.GetRequiredService<ControlChangeTracker>(), args.Item)
             {
                 Title = args.Parent.GetFileName(args.Path),
             };

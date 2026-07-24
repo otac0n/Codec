@@ -94,6 +94,7 @@ OpenSource Info
 | Project | License | Details |
 |---------|---------|---------|
 | [Silk.NET](https://github.com/dotnet/Silk.NET) | [MIT](https://github.com/dotnet/Silk.NET/blob/main/LICENSE.md) | 3D rendering and windowing |
+| [HIDDevices](https://github.com/DevDecoder/HIDDevices) | [Apache 2.0](https://github.com/DevDecoder/HIDDevices/blob/master/LICENSE.txt) | Device handling |
 | [Assimp](https://github.com/Saalvage/AssimpNetter) | [MIT + BSD-3-Clause](https://github.com/Saalvage/AssimpNetter/blob/master/License.txt) | 3D object loading and saving |
 | [Magick.NET](https://github.com/dlemstra/Magick.NET) | [Apache 2.0](https://github.com/dlemstra/Magick.NET/blob/main/License.txt) | Image loading and saving |
 | [NAudio](https://github.com/naudio/naudio) | [MIT](https://github.com/naudio/naudio/blob/main/LICENSE) | Audio loading and playing |

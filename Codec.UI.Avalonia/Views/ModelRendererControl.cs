@@ -3,12 +3,13 @@
     using Codec.Archives;
     using Codec.Files;
     using Codec.Rendering;
+    using Codec.Rendering.Input;
     using global::Avalonia.OpenGL;
     using global::Avalonia.OpenGL.Controls;
     using global::Avalonia.Threading;
     using Silk.NET.OpenGL;
 
-    public class ModelRendererControl(string path, NestedFileSystemManager fsm, RenderableScene? scene = null) : OpenGlControlBase
+    public class ModelRendererControl(string path, NestedFileSystemManager fsm, ControlChangeTracker changeTracker, RenderableScene? scene = null) : OpenGlControlBase
     {
         private GL? gl;
         private GLModelViewer modelViewer;
@@ -17,7 +18,7 @@
         {
             base.OnOpenGlInit(gl);
             this.gl = GL.GetApi(gl.GetProcAddress);
-            this.modelViewer = new GLModelViewer(path, fsm, scene);
+            this.modelViewer = new GLModelViewer(path, fsm, changeTracker, scene);
             this.modelViewer.Initialize(this.gl);
         }
 
