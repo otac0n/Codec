@@ -21,7 +21,7 @@ Support for the following formats is implemented:
     - .sdx Sound Packs (MGS2)
     - STAGE.DIR Archive (MGS1 & MGSVR)
     - STAGE.DAT Archive (MGS2 & TTS)
-    - FACE.DAT Archive (MGS1)
+    - FACE.DAT Archive (MGS1) [read & write]
     - DEMO.DAT Archive (MGS1)
     - .brf Briefing Files (MGS1 & MGSVR)
     - .slot Data Files (MGS4)
