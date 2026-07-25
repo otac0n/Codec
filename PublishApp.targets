@@ -1,13 +1,12 @@
 <Project>
   <PropertyGroup>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
-    <Configuration Condition="'$(Platform)' == ''">Release</Configuration>
+    <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
     <SelfContained>false</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>
     <EnableCompressionInSingleFile>$(SelfContained)</EnableCompressionInSingleFile>
     <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))</RepoRoot>
-    <PublishDir Condition="'$(TargetFrameworks)' == ''">$(RepoRoot)publish\$(MSBuildProjectName)-$(Platform)-$(Configuration)-$(RuntimeIdentifier)\</PublishDir>
-    <PublishDir Condition="'$(PublishDir)' == ''">$(RepoRoot)publish\$(MSBuildProjectName)-$(Platform)-$(Configuration)\$(TargetFramework)\</PublishDir>
+    <PublishDir>$(RepoRoot)publish\$(MSBuildProjectName)-$(Platform)-$(Configuration)-$(RuntimeIdentifier)\</PublishDir>
   </PropertyGroup>
   <Target Name="ExcludePdbFromPublish" AfterTargets="ComputeFilesToPublish">
     <ItemGroup>
@@ -17,5 +16,11 @@
   </Target>
   <Target Name="RenamePublishExe" AfterTargets="Publish" Condition="Exists('$(PublishDir)$(AssemblyName).exe')">
     <Move SourceFiles="$(PublishDir)$(AssemblyName).exe" DestinationFiles="$(PublishDir)codec.exe" />
+  </Target>
+  <Target Name="ZipPublishOutput" AfterTargets="Publish">
+    <PropertyGroup>
+      <_ZipFileName>$(MSBuildProjectName)-$(Platform)-$(Configuration)-$(RuntimeIdentifier)-v$(Version).zip</_ZipFileName>
+    </PropertyGroup>
+    <ZipDirectory SourceDirectory="$(PublishDir)" DestinationFile="$(RepoRoot)publish\$(_ZipFileName)" Overwrite="true" />
   </Target>
 </Project>
