@@ -77,7 +77,7 @@ namespace Codec.MGS.Archives
                     return new(
                         read: (fullPath, parentRelativePath, parent, parentPath) =>
                         {
-                            using var palette = parent.File.OpenRead(GetPaletteFileName(parent, parentRelativePath));
+                            using var palette = parent.File.OpenRead(parentRelativePath);
                             return LoadPaletteImage(palette);
                         });
                 }
