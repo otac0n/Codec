@@ -9,7 +9,6 @@ namespace Codec.MGS.Archives
     using System.IO;
     using System.IO.Abstractions;
     using System.Linq;
-    using System.Runtime.InteropServices;
     using Codec.Archives;
     using Codec.Audio;
     using DiscUtils.Streams;

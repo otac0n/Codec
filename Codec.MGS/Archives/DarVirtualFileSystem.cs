@@ -40,7 +40,7 @@ namespace Codec.MGS.Archives
                 while (true)
                 {
                     var b = source.ReadByte();
-                    if (b == 0 || b == -1)
+                    if (b <= 0)
                     {
                         break;
                     }
