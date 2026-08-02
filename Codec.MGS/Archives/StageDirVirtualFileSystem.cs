@@ -10,6 +10,7 @@ namespace Codec.MGS.Archives
     using System.Runtime.InteropServices;
     using System.Text;
     using Codec.Archives;
+    using Codec.MGS.Services;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (string Folder, byte Group, ushort Id, byte Ext, long Offset, long Length);
@@ -20,7 +21,7 @@ namespace Codec.MGS.Archives
 
         private static readonly ImmutableDictionary<byte, string> Extensions = new Dictionary<byte, string>
         {
-            [0x61] = "azm",
+            [0x61] = "azm", // aar
             [0x62] = "bin",
             [0x63] = "con",
             [0x64] = "dar",
@@ -30,10 +31,11 @@ namespace Codec.MGS.Archives
             [0x69] = "img",
             [0x6b] = "kmd",
             [0x6c] = "lit",
-            [0x6d] = "mdx",
+            [0x6d] = "mdx", // mt3
+            [0x6e] = "nar",
             [0x6f] = "oar",
-            [0x70] = "pcx",
-            [0x72] = "res",
+            [0x70] = "pcx", // pcc, which == pcx
+            [0x72] = "res", // rar, rpk
             [0x73] = "sgt",
             [0x77] = "wvx",
             [0x7a] = "zmd",
@@ -62,8 +64,16 @@ namespace Codec.MGS.Archives
             });
         }
 
-        protected override string GetEntryName(Entry entry) =>
-            $"{entry.Folder}/{Groups[entry.Group]}/{entry.Id:x4}.{Extensions[entry.Ext]}";
+        protected override string GetEntryName(Entry entry)
+        {
+            if (!(JoyDictService.TryGetOriginalFileName("mgs1", "stage.dir", null, entry.Folder, $"{entry.Id:x4}.{(char)entry.Ext}", out var filename) ||
+                JoyDictService.TryGetOriginalFileName("mgs1", "stage.dar", null, entry.Folder, $"{entry.Id:x4}.{(char)entry.Ext}", out filename)))
+            {
+                filename = $"{entry.Id:x4}.{Extensions[entry.Ext]}";
+            }
+
+            return $"{entry.Folder}/{Groups[entry.Group]}/{filename}";
+        }
 
         private static IEnumerable<Entry> ReadDar(Stream source, string folder, byte group, long offset, long length)
         {

@@ -16,6 +16,9 @@
     <ProjectReference Include="..\Codec.Imaging\Codec.Imaging.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources\**\*.tbl" />
+    <None Remove="Resources\**" />
+    <Content Remove="Resources\**" />
     <AdditionalFiles Include="..\stylecop.json" Link="stylecop.json" />
   </ItemGroup>
 </Project>

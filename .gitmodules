@@ -1,0 +1,3 @@
+[submodule "Codec.MGS/Resources/JoyDict"]
+	path = Codec.MGS/Resources/JoyDict
+	url = https://github.com/Joy-Division/JoyDict.git
