@@ -61,8 +61,16 @@
                     return static (fullPath, parentRelativePath, parent, parentPath) =>
                     {
                         var file = parent.File.OpenRead(parentRelativePath);
-                        var cdReader = new CDReader(file, joliet: true);
-                        return new DiscUtilsVFSAdapter(cdReader);
+                        try
+                        {
+                            var cdReader = new CDReader(file, joliet: true);
+                            return new DiscUtilsVFSAdapter(cdReader);
+                        }
+                        catch
+                        {
+                            file.Dispose();
+                            throw;
+                        }
                     };
                 }
 

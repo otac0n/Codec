@@ -24,9 +24,13 @@
 
             lock (handles)
             {
-                if (!handles.All(h => Compatible(h, access, share)))
+                if (handles.Where(h => !Compatible(h, access, share)).ToArray() is var conflicts and { Length: > 0 })
                 {
-                    throw new IOException("The file cannot be opened because someone has it open and doesn't want to share.");
+                    var message = "The file cannot be opened because someone has it open and doesn't want to share.";
+#if DEBUG
+                    message = $"{message}{Environment.NewLine}{string.Join(Environment.NewLine, conflicts.Select(c => c.Origin))}";
+#endif
+                    throw new IOException(message);
                 }
 
                 var handle = new OpenHandle(handles, access, share);
