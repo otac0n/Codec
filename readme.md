@@ -22,6 +22,7 @@ Support for the following formats is implemented:
     - STAGE.DIR Archive (MGS1 & MGSVR)
     - STAGE.DAT Archive (MGS2 & TTS)
     - FACE.DAT Archive (MGS1) [read & write]
+    - RADIO.DAT Archive (MGS1)
     - DEMO.DAT Archive (MGS1)
     - .brf Briefing Files (MGS1 & MGSVR)
     - .slot Data Files (MGS4)

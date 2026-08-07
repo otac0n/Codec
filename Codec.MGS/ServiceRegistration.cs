@@ -14,6 +14,7 @@ namespace Codec.MGS
         public static void Register(IServiceCollection services)
         {
             CtxrFile.Register(services);
+            GlyFile.Register(services);
             TriFile.Register(services);
             TplFile.Register(services);
             TxnFile.Register(services);
@@ -35,6 +36,7 @@ namespace Codec.MGS
             DemoDatVirtualFileSystem.Register(services);
             DlzVirtualFileSystem.Register(services);
             FaceDatVirtualFileSystem.Register(services);
+            RadioDatVirtualFileSystem.Register(services);
             StageDatVirtualFileSystem.Register(services);
             StageDirVirtualFileSystem.Register(services);
             SlotVirtualFileSystem.Register(services);
