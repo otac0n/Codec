@@ -15,6 +15,7 @@ namespace Codec.MGS
         {
             CtxrFile.Register(services);
             GlyFile.Register(services);
+            MdxFile.Register(services);
             TriFile.Register(services);
             TplFile.Register(services);
             TxnFile.Register(services);

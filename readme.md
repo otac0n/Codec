@@ -36,6 +36,7 @@ Support for the following formats is implemented:
     - .pcx Image Files
   - Metal Gear Specific
     - .pll Image Files (MGS1)
+    - .mdx Model Files (MGS1)
     - .kmd Model Files (MGS1)
     - .kms Model Files (MGS2)
     - .tri Texture Files (MGS2 & MGS3)
