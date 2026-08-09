@@ -178,6 +178,19 @@ namespace Codec
             }
         }
 
+        public static bool PeekAllZeros(this Stream source, long count)
+        {
+            var start = source.Position;
+            var allZeroes = true;
+            while (allZeroes && count-- > 0)
+            {
+                allZeroes &= source.ReadByte() == 0;
+            }
+
+            source.Position = start;
+            return allZeroes;
+        }
+
         public static bool Contains(this Stream source, byte[] pattern)
         {
             using var memory = new MemoryStream();

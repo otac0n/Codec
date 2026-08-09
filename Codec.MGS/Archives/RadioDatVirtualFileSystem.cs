@@ -94,7 +94,7 @@ namespace Codec.MGS.Archives
                     return !LooksLikeHeader(source);
                 }
 
-                return !AllZeroes(source, GlyFile.ChunkSize);
+                return !source.PeekAllZeros(GlyFile.ChunkSize);
             }
             else if (aligned == false)
             {
@@ -108,7 +108,7 @@ namespace Codec.MGS.Archives
                     return !LooksLikeHeader(source);
                 }
 
-                if (padding < GlyFile.ChunkSize && AllZeroes(source, padding))
+                if (padding < GlyFile.ChunkSize && source.PeekAllZeros(padding))
                 {
                     source.Position += padding;
                     var headerAfterPad = LooksLikeHeader(source);
@@ -119,7 +119,7 @@ namespace Codec.MGS.Archives
                     }
                 }
 
-                return !LooksLikeHeader(source) && !AllZeroes(source, GlyFile.ChunkSize);
+                return !LooksLikeHeader(source) && !source.PeekAllZeros(GlyFile.ChunkSize);
             }
         }
 
@@ -144,7 +144,7 @@ namespace Codec.MGS.Archives
                 }
                 else
                 {
-                    if (AllZeroes(source, padding))
+                    if (source.PeekAllZeros(padding))
                     {
                         aligned = true;
                         source.Align(Alignment);
@@ -157,19 +157,6 @@ namespace Codec.MGS.Archives
 
                 Debug.WriteLine($"Alignment set to: {aligned}");
             }
-        }
-
-        private static bool AllZeroes(Stream source, long count)
-        {
-            var start = source.Position;
-            var allZeroes = true;
-            while (allZeroes && count-- > 0)
-            {
-                allZeroes &= source.ReadByte() == 0;
-            }
-
-            source.Position = start;
-            return allZeroes;
         }
 
         private static bool LooksLikeHeader(Stream source)
