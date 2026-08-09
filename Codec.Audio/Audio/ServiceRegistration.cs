@@ -13,8 +13,9 @@ namespace Codec.Audio
     {
         public static void Register(IServiceCollection services)
         {
+            MidiFile.Register(services);
             CdaFile.Register(services);
-            services.AddSingleton(new EntryTypeMatcher(EntryType.Audio, "*.mid;*.midi;*.mp3;*.wav"));
+            services.AddSingleton(new EntryTypeMatcher(EntryType.Audio, "*.mp3;*.wav"));
             services.AddSingleton(new EntryTypeMatcher(EntryType.Video, "*.avi;*.mov;*.mp4;*.mkv;*.webm"));
 
             var vagstreamExtensions = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);

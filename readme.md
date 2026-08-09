@@ -28,10 +28,11 @@ Support for the following formats is implemented:
     - .slot Data Files (MGS4)
 - Files
   - Generic
-    - CD Audio Tracks
     - All Basic Image Formats (PNG, JPEG, BMP, etc.)
     - All Basic 3D Formats (FBX, OBJ, STL, STEP, etc.)
-    - WAV & MP3 Audio Files
+    - WAV, MP3, and MIDI Audio Files
+    - All VGMStream Formats (VAG, etc.)
+    - CD Audio Tracks
     - .pcx Image Files
   - Metal Gear Specific
     - .pll Image Files (MGS1)
@@ -102,6 +103,9 @@ OpenSource Info
 | [System.IO.Abstractions](https://github.com/TestableIO/System.IO.Abstractions) | [MIT](https://github.com/TestableIO/System.IO.Abstractions/blob/main/LICENSE) | Nested filesystems |
 | [CueSharp](https://www.nuget.org/packages/CueSharp) | [BSD-2-Clause](https://www.nuget.org/packages/CueSharp/1.0.1/License) | CUE format |
 | [DiscUtils](https://github.com/DiscUtils/DiscUtils) | [MIT](https://github.com/DiscUtils/DiscUtils/blob/develop/LICENSE.txt) | ISO format |
+| [MeltySynth](https://github.com/sinshu/meltysynth) | [MIT](https://github.com/sinshu/meltysynth/blob/main/LICENSE.txt) | MIDI Synthesizer |
+| [TinySoundFont](https://github.com/schellingb/TinySoundFont) | [MIT](https://github.com/schellingb/TinySoundFont/blob/main/LICENSE) | Sound Font file |
+| [DryWetMidi](https://github.com/melanchall/drywetmidi) | [MIT](https://github.com/melanchall/drywetmidi/blob/develop/LICENSE) | MIDI creation |
 | [GMWare.M2](https://gitlab.com/modmyclassic/sega-mega-drive-mini/marchive-batch-tool) | [GPL 3.0](https://gitlab.com/modmyclassic/sega-mega-drive-mini/marchive-batch-tool/-/blob/master/COPYING) | M2 Archive format |
 | [metalgeardev/MGS1](https://github.com/metalgeardev/MGS1) | | Reference code |
 | [mgs_reversing](https://github.com/FoxdieTeam/mgs_reversing) | | Reference code |

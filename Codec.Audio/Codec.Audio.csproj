@@ -12,6 +12,8 @@
     <PackageProjectUrl>https://github.com/otac0n/Codec</PackageProjectUrl>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Melanchall.DryWetMidi" Version="8.0.3" />
+    <PackageReference Include="MeltySynth" Version="2.4.1" />
     <PackageReference Include="NAudio" Version="2.3.0" />
     <PackageReference Include="VgmSharp" Version="0.1.1" />
   </ItemGroup>
@@ -19,6 +21,8 @@
     <ProjectReference Include="..\Codec.Base\Codec.Base.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <None Remove="Resources\florestan-subset.sf2" />
+    <EmbeddedResource Include="Resources\florestan-subset.sf2" />
     <AdditionalFiles Include="..\stylecop.json" Link="stylecop.json" />
   </ItemGroup>
 </Project>

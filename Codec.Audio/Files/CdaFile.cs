@@ -41,24 +41,7 @@
             short channels = 2;
             short bitsPerSample = 16;
 
-            var byteRate = sampleRate * channels * (bitsPerSample / 8);
-            var blockAlign = (short)(channels * (bitsPerSample / 8));
-
-            bw.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));
-            bw.Write(36 + dataSize);
-            bw.Write(System.Text.Encoding.ASCII.GetBytes("WAVE"));
-
-            bw.Write(System.Text.Encoding.ASCII.GetBytes("fmt "));
-            bw.Write(16);
-            bw.Write((short)1);
-            bw.Write(channels);
-            bw.Write(sampleRate);
-            bw.Write(byteRate);
-            bw.Write(blockAlign);
-            bw.Write(bitsPerSample);
-
-            bw.Write(System.Text.Encoding.ASCII.GetBytes("data"));
-            bw.Write(dataSize);
+            WavFile.WritePcmHeader(bw, sampleRate, channels, bitsPerSample, dataSize);
 
             ms.Seek(0, SeekOrigin.Begin);
             return ms;
