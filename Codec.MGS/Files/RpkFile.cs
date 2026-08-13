@@ -13,7 +13,6 @@ namespace Codec.MGS.Files
     using DiscUtils.Streams;
     using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.Logging;
     using Entry = (int ImageIndex, int PaletteIndex, long Offset, long Length);
 
     internal class RpkFile
@@ -26,13 +25,7 @@ namespace Codec.MGS.Files
                 {
                     using var stream = parent.File.OpenRead(parentRelativePath);
                     var header = stream.ReadLittleEndian<Header>();
-                    if (header.PaletteCount > header.ImageCount || header.Pad != 0)
-                    {
-                        serviceProvider.GetService<ILogger<RpkFileFileSystem>>()?.LogInformation("Unknown RPK. PaletteCount: '{PaletteCount}', ImageCount: '{ImageCount}', Pad: '{Pad:x4}'", header.PaletteCount, header.ImageCount, header.Pad);
-                        return false;
-                    }
-
-                    return true;
+                    return header.PaletteCount <= header.ImageCount && header.Pad == 0;
                 },
                 static (fullPath, parentRelativePath, parent, parentPath) => new RpkFileFileSystem(parentRelativePath, parent));
 
