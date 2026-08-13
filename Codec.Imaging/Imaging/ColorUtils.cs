@@ -2,7 +2,6 @@
 
 namespace Codec.Imaging
 {
-    using System;
     using ImageMagick;
 
     public static class ColorUtils

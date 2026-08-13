@@ -1,7 +1,6 @@
 ﻿namespace Codec.MGS.Files
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Runtime.InteropServices;
     using Assimp;

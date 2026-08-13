@@ -14,8 +14,8 @@ namespace Codec.MGS.Archives
     using Codec.MGS.Streams;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
-    using Section = (long Offset, long Length, bool Encoded);
     using Entry = (string Folder, uint Group, uint Id, byte Ext, (long Offset, long Length, bool Encoded) Section, long Offset, long Length);
+    using Section = (long Offset, long Length, bool Encoded);
 
     public enum StageDatVariant
     {

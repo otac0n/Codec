@@ -4,7 +4,6 @@ namespace Codec.MGS.Files
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.IO;
     using System.IO.Abstractions;
     using System.IO.Compression;

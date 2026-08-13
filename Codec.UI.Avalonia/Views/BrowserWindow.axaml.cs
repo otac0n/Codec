@@ -5,10 +5,10 @@
     using global::Avalonia.Media.Imaging;
     using global::Avalonia.Threading;
     using Codec.Files;
-    using Codec.UI.Avalonia.ViewModels;
-    using Microsoft.Extensions.Logging;
-    using Microsoft.Extensions.DependencyInjection;
     using Codec.Rendering.Input;
+    using Codec.UI.Avalonia.ViewModels;
+    using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Logging;
 
     public partial class BrowserWindow : Window
     {

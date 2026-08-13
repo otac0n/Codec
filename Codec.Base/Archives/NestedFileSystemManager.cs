@@ -5,7 +5,6 @@
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.IO.Abstractions;
-    using System.Linq;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
 
