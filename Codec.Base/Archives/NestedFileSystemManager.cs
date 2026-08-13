@@ -94,8 +94,31 @@
 
             while (stack.Count > 0)
             {
-                foreach (var entry in this.EnumerateEntries(stack.Pop()))
+                IEnumerator<Entry> enumerator;
+                try
                 {
+                    enumerator = this.EnumerateEntries(stack.Pop()).GetEnumerator();
+                }
+                catch (IOException)
+                {
+                    continue;
+                }
+
+                while (true)
+                {
+                    try
+                    {
+                        if (!enumerator.MoveNext())
+                        {
+                            break;
+                        }
+                    }
+                    catch (IOException)
+                    {
+                        break;
+                    }
+
+                    var entry = enumerator.Current;
                     yield return entry;
 
                     if (recursive && entry.CanEnumerateEntries)
