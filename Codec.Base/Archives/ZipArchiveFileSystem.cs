@@ -1,6 +1,5 @@
 ﻿namespace Codec.Archives
 {
-    using System;
     using System.Collections.Generic;
     using System.IO;
     using System.IO.Abstractions;
@@ -11,16 +10,8 @@
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton<FileSystemResolver>((servicProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".zip", StringComparison.OrdinalIgnoreCase))
-                {
-                    return static (fullPath, parentRelativePath, parent, parentPath) =>
-                        new ZipArchiveFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+            services.AddFileSystems(
+                ("*.zip", static (fullPath, parentRelativePath, parent, parentPath) => new ZipArchiveFileSystem(parentRelativePath, parent)));
         }
 
         protected override string GetEntryName(ZipArchiveEntry entry) => entry.FullName;

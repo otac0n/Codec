@@ -51,17 +51,8 @@ namespace Codec.MGS.Archives
 
         public static void Register(IServiceCollection services)
         {
-            var glob = PathExtensions.GlobToRegex("*STAGE*.DIR");
-            services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (glob.IsMatch(parent.Path.GetFileName(parentRelativePath)))
-                {
-                    return static (fullPath, parentRelativePath, parent, parentPath) =>
-                        new StageDirVirtualFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+            services.AddFileSystems(
+                ("*STAGE*.DIR", static (fullPath, parentRelativePath, parent, parentPath) => new StageDirVirtualFileSystem(parentRelativePath, parent)));
         }
 
         protected override string GetEntryName(Entry entry)

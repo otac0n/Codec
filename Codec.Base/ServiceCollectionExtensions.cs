@@ -4,6 +4,7 @@ namespace Codec
 {
     using System;
     using Microsoft.Extensions.DependencyInjection;
+    using Filter = System.Func<System.IServiceProvider, string, string, System.IO.Abstractions.IFileSystem, string, bool>;
 
     public static class ServiceCollectionExtensions
     {
@@ -26,5 +27,39 @@ namespace Codec
             Func<IServiceProvider, TKey, TService> implementationFactory)
             where TService : class =>
             services.AddKeyedTransient<TService>(KeyedService.AnyKey, (s, key) => implementationFactory(s, (TKey)key!));
+
+        public static IServiceCollection AddFileSystem(this IServiceCollection services, string pattern, FileSystemFactory factory) =>
+            AddFileSystem(services, pattern, null, factory);
+
+        public static IServiceCollection AddFileSystem(this IServiceCollection services, string pattern, Filter? filter, FileSystemFactory factory) =>
+            AddFileSystems(services, (pattern, filter, factory));
+
+        public static IServiceCollection AddFileSystems(this IServiceCollection services, params (string Pattern, FileSystemFactory Factory)[] fileSystems) =>
+            AddFileSystems(services, Array.ConvertAll(fileSystems, fs => (fs.Pattern, (Filter?)null, fs.Factory)));
+
+        public static IServiceCollection AddFileSystems(this IServiceCollection services, params (string Pattern, Filter? Filter, FileSystemFactory Factory)[] fileSystems)
+        {
+            FileSystemResolver MakeResolver(string pattern, Filter? filter, FileSystemFactory factory)
+            {
+                var glob = PathExtensions.GlobToRegex(pattern);
+                if (filter == null)
+                {
+                    return (servicProvider, fullPath, parentRelativePath, parent, parentPath) =>
+                        glob.IsMatch(parent.Path.GetFileName(parentRelativePath)) ? factory : null;
+                }
+                else
+                {
+                    return (servicProvider, fullPath, parentRelativePath, parent, parentPath) =>
+                        glob.IsMatch(parent.Path.GetFileName(parentRelativePath)) && filter(servicProvider, fullPath, parentRelativePath, parent, parentPath) ? factory : null;
+                }
+            }
+
+            foreach (var (pattern, filter, factory) in fileSystems)
+            {
+                services.AddSingleton(MakeResolver(pattern, filter, factory));
+            }
+
+            return services;
+        }
     }
 }

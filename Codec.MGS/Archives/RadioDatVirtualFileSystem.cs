@@ -22,17 +22,8 @@ namespace Codec.MGS.Archives
 
         public static void Register(IServiceCollection services)
         {
-            var glob = PathExtensions.GlobToRegex("*RADIO*.DAT");
-            services.AddSingleton<FileSystemResolver>((servicProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (glob.IsMatch(parent.Path.GetFileName(parentRelativePath)))
-                {
-                    return static (fullPath, parentRelativePath, parent, parentPath) =>
-                        new RadioDatVirtualFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+            services.AddFileSystems(
+                ("*RADIO*.DAT", static (fullPath, parentRelativePath, parent, parentPath) => new RadioDatVirtualFileSystem(parentRelativePath, parent)));
         }
 
         protected override string GetEntryName(Entry entry) =>
@@ -125,9 +116,9 @@ namespace Codec.MGS.Archives
 
         private static void ApplyAlignment(Stream source, ref bool? aligned)
         {
-            if (aligned is bool vale)
+            if (aligned is bool value)
             {
-                if (vale)
+                if (value)
                 {
                     source.Align(Alignment);
                 }
