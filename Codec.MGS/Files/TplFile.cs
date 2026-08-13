@@ -23,32 +23,22 @@ namespace Codec.MGS.Files
         {
             services.AddSingleton(new EntryTypeMatcher(EntryType.Image, "*.tplx"));
 
-            services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".tpl", StringComparison.OrdinalIgnoreCase))
+            services.AddFileSystem(
+                "*.tpl",
+                static (serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
                 {
-                    using (var stream = parent.File.OpenRead(parentRelativePath))
+                    using var stream = parent.File.OpenRead(parentRelativePath);
+                    var header = stream.ReadBigEndian<Header>();
+                    if (header.Padding1 != 0 || header.Padding2 != 0 || header.Padding3 != 0)
                     {
-                        var header = stream.ReadBigEndian<Header>();
-                        if (header.Padding1 != 0 || header.Padding2 != 0 || header.Padding3 != 0)
-                        {
-                            return null;
-                        }
-
-                        stream.Position = (long)header.TplOffset;
-                        var signature = stream.ReadUInt32BigEndian();
-                        if (signature != 0x0020af30)
-                        {
-                            return null;
-                        }
+                        return false;
                     }
 
-                    return (fullPath, parentRelativePath, parent, parentPath) =>
-                        new TxpFileFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+                    stream.Position = (long)header.TplOffset;
+                    var signature = stream.ReadUInt32BigEndian();
+                    return signature == 0x0020af30;
+                },
+                static (fullPath, parentRelativePath, parent, parentPath) => new TxpFileFileSystem(parentRelativePath, parent));
 
             services.AddSingleton<FileHandlerResolver<MagickImage>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {

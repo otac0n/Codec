@@ -22,8 +22,7 @@ namespace Codec.MGS.Archives
 
         public static void Register(IServiceCollection services)
         {
-            services.AddFileSystems(
-                ("*RADIO*.DAT", static (fullPath, parentRelativePath, parent, parentPath) => new RadioDatVirtualFileSystem(parentRelativePath, parent)));
+            services.AddFileSystem("*RADIO*.DAT", static (fullPath, parentRelativePath, parent, parentPath) => new RadioDatVirtualFileSystem(parentRelativePath, parent));
         }
 
         protected override string GetEntryName(Entry entry) =>

@@ -1,6 +1,5 @@
 ﻿namespace Codec.MGS.Archives
 {
-    using System;
     using System.Buffers.Binary;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -32,22 +31,15 @@
 
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".dlz", StringComparison.OrdinalIgnoreCase))
-                {
-                    using var file = parent.File.OpenRead(parentRelativePath);
-                    var signature = file.ReadLittleEndian<Name4>();
-                    if (Encoding.ASCII.GetString(signature) != "segs")
-                    {
-                        return null;
-                    }
-
-                    return (fullPath, parentRelativePath, parent, parentPath) => new DlzVirtualFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+            services.AddFileSystem(
+                 "*.dlz",
+                 static (services, fullPath, parentRelativePath, parent, parentPath) =>
+                 {
+                     using var file = parent.File.OpenRead(parentRelativePath);
+                     var signature = file.ReadLittleEndian<Name4>();
+                     return Encoding.ASCII.GetString(signature) == "segs";
+                 },
+                 static (fullPath, parentRelativePath, parent, parentPath) => new DlzVirtualFileSystem(parentRelativePath, parent));
         }
 
         internal static Stream ReadDlzArchive(Stream stream)

@@ -27,16 +27,7 @@
 
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".sdx", StringComparison.OrdinalIgnoreCase))
-                {
-                    return static (fullPath, parentRelativePath, parent, parentPath) =>
-                        new SdxVirtualFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+            services.AddFileSystem("*.sdx", static (fullPath, parentRelativePath, parent, parentPath) => new SdxVirtualFileSystem(parentRelativePath, parent));
         }
 
         protected override IEnumerable<Entry> ReadIndex()

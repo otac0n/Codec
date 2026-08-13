@@ -10,8 +10,7 @@
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddFileSystems(
-                ("*.zip", static (fullPath, parentRelativePath, parent, parentPath) => new ZipArchiveFileSystem(parentRelativePath, parent)));
+            services.AddFileSystem("*.zip", static (fullPath, parentRelativePath, parent, parentPath) => new ZipArchiveFileSystem(parentRelativePath, parent));
         }
 
         protected override string GetEntryName(ZipArchiveEntry entry) => entry.FullName;

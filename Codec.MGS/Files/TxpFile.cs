@@ -22,29 +22,21 @@ namespace Codec.MGS.Files
         {
             services.AddSingleton(new EntryTypeMatcher(EntryType.Image, "*.txpx"));
 
-            services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".txp", StringComparison.OrdinalIgnoreCase))
+            services.AddFileSystem(
+                "*.txp",
+                static (services, fullPath, parentRelativePath, parent, parentPath) =>
                 {
-                    using (var stream = parent.File.OpenRead(parentRelativePath))
+                    using var stream = parent.File.OpenRead(parentRelativePath);
+                    var header = stream.ReadLittleEndian<Header>();
+                    if (header.Flags > 0xFFF || header.TextureCount > 0x400)
                     {
-                        var header = stream.ReadLittleEndian<Header>();
-                        if (header.Flags > 0xFFF || header.TextureCount > 0x400)
-                        {
-                            serviceProvider.GetService<ILogger<TxpFileFileSystem>>()?
-                                .LogInformation("Unknown TXP. Flags: '{Flags:x8}', Texture Count: '{TextureCount}', Path: '{FullPath}'", header.Flags, header.TextureCount, fullPath);
-                            return null;
-                        }
+                        services.GetService<ILogger<TxpFileFileSystem>>()?.LogInformation("Unknown TXP. Flags: '{Flags:x8}', Texture Count: '{TextureCount}', Path: '{FullPath}'", header.Flags, header.TextureCount, fullPath);
+                        return false;
                     }
 
-                    return (fullPath, parentRelativePath, parent, parentPath) =>
-                    {
-                        return new TxpFileFileSystem(parentRelativePath, parent);
-                    };
-                }
-
-                return null;
-            });
+                    return true;
+                },
+                static (fullPath, parentRelativePath, parent, parentPath) => new TxpFileFileSystem(parentRelativePath, parent));
 
             services.AddSingleton<FileHandlerResolver<MagickImage>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {

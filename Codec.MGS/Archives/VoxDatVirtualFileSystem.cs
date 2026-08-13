@@ -1,6 +1,5 @@
 ﻿namespace Codec.MGS.Archives
 {
-    using System;
     using System.Buffers.Binary;
     using System.Collections.Generic;
     using System.IO;
@@ -17,16 +16,7 @@
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton<FileSystemResolver>((servicProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetFileName(parentRelativePath), "VOX.DAT", StringComparison.OrdinalIgnoreCase))
-                {
-                    return static (fullPath, parentRelativePath, parent, parentPath) =>
-                        new VoxDatVirtualFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+            services.AddFileSystem("VOX.DAT", static (fullPath, parentRelativePath, parent, parentPath) => new VoxDatVirtualFileSystem(parentRelativePath, parent));
         }
 
         protected override IEnumerable<Entry> ReadIndex()

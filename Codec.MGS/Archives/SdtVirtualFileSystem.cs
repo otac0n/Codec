@@ -1,6 +1,5 @@
 ﻿namespace Codec.MGS.Archives
 {
-    using System;
     using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
@@ -17,16 +16,7 @@
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".sdt", StringComparison.OrdinalIgnoreCase))
-                {
-                    return static (fullPath, parentRelativePath, parent, parentPath) =>
-                        new SdtVirtualFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+            services.AddFileSystem("*.sdt", static (fullPath, parentRelativePath, parent, parentPath) => new SdtVirtualFileSystem(parentRelativePath, parent));
         }
 
         protected override IEnumerable<Entry> ReadIndex()

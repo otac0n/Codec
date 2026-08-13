@@ -2,7 +2,6 @@
 
 namespace Codec.M2
 {
-    using System;
     using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
@@ -30,16 +29,7 @@ namespace Codec.M2
 
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".psb", StringComparison.OrdinalIgnoreCase))
-                {
-                    var seed = serviceProvider.GetRequiredService<ArchiveOptions>().Key;
-                    return (fullPath, parentRelativePath, parent, parentPath) => new PsbVirtualFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+            services.AddFileSystem("*.psb", static (fullPath, parentRelativePath, parent, parentPath) => new PsbVirtualFileSystem(parentRelativePath, parent));
         }
 
         internal static PsbReader PsbDecode(Stream decompStream)

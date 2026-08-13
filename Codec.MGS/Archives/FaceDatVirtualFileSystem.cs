@@ -28,28 +28,10 @@ namespace Codec.MGS.Archives
         {
             services.AddSingleton(new EntryTypeMatcher(EntryType.Image, "*.img"));
 
-            services.AddSingleton<FileSystemResolver>((servicProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetFileName(parentRelativePath), "FACE.DAT", StringComparison.OrdinalIgnoreCase))
-                {
-                    return static (fullPath, parentRelativePath, parent, parentPath) =>
-                        new FaceDatVirtualFileSystem(parentRelativePath, parent);
-                }
-
-                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".face", StringComparison.OrdinalIgnoreCase))
-                {
-                    return static (fullPath, parentRelativePath, parent, parentPath) =>
-                        new FaceFileSystem(parentRelativePath, parent);
-                }
-
-                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".anim", StringComparison.OrdinalIgnoreCase))
-                {
-                    return static (fullPath, parentRelativePath, parent, parentPath) =>
-                        new AnimFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+            services.AddFileSystems(
+                ("FACE.DAT", static (fullPath, parentRelativePath, parent, parentPath) => new FaceDatVirtualFileSystem(parentRelativePath, parent)),
+                ("*.face", static (fullPath, parentRelativePath, parent, parentPath) => new FaceFileSystem(parentRelativePath, parent)),
+                ("*.anim", static (fullPath, parentRelativePath, parent, parentPath) => new AnimFileSystem(parentRelativePath, parent)));
 
             services.AddSingleton<FileHandlerResolver<MagickImage>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {

@@ -13,8 +13,7 @@
 
         public static void Register(IServiceCollection services)
         {
-            services.AddFileSystems(
-                ("_zar", static (fullPath, parentRelativePath, parent, parentPath) => new ZarArchive(parentRelativePath, parent)));
+            services.AddFileSystem("_zar", static (fullPath, parentRelativePath, parent, parentPath) => new ZarArchive(parentRelativePath, parent));
         }
 
         protected override string GetEntryName(string entry) => entry;

@@ -22,16 +22,7 @@ namespace Codec.MGS.Files
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".mdx", StringComparison.OrdinalIgnoreCase))
-                {
-                    return (fullPath, parentRelativePath, parent, parentPath) =>
-                        new MdxFileFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+            services.AddFileSystem("*.mdx", static (fullPath, parentRelativePath, parent, parentPath) => new MdxFileFileSystem(parentRelativePath, parent));
         }
 
         private class MdxFileFileSystem(string path, IFileSystem parent) : IndexedFileSystem<uint>

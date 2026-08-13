@@ -51,8 +51,7 @@ namespace Codec.MGS.Archives
 
         public static void Register(IServiceCollection services)
         {
-            services.AddFileSystems(
-                ("*STAGE*.DIR", static (fullPath, parentRelativePath, parent, parentPath) => new StageDirVirtualFileSystem(parentRelativePath, parent)));
+            services.AddFileSystem("*STAGE*.DIR", static (fullPath, parentRelativePath, parent, parentPath) => new StageDirVirtualFileSystem(parentRelativePath, parent));
         }
 
         protected override string GetEntryName(Entry entry)

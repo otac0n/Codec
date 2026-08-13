@@ -20,29 +20,21 @@ namespace Codec.MGS.Files
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".rpk", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(parent.Path.GetExtension(parentRelativePath), ".res", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(parent.Path.GetExtension(parentRelativePath), ".r", StringComparison.OrdinalIgnoreCase))
+            services.AddFileSystem(
+                "*.rpk;*.res;*.r",
+                static (serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
                 {
-                    using (var stream = parent.File.OpenRead(parentRelativePath))
+                    using var stream = parent.File.OpenRead(parentRelativePath);
+                    var header = stream.ReadLittleEndian<Header>();
+                    if (header.PaletteCount > header.ImageCount || header.Pad != 0)
                     {
-                        var header = stream.ReadLittleEndian<Header>();
-                        if (header.PaletteCount > header.ImageCount || header.Pad != 0)
-                        {
-                            serviceProvider.GetService<ILogger<RpkFileFileSystem>>()?
-                                .LogInformation("Unknown RPK. PaletteCount: '{PaletteCount}', ImageCount: '{ImageCount}', Pad: '{Pad:x4}'", header.PaletteCount, header.ImageCount, header.Pad);
-                            return null;
-                        }
+                        serviceProvider.GetService<ILogger<RpkFileFileSystem>>()?.LogInformation("Unknown RPK. PaletteCount: '{PaletteCount}', ImageCount: '{ImageCount}', Pad: '{Pad:x4}'", header.PaletteCount, header.ImageCount, header.Pad);
+                        return false;
                     }
 
-                    return (fullPath, parentRelativePath, parent, parentPath) =>
-                        new RpkFileFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+                    return true;
+                },
+                static (fullPath, parentRelativePath, parent, parentPath) => new RpkFileFileSystem(parentRelativePath, parent));
 
             services.AddSingleton<FileHandlerResolver<MagickImage>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {

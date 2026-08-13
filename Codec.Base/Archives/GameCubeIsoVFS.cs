@@ -22,32 +22,20 @@ namespace Codec.Archives
 
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                var extension = parent.Path.GetExtension(parentRelativePath);
-                if (!string.Equals(extension, ".iso", StringComparison.OrdinalIgnoreCase) &&
-                    !string.Equals(extension, ".gcm", StringComparison.OrdinalIgnoreCase))
+            services.AddFileSystem(
+                "*.gcm;*.iso",
+                static (serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
                 {
-                    return null;
-                }
-
-                using (var file = parent.File.OpenRead(parentRelativePath))
-                {
+                    using var file = parent.File.OpenRead(parentRelativePath);
                     if (file.Length < Marshal.SizeOf<GcDiscHeader>())
                     {
-                        return null;
+                        return false;
                     }
 
                     var header = file.ReadBigEndian<GcDiscHeader>();
-                    if (header.GcMagic != GameCubeMagic)
-                    {
-                        return null;
-                    }
-                }
-
-                return static (fullPath, parentRelativePath, parent, parentPath) =>
-                    new GameCubeIsoVFS(parentRelativePath, parent);
-            });
+                    return header.GcMagic == GameCubeMagic;
+                },
+                static (fullPath, parentRelativePath, parent, parentPath) => new GameCubeIsoVFS(parentRelativePath, parent));
         }
 
         protected override string GetEntryName(FstFile entry) =>

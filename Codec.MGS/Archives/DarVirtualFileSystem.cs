@@ -17,16 +17,7 @@ namespace Codec.MGS.Archives
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".dar", StringComparison.OrdinalIgnoreCase))
-                {
-                    return static (fullPath, parentRelativePath, parent, parentPath) =>
-                        new DarVirtualFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+            services.AddFileSystem("*.dar", static (fullPath, parentRelativePath, parent, parentPath) => new DarVirtualFileSystem(parentRelativePath, parent));
         }
 
         protected override string GetEntryName(Entry entry) => entry.FileName;

@@ -2,7 +2,6 @@
 
 namespace Codec.MGS.Archives
 {
-    using System;
     using System.Collections.Generic;
     using System.IO;
     using System.IO.Abstractions;
@@ -20,16 +19,7 @@ namespace Codec.MGS.Archives
 
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".dld", StringComparison.OrdinalIgnoreCase))
-                {
-                    return (fullPath, parentRelativePath, parent, parentPath) =>
-                        new DldVirtualFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+            services.AddFileSystem("*.dld", static (fullPath, parentRelativePath, parent, parentPath) => new DldVirtualFileSystem(parentRelativePath, parent));
         }
 
         protected override IEnumerable<Entry> ReadIndex()

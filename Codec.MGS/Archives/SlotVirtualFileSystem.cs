@@ -122,15 +122,7 @@
 
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".slot", StringComparison.OrdinalIgnoreCase))
-                {
-                    return (fullPath, parentRelativePath, parent, parentPath) => new SlotVirtualFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+            services.AddFileSystem("*.slot", static (fullPath, parentRelativePath, parent, parentPath) => new SlotVirtualFileSystem(parentRelativePath, parent));
         }
 
         protected override IEnumerable<Entry> ReadIndex()

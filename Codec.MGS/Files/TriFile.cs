@@ -24,16 +24,7 @@ namespace Codec.MGS.Files
         {
             services.AddSingleton(new EntryTypeMatcher(EntryType.Image, "*.tm2x"));
 
-            services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".tri", StringComparison.OrdinalIgnoreCase))
-                {
-                    return (fullPath, parentRelativePath, parent, parentPath) =>
-                        new TriFileFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+            services.AddFileSystem("*.tri", static (fullPath, parentRelativePath, parent, parentPath) => new TriFileFileSystem(parentRelativePath, parent));
 
             services.AddSingleton<FileHandlerResolver<MagickImage>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {

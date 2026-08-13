@@ -2,7 +2,6 @@
 
 namespace Codec.MGS.Files
 {
-    using System;
     using System.Collections.Generic;
     using System.IO;
     using System.IO.Abstractions;
@@ -17,16 +16,7 @@ namespace Codec.MGS.Files
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".wvx", StringComparison.OrdinalIgnoreCase))
-                {
-                    return (fullPath, parentRelativePath, parent, parentPath) =>
-                        new WvxFileFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+            services.AddFileSystem("*.wvx", static (fullPath, parentRelativePath, parent, parentPath) => new WvxFileFileSystem(parentRelativePath, parent));
         }
 
         private class WvxFileFileSystem(string path, IFileSystem parent) : IndexedFileSystem<Entry>

@@ -23,10 +23,7 @@ namespace Codec.MGS.Files
             {
                 if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".txn", StringComparison.OrdinalIgnoreCase))
                 {
-                    return (fullPath, parentRelativePath, parent, parentPath) =>
-                    {
-                        return new TxnFileFileSystem(parentRelativePath, parent, parentPath, serviceProvider.GetRequiredService<NestedFileSystemManager>());
-                    };
+                    return (fullPath, parentRelativePath, parent, parentPath) => new TxnFileFileSystem(parentRelativePath, parent, parentPath, serviceProvider.GetRequiredService<NestedFileSystemManager>());
                 }
 
                 return null;

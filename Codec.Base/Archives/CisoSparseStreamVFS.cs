@@ -19,26 +19,16 @@ namespace Codec.Archives
 
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".ciso", StringComparison.OrdinalIgnoreCase))
+            services.AddFileSystem(
+                "*.ciso",
+                (services, fullPath, parentRelativePath, parent, parentPath) =>
                 {
-                    using (var file = parent.File.OpenRead(parentRelativePath))
-                    {
-                        // TODO: Also verify the space bitmap.
-                        var header = file.ReadLittleEndian<CisoHeader>();
-                        if (Encoding.ASCII.GetString(header.Signature) != "CISO")
-                        {
-                            return null;
-                        }
-                    }
-
-                    return static (fullPath, parentRelativePath, parent, parentPath) =>
-                        new CisoSparseStreamVFS(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+                    // TODO: Also verify the space bitmap.
+                    using var file = parent.File.OpenRead(parentRelativePath);
+                    var header = file.ReadLittleEndian<CisoHeader>();
+                    return Encoding.ASCII.GetString(header.Signature) == "CISO";
+                },
+                static (fullPath, parentRelativePath, parent, parentPath) => new CisoSparseStreamVFS(parentRelativePath, parent));
         }
 
         protected override string GetEntryName(string entry) =>

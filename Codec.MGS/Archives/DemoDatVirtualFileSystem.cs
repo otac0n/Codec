@@ -2,7 +2,6 @@
 
 namespace Codec.MGS.Archives
 {
-    using System;
     using System.Buffers.Binary;
     using System.Collections.Generic;
     using System.Collections.Immutable;
@@ -29,16 +28,7 @@ namespace Codec.MGS.Archives
 
         public static void Register(IServiceCollection services)
         {
-            services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
-            {
-                if (string.Equals(parent.Path.GetFileName(parentRelativePath), "DEMO.DAT", StringComparison.OrdinalIgnoreCase))
-                {
-                    return static (fullPath, parentRelativePath, parent, parentPath) =>
-                        new DemoDatVirtualFileSystem(parentRelativePath, parent);
-                }
-
-                return null;
-            });
+            services.AddFileSystem("DEMO.DAT", static (fullPath, parentRelativePath, parent, parentPath) => new DemoDatVirtualFileSystem(parentRelativePath, parent));
         }
 
         protected override string GetEntryName(Entry entry) => entry.Path;
