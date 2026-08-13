@@ -45,6 +45,7 @@ namespace Codec.MGS
             SdtVirtualFileSystem.Register(services);
             SdxVirtualFileSystem.Register(services);
             VoxDatVirtualFileSystem.Register(services);
+            ZarArchive.Register(services);
 
             services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
