@@ -3,7 +3,7 @@
     using Codec.Archives;
     using Microsoft.Extensions.DependencyInjection;
 
-    internal static class MgzFileSystemHandler
+    internal static class MgzArchive
     {
         public static void Register(IServiceCollection services)
         {

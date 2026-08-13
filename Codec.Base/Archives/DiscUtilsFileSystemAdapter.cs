@@ -6,11 +6,11 @@
     using System.IO;
     using System.IO.Abstractions;
 
-    public partial class DiscUtilsVFSAdapter : FileSystemBase
+    public partial class DiscUtilsFileSystemAdapter : FileSystemBase
     {
         private readonly DiscUtils.IFileSystem underlying;
 
-        public DiscUtilsVFSAdapter(DiscUtils.IFileSystem underlying)
+        public DiscUtilsFileSystemAdapter(DiscUtils.IFileSystem underlying)
         {
             this.underlying = underlying;
             this.Directory = new DirectoryProvider(this);
@@ -34,7 +34,7 @@
             });
         }
 
-        private class DirectoryProvider(DiscUtilsVFSAdapter parent) : DirectoryBase(parent)
+        private class DirectoryProvider(DiscUtilsFileSystemAdapter parent) : DirectoryBase(parent)
         {
             public override void Delete(string path) => parent.underlying.DeleteDirectory(path);
 
@@ -109,7 +109,7 @@
             public override void SetLastWriteTimeUtc(string path, DateTime lastWriteTimeUtc) => parent.underlying.SetLastWriteTimeUtc(path, lastWriteTimeUtc);
         }
 
-        private class FileProvider(DiscUtilsVFSAdapter parent) : FileBase(parent)
+        private class FileProvider(DiscUtilsFileSystemAdapter parent) : FileBase(parent)
         {
             private readonly FileLockManager<string> locks = new();
 
@@ -152,7 +152,7 @@
             public override void SetLastWriteTimeUtc(string path, DateTime lastWriteTimeUtc) => parent.underlying.SetLastWriteTimeUtc(path, lastWriteTimeUtc);
         }
 
-        private class PathProvider(DiscUtilsVFSAdapter parent) : PathBase(parent)
+        private class PathProvider(DiscUtilsFileSystemAdapter parent) : PathBase(parent)
         {
             public override char DirectorySeparatorChar => '\\';
         }

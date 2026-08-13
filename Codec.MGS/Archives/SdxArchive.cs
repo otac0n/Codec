@@ -10,16 +10,16 @@
     using Microsoft.Extensions.DependencyInjection;
     using NAudio.Utils;
     using NAudio.Wave;
-    using Entry = (string FileName, SdxVirtualFileSystem.NoteParameters Data, uint SpuID);
+    using Entry = (string FileName, SdxArchive.NoteParameters Data, uint SpuID);
 
-    public sealed partial class SdxVirtualFileSystem : IndexedFileSystem<Entry>
+    public sealed partial class SdxArchive : IndexedFileSystem<Entry>
     {
         private readonly string parentRelativePath;
         private readonly IFileSystem parent;
 
         List<SpuData> soundDatas = new List<SpuData>();
 
-        public SdxVirtualFileSystem(string parentRelativePath, IFileSystem parent)
+        public SdxArchive(string parentRelativePath, IFileSystem parent)
         {
             this.parentRelativePath = parentRelativePath;
             this.parent = parent;
@@ -27,7 +27,7 @@
 
         public static void Register(IServiceCollection services)
         {
-            services.AddFileSystem("*.sdx", static (fullPath, parentRelativePath, parent, parentPath) => new SdxVirtualFileSystem(parentRelativePath, parent));
+            services.AddFileSystem("*.sdx", static (fullPath, parentRelativePath, parent, parentPath) => new SdxArchive(parentRelativePath, parent));
         }
 
         protected override IEnumerable<Entry> ReadIndex()

@@ -15,7 +15,7 @@ namespace Codec.MGS.Archives
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (string Folder, byte Group, ushort Id, byte Ext, long Offset, long Length);
 
-    public class StageDirVirtualFileSystem(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
+    public class StageDirArchive(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
     {
         private static readonly uint SectorSize = 0x800;
 
@@ -51,7 +51,7 @@ namespace Codec.MGS.Archives
 
         public static void Register(IServiceCollection services)
         {
-            services.AddFileSystem("*STAGE*.DIR", static (fullPath, parentRelativePath, parent, parentPath) => new StageDirVirtualFileSystem(parentRelativePath, parent));
+            services.AddFileSystem("*STAGE*.DIR", static (fullPath, parentRelativePath, parent, parentPath) => new StageDirArchive(parentRelativePath, parent));
         }
 
         protected override string GetEntryName(Entry entry)

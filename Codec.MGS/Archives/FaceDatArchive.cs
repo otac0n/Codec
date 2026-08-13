@@ -18,7 +18,7 @@ namespace Codec.MGS.Archives
     using Entry = (int Group, ushort Id, bool IsAnimation, long Offset, long Size);
     using ImageEntry = (int Index, int PaletteIndex, long Offset, long Length, bool IsPalette);
 
-    public class FaceDatVirtualFileSystem(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
+    public class FaceDatArchive(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
     {
         private static readonly ushort PaletteCount = 1 << 8;
         private static readonly int PaletteSize = sizeof(ushort) * PaletteCount;
@@ -29,7 +29,7 @@ namespace Codec.MGS.Archives
             services.AddSingleton(new EntryTypeMatcher(EntryType.Image, "*.img"));
 
             services.AddFileSystems(
-                ("FACE.DAT", static (fullPath, parentRelativePath, parent, parentPath) => new FaceDatVirtualFileSystem(parentRelativePath, parent)),
+                ("FACE.DAT", static (fullPath, parentRelativePath, parent, parentPath) => new FaceDatArchive(parentRelativePath, parent)),
                 ("*.face", static (fullPath, parentRelativePath, parent, parentPath) => new FaceFileSystem(parentRelativePath, parent)),
                 ("*.anim", static (fullPath, parentRelativePath, parent, parentPath) => new AnimFileSystem(parentRelativePath, parent)));
 

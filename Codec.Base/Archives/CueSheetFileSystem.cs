@@ -11,7 +11,7 @@
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
 
-    public partial class CueSheetVirtualFileSystem : IndexedFileSystem<Track>
+    public partial class CueSheetFileSystem : IndexedFileSystem<Track>
     {
         public CueSheet CueSheet { get; }
 
@@ -19,7 +19,7 @@
 
         public IFileSystem Parent { get; }
 
-        public CueSheetVirtualFileSystem(string path, IFileSystem parent, CueSheet? cue = null)
+        public CueSheetFileSystem(string path, IFileSystem parent, CueSheet? cue = null)
         {
             this.Parent = parent ?? new FileSystem();
             this.CueSheetPath = path;
@@ -30,7 +30,7 @@
         {
             services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
-                if (parent is CueSheetVirtualFileSystem cueFS &&
+                if (parent is CueSheetFileSystem cueFS &&
                     TrackMatcher().Match(parentRelativePath) is { Success: true } match &&
                     int.TryParse(match.Groups[1].Value, out var trackNumber) &&
                     cueFS.CueSheet.Tracks[trackNumber - 1] is Track track &&
@@ -51,7 +51,7 @@
                         }
                         else
                         {
-                            return new CueSheetVirtualFileSystem(parentRelativePath, parent, cue);
+                            return new CueSheetFileSystem(parentRelativePath, parent, cue);
                         }
                     };
                 }
@@ -64,7 +64,7 @@
                         try
                         {
                             var cdReader = new CDReader(file, joliet: true);
-                            return new DiscUtilsVFSAdapter(cdReader);
+                            return new DiscUtilsFileSystemAdapter(cdReader);
                         }
                         catch
                         {
@@ -148,7 +148,7 @@
             throw new FileNotFoundException();
         }
 
-        private static DiscUtilsVFSAdapter CreateCueTrackFileSystem(string parentRelativePath, IFileSystem parent, Track track)
+        private static DiscUtilsFileSystemAdapter CreateCueTrackFileSystem(string parentRelativePath, IFileSystem parent, Track track)
         {
             var stream = parent.File.OpenRead(GetTrackFileName(parentRelativePath, parent, track));
             var cdReader = new CDReader(
@@ -160,7 +160,7 @@
                     DataType.MODE2_2352 => new CDSectorStream(stream, CDSectorStream.XAForm1),
                 },
                 joliet: true);
-            return new DiscUtilsVFSAdapter(cdReader);
+            return new DiscUtilsFileSystemAdapter(cdReader);
         }
     }
 }

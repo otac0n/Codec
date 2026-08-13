@@ -24,7 +24,7 @@ namespace Codec.MGS.Archives
         Tts,
     }
 
-    public class StageDatVirtualFileSystem(string parentRelativePath, IFileSystem parent, StageDatVariant variant = StageDatVariant.Unknown) : IndexedFileSystem<Entry>
+    public class StageDatArchive(string parentRelativePath, IFileSystem parent, StageDatVariant variant = StageDatVariant.Unknown) : IndexedFileSystem<Entry>
     {
         private static readonly uint SectorSize = 0x800;
 
@@ -89,7 +89,7 @@ namespace Codec.MGS.Archives
                     if (variant != StageDatVariant.Unknown)
                     {
                         return (fullPath, parentRelativePath, parent, parentPath) =>
-                            new StageDatVirtualFileSystem(parentRelativePath, parent, variant);
+                            new StageDatArchive(parentRelativePath, parent, variant);
                     }
                 }
 

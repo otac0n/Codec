@@ -10,13 +10,13 @@
     using Codec.Archives;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
-    using Entry = (int Index, SdtVirtualFileSystem.SDTStream Stream, SdtVirtualFileSystem.SDTChunk[] Chunks);
+    using Entry = (int Index, SdtArchive.SDTStream Stream, SdtArchive.SDTChunk[] Chunks);
 
-    public sealed partial class SdtVirtualFileSystem(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
+    public sealed partial class SdtArchive(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddFileSystem("*.sdt", static (fullPath, parentRelativePath, parent, parentPath) => new SdtVirtualFileSystem(parentRelativePath, parent));
+            services.AddFileSystem("*.sdt", static (fullPath, parentRelativePath, parent, parentPath) => new SdtArchive(parentRelativePath, parent));
         }
 
         protected override IEnumerable<Entry> ReadIndex()

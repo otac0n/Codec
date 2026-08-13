@@ -10,13 +10,13 @@
     using Codec.Audio;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
-    using Entry = (int Bank, VoxDatVirtualFileSystem.SlotCode Slot, (long Offset, long Size)[] Chunks);
+    using Entry = (int Bank, VoxDatArchive.SlotCode Slot, (long Offset, long Size)[] Chunks);
 
-    internal class VoxDatVirtualFileSystem(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
+    internal class VoxDatArchive(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddFileSystem("VOX.DAT", static (fullPath, parentRelativePath, parent, parentPath) => new VoxDatVirtualFileSystem(parentRelativePath, parent));
+            services.AddFileSystem("VOX.DAT", static (fullPath, parentRelativePath, parent, parentPath) => new VoxDatArchive(parentRelativePath, parent));
         }
 
         protected override IEnumerable<Entry> ReadIndex()

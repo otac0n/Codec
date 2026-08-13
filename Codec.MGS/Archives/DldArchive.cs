@@ -12,14 +12,14 @@ namespace Codec.MGS.Archives
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (uint Id, uint Index, long Offset, uint Size);
 
-    public class DldVirtualFileSystem(string path, IFileSystem parent) : IndexedFileSystem<Entry>
+    public class DldArchive(string path, IFileSystem parent) : IndexedFileSystem<Entry>
     {
         private readonly IFileSystem parent = parent ?? new FileSystem();
         private readonly string path = path;
 
         public static void Register(IServiceCollection services)
         {
-            services.AddFileSystem("*.dld", static (fullPath, parentRelativePath, parent, parentPath) => new DldVirtualFileSystem(parentRelativePath, parent));
+            services.AddFileSystem("*.dld", static (fullPath, parentRelativePath, parent, parentPath) => new DldArchive(parentRelativePath, parent));
         }
 
         protected override IEnumerable<Entry> ReadIndex()

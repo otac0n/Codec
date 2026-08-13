@@ -15,14 +15,14 @@ namespace Codec.MGS.Archives
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (int Group, int Index, string Name, long Offset, long Size);
 
-    public class RadioDatVirtualFileSystem(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
+    public class RadioDatArchive(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
     {
         private static readonly int Alignment = 0x800;
         private static readonly int HeaderSize = Marshal.SizeOf<Header>();
 
         public static void Register(IServiceCollection services)
         {
-            services.AddFileSystem("*RADIO*.DAT", static (fullPath, parentRelativePath, parent, parentPath) => new RadioDatVirtualFileSystem(parentRelativePath, parent));
+            services.AddFileSystem("*RADIO*.DAT", static (fullPath, parentRelativePath, parent, parentPath) => new RadioDatArchive(parentRelativePath, parent));
         }
 
         protected override string GetEntryName(Entry entry) =>

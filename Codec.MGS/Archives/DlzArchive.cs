@@ -14,14 +14,14 @@
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
 
-    internal class DlzVirtualFileSystem : IndexedFileSystem<string>
+    internal class DlzArchive : IndexedFileSystem<string>
     {
         private readonly string filePath;
         private readonly IFileSystem fileSystem;
         private readonly string fileName;
         private Stream cachedStream;
 
-        public DlzVirtualFileSystem(string filePath, IFileSystem? fileSystem = null)
+        public DlzArchive(string filePath, IFileSystem? fileSystem = null)
         {
             fileSystem ??= new FileSystem();
             this.filePath = filePath;
@@ -39,7 +39,7 @@
                      var signature = file.ReadLittleEndian<Name4>();
                      return Encoding.ASCII.GetString(signature) == "segs";
                  },
-                 static (fullPath, parentRelativePath, parent, parentPath) => new DlzVirtualFileSystem(parentRelativePath, parent));
+                 static (fullPath, parentRelativePath, parent, parentPath) => new DlzArchive(parentRelativePath, parent));
         }
 
         internal static Stream ReadDlzArchive(Stream stream)

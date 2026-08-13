@@ -13,8 +13,8 @@ namespace Codec.Archives
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
 
-    public class GameCubeIsoVFS(string parentRelativePath, IFileSystem parent)
-        : IndexedFileSystem<GameCubeIsoVFS.FstFile>
+    public class GameCubeIsoArchive(string parentRelativePath, IFileSystem parent)
+        : IndexedFileSystem<GameCubeIsoArchive.FstFile>
     {
         private const uint GameCubeMagic = 0xC2339F3D;
 
@@ -35,7 +35,7 @@ namespace Codec.Archives
                     var header = file.ReadBigEndian<GcDiscHeader>();
                     return header.GcMagic == GameCubeMagic;
                 },
-                static (fullPath, parentRelativePath, parent, parentPath) => new GameCubeIsoVFS(parentRelativePath, parent));
+                static (fullPath, parentRelativePath, parent, parentPath) => new GameCubeIsoArchive(parentRelativePath, parent));
         }
 
         protected override string GetEntryName(FstFile entry) =>

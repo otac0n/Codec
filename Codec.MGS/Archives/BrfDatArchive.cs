@@ -11,11 +11,11 @@
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (string FolderName, string FileName, long Offset, long Length);
 
-    internal class BrfDatVirtualFileSystem(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
+    internal class BrfDatArchive(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddFileSystem("BRF.DAT", static (fullPath, parentRelativePath, parent, parentPath) => new BrfDatVirtualFileSystem(parentRelativePath, parent));
+            services.AddFileSystem("BRF.DAT", static (fullPath, parentRelativePath, parent, parentPath) => new BrfDatArchive(parentRelativePath, parent));
         }
 
         protected override IEnumerable<Entry> ReadIndex()

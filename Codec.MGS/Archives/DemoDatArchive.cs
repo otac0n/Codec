@@ -15,7 +15,7 @@ namespace Codec.MGS.Archives
     using Chunk = (long Offset, long Size);
     using Entry = (string Path, (long Offset, long Size)[] Chunks);
 
-    public class DemoDatVirtualFileSystem(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
+    public class DemoDatArchive(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
     {
         private static readonly byte EndCode = 240;
 
@@ -28,7 +28,7 @@ namespace Codec.MGS.Archives
 
         public static void Register(IServiceCollection services)
         {
-            services.AddFileSystem("DEMO.DAT", static (fullPath, parentRelativePath, parent, parentPath) => new DemoDatVirtualFileSystem(parentRelativePath, parent));
+            services.AddFileSystem("DEMO.DAT", static (fullPath, parentRelativePath, parent, parentPath) => new DemoDatArchive(parentRelativePath, parent));
         }
 
         protected override string GetEntryName(Entry entry) => entry.Path;

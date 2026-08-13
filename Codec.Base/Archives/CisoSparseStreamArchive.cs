@@ -13,7 +13,7 @@ namespace Codec.Archives
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
 
-    internal class CisoSparseStreamVFS(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<string>
+    internal class CisoSparseStreamArchive(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<string>
     {
         private readonly string fileName = PathExtensions.ChangeExtension(parent.Path.GetFileName(parentRelativePath), ".iso");
 
@@ -28,7 +28,7 @@ namespace Codec.Archives
                     var header = file.ReadLittleEndian<CisoHeader>();
                     return Encoding.ASCII.GetString(header.Signature) == "CISO";
                 },
-                static (fullPath, parentRelativePath, parent, parentPath) => new CisoSparseStreamVFS(parentRelativePath, parent));
+                static (fullPath, parentRelativePath, parent, parentPath) => new CisoSparseStreamArchive(parentRelativePath, parent));
         }
 
         protected override string GetEntryName(string entry) =>

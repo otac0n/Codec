@@ -13,7 +13,7 @@
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
 
-    internal class SlotVirtualFileSystem : IndexedFileSystem<SlotVirtualFileSystem.Entry>
+    internal class SlotArchive : IndexedFileSystem<SlotArchive.Entry>
     {
         public static readonly ImmutableDictionary<uint, string> Regions = new Dictionary<uint, string>
         {
@@ -113,7 +113,7 @@
         private readonly string filePath;
         private readonly IFileSystem fileSystem;
 
-        public SlotVirtualFileSystem(string filePath, IFileSystem? fileSystem = null)
+        public SlotArchive(string filePath, IFileSystem? fileSystem = null)
         {
             fileSystem ??= new FileSystem();
             this.filePath = filePath;
@@ -122,7 +122,7 @@
 
         public static void Register(IServiceCollection services)
         {
-            services.AddFileSystem("*.slot", static (fullPath, parentRelativePath, parent, parentPath) => new SlotVirtualFileSystem(parentRelativePath, parent));
+            services.AddFileSystem("*.slot", static (fullPath, parentRelativePath, parent, parentPath) => new SlotArchive(parentRelativePath, parent));
         }
 
         protected override IEnumerable<Entry> ReadIndex()

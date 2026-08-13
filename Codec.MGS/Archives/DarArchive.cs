@@ -13,11 +13,11 @@ namespace Codec.MGS.Archives
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (string FileName, long Offset, long Length);
 
-    public class DarVirtualFileSystem(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
+    public class DarArchive(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddFileSystem("*.dar", static (fullPath, parentRelativePath, parent, parentPath) => new DarVirtualFileSystem(parentRelativePath, parent));
+            services.AddFileSystem("*.dar", static (fullPath, parentRelativePath, parent, parentPath) => new DarArchive(parentRelativePath, parent));
         }
 
         protected override string GetEntryName(Entry entry) => entry.FileName;

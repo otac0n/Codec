@@ -30,21 +30,21 @@ namespace Codec.MGS
             MdnFile.Register(services);
             ZmdFile.Register(services);
 
-            MgzFileSystemHandler.Register(services);
+            MgzArchive.Register(services);
 
-            BrfDatVirtualFileSystem.Register(services);
-            DarVirtualFileSystem.Register(services);
-            DldVirtualFileSystem.Register(services);
-            DemoDatVirtualFileSystem.Register(services);
-            DlzVirtualFileSystem.Register(services);
-            FaceDatVirtualFileSystem.Register(services);
-            RadioDatVirtualFileSystem.Register(services);
-            StageDatVirtualFileSystem.Register(services);
-            StageDirVirtualFileSystem.Register(services);
-            SlotVirtualFileSystem.Register(services);
-            SdtVirtualFileSystem.Register(services);
-            SdxVirtualFileSystem.Register(services);
-            VoxDatVirtualFileSystem.Register(services);
+            BrfDatArchive.Register(services);
+            DarArchive.Register(services);
+            DldArchive.Register(services);
+            DemoDatArchive.Register(services);
+            DlzArchive.Register(services);
+            FaceDatArchive.Register(services);
+            RadioDatArchive.Register(services);
+            StageDatArchive.Register(services);
+            StageDirArchive.Register(services);
+            SlotArchive.Register(services);
+            SdtArchive.Register(services);
+            SdxArchive.Register(services);
+            VoxDatArchive.Register(services);
             ZarArchive.Register(services);
 
             services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
@@ -57,7 +57,7 @@ namespace Codec.MGS
                         var file = parent.File.OpenRead(parentRelativePath);
                         var cdSector = new CDSectorStream(file, CDSectorStream.XAForm1);
                         var cdReader = new CDReader(cdSector, joliet: false);
-                        return new DiscUtilsVFSAdapter(cdReader);
+                        return new DiscUtilsFileSystemAdapter(cdReader);
                     };
                 }
 
