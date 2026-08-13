@@ -3,6 +3,7 @@
 namespace Codec.MGS.Archives
 {
     using System;
+    using System.Buffers.Binary;
     using System.Collections.Generic;
     using System.IO;
     using System.IO.Abstractions;
@@ -33,7 +34,12 @@ namespace Codec.MGS.Archives
         protected override IEnumerable<Entry> ReadIndex()
         {
             using var source = parent.File.OpenRead(parentRelativePath);
-            var fileCount = source.ReadUInt32LittleEndian();
+            var fileCountLE = source.ReadUInt32LittleEndian();
+
+            var (fileCount, endianness) = fileCountLE > 0x0000FFFF
+                ? (BinaryPrimitives.ReverseEndianness(fileCountLE), Endianness.BigEndian)
+                : (fileCountLE, Endianness.LittleEndian);
+
             bool? alignData = null;
             for (var i = 0; i < fileCount; i++)
             {
@@ -52,7 +58,7 @@ namespace Codec.MGS.Archives
                 source.Align(4);
 
                 var name = nameBuilder.ToString();
-                var length = source.ReadUInt32LittleEndian();
+                var length = source.ReadWithEndianness<uint>(endianness);
 
                 ApplyAlignment(source, length, ref alignData);
 
