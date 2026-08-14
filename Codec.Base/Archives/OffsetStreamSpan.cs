@@ -39,11 +39,7 @@ namespace Codec.Archives
             get => this.position;
             set
             {
-                if (value < 0 || value > this.Length)
-                {
-                    throw new NotSupportedException();
-                }
-
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 this.underlying.Position = value + this.offset;
                 this.position = value;
             }
@@ -70,6 +66,11 @@ namespace Codec.Archives
 
         public override int Read(byte[] buffer, int offset, int count)
         {
+            if (this.Position >= this.Length)
+            {
+                return 0;
+            }
+
             count = (int)Math.Min(count, this.Length - this.position);
             this.underlying.Seek(this.position + this.offset, SeekOrigin.Begin);
             var read = this.underlying.Read(buffer, offset, count);
@@ -91,9 +92,9 @@ namespace Codec.Archives
 
                 case SeekOrigin.Current:
                     var newPosition = this.position + offset;
-                    if (newPosition < 0 || newPosition > this.Length)
+                    if (newPosition < 0)
                     {
-                        throw new NotSupportedException();
+                        ArgumentOutOfRangeException.ThrowIfNegative(newPosition, nameof(offset));
                     }
 
                     return this.position = newPosition;
@@ -107,6 +108,11 @@ namespace Codec.Archives
 
         public override void Write(byte[] buffer, int offset, int count)
         {
+            if (this.Position + count >= this.Length)
+            {
+                this.SetLength(this.Length - this.position + count);
+            }
+
             count = (int)Math.Min(count, this.Length - this.position);
             this.underlying.Seek(this.position + this.offset, SeekOrigin.Begin);
             this.underlying.Write(buffer, offset, count);
