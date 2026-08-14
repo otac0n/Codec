@@ -33,7 +33,7 @@
         {
             services.AddFileSystem(
                  "*.dlz",
-                 static (services, fullPath, parentRelativePath, parent, parentPath) =>
+                 static (serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
                  {
                      using var file = parent.File.OpenRead(parentRelativePath);
                      var signature = file.ReadLittleEndian<Name4>();

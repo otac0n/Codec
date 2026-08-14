@@ -21,7 +21,7 @@ namespace Codec.Archives
         {
             services.AddFileSystem(
                 "*.ciso",
-                (services, fullPath, parentRelativePath, parent, parentPath) =>
+                (serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
                 {
                     // TODO: Also verify the space bitmap.
                     using var file = parent.File.OpenRead(parentRelativePath);

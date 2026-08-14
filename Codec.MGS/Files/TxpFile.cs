@@ -23,7 +23,7 @@ namespace Codec.MGS.Files
 
             services.AddFileSystem(
                 "*.txp",
-                static (services, fullPath, parentRelativePath, parent, parentPath) =>
+                static (serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
                 {
                     using var stream = parent.File.OpenRead(parentRelativePath);
                     var header = stream.ReadLittleEndian<Header>();
