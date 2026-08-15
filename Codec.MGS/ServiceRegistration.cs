@@ -34,6 +34,7 @@ namespace Codec.MGS
 
             BrfDatArchive.Register(services);
             DarArchive.Register(services);
+            DirArchive.Register(services);
             DldArchive.Register(services);
             DemoDatArchive.Register(services);
             DlzArchive.Register(services);
@@ -43,6 +44,7 @@ namespace Codec.MGS
             StageDatArchive.Register(services);
             StageDirArchive.Register(services);
             SlotArchive.Register(services);
+            SlotDatArchive.Register(services);
             SdtArchive.Register(services);
             SdxArchive.Register(services);
             VoxDatArchive.Register(services);
