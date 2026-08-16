@@ -16,16 +16,19 @@ Support for the following formats is implemented:
   - Metal Gear Specific
     - M2 Archive (Master Collection v1)
       - .psb.m Packaging Format
-    - .dar Archives (MGS1) [read & write]
-    - .sdt Sound Packs (MGS2)
-    - .sdx Sound Packs (MGS2)
-    - STAGE.DIR Archive (MGS1 & MGSVR)
-    - STAGE.DAT Archive (MGS2 & TTS)
+    - .dar Archives (MGS1, MGA2, MGO, MGO+, MGS PW, MGS4)
+    - .dir Archives (MGS1, MGS2, TTS, MGS4)
+    - .qar Archives (MGS2, TTS, MGS3, MGA2, MGO, MGO+, MGS PW, MGS4)
+    - .slot Archives (MGS4)
+    - _zar Archives (MGA2, MGO, MGO+)
+    - BRF.DAT Archive (MGS1)
+    - DEMO.DAT Archive (MGS1)
     - FACE.DAT Archive (MGS1) [read & write]
     - RADIO.DAT Archive (MGS1)
-    - DEMO.DAT Archive (MGS1)
-    - .brf Briefing Files (MGS1 & MGSVR)
-    - .slot Data Files (MGS4)
+    - SLOT.DAT Archive (MGS PW)
+    - STAGE.DAT Archive (MGS2 & TTS)
+    - STAGE.DIR Archive (MGS1 & MGSVR)
+    - VOX.DAT Archive (MGS1 & MGSVR)
 - Files
   - Generic
     - All Basic Image Formats (PNG, JPEG, BMP, etc.)
@@ -35,15 +38,22 @@ Support for the following formats is implemented:
     - CD Audio Tracks
     - .pcx Image Files
   - Metal Gear Specific
+    - .ctxr Texture Files (MGS2 & MGS3)
+    - .gly Glyph Files (MGS1)
     - .pll Image Files (MGS1)
+    - .rpk Texture Files (MGS1) [read & write]
+    - .tri Texture Files (MGS2 & MGS3)
+    - .txn/.dlz/.dld Texture Files (MGS4)
+    - .txp Texture Files (MGS PW)
     - .mdx Model Files (MGS1)
     - .kmd Model Files (MGS1)
     - .kms Model Files (MGS2)
-    - .tri Texture Files (MGS2 & MGS3)
-    - .ctxr Texture Files (MGS2 & MGS3)
-    - .txp Texture Files (MGS PW)
+    - .kmy Model Files (TTS)
     - .mdn Model Files (MGS4)
-    - .rpk Texture Files (MGS1) [read & write]
+    - .mdx Sequence Packs (MGS1)
+    - .sdt Sound Packs (MGS2)
+    - .sdx Sound Packs (MGS2)
+    - .wvx Sound Packs (MGS1)
 
 To view Master Collection resources, you will need to have a copy of the game on your system.  The tool will automatically detect the Steam location of the game, but you can browse to any location as desired.
 
