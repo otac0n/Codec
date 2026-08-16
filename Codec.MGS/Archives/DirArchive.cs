@@ -3,6 +3,7 @@
 namespace Codec.MGS.Archives
 {
     using System;
+    using System.Buffers.Binary;
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Globalization;
@@ -17,72 +18,145 @@ namespace Codec.MGS.Archives
 
     public class DirArchive(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
     {
-        private static readonly ImmutableDictionary<byte, string> Extensions = new Dictionary<byte, string>()
+        private static readonly ImmutableDictionary<Variant, ImmutableDictionary<byte, string>> Extensions = new Dictionary<Variant, ImmutableDictionary<byte, string>>()
         {
-            { 0x01, "bin" },
-            { 0x02, "gcx" },
-            { 0x03, "tri" },
-            { 0x04, "mdh" },
-            { 0x05, "mds" },
-            { 0x06, "lt2" },
-            { 0x07, "cv2" },
-            { 0x08, "mtar" },
-            { 0x09, "mtsq" },
-            { 0x0A, "mtfa" },
-            { 0x0B, "mtcm" },
-            { 0x0C, "geom" },
-            { 0x0F, "nav" },
-            { 0x10, "cvd" },
-            { 0x11, "eft" },
-            { 0x12, "zon" },
-            { 0x13, "mdp" }, // "mdb", "mdc", "mdl"
-            { 0x14, "txp" },
-            { 0x15, "kms" },
-            { 0x16, "rpd" },
-            { 0x17, "fcx" },
-            { 0x18, "mtst" },
-            { 0x19, "mdpb" },
-            { 0x1A, "mdpe" },
-            { 0x1B, "dcd" },
-            { 0x1C, "ypk" },
-            { 0x1D, "spk" },
-            { 0x1E, "ohd" },
-            { 0x1F, "mmd" },
-            { 0x20, "vrd" },
-            { 0x21, "vrdv" },
-            { 0x22, "vrdt" },
-            { 0x23, "vcp" },
-            { 0x24, "vcpg" },
-            { 0x30, "mgm" },
-            { 0x31, "prx" },
-            { 0x32, "rlc" },
-            { 0x33, "ptcp" },
-            { 0x34, "cddl" },
-            { 0x35, "cap" },
-            { 0x36, "pcmp" },
-            { 0x37, "sep" },
-            { 0x38, "bgp" },
-            { 0x5D, "olang" },
-            { 0x5E, "la3" },
-            { 0x5F, "la2" },
-            { 0x60, "slot" },
-            { 0x61, "vram" },
-            { 0x63, "cmf" },
-            { 0x64, "eqp" },
-            { 0x65, "vlm" },
-            { 0x66, "lst" },
-            { 0x68, "png" },
-            { 0x69, "img" },
-            { 0x6A, "vib" },
-            { 0x6B, "rat" },
-            { 0x6C, "rcm" },
-            { 0x6D, "ola" },
-            { 0x6E, "row" },
-            { 0x6F, "mtra" },
-            { 0xF0, "dar" },
-            { 0xF1, "qar" },
-            { 0xF2, "cnf" },
-            { 0xFF, "psq" },
+            [Variant.MGSPW] = new Dictionary<byte, string>()
+            {
+                { 0x01, "bin" },
+                { 0x02, "gcx" },
+                { 0x03, "tri" },
+                { 0x04, "mdh" },
+                { 0x05, "mds" },
+                { 0x06, "lt2" },
+                { 0x07, "cv2" },
+                { 0x08, "mtar" },
+                { 0x09, "mtsq" },
+                { 0x0A, "mtfa" },
+                { 0x0B, "mtcm" },
+                { 0x0C, "geom" },
+                { 0x0F, "nav" },
+                { 0x10, "cvd" },
+                { 0x11, "eft" },
+                { 0x12, "zon" },
+                { 0x13, "mdp" }, // "mdb", "mdc", "mdl"
+                { 0x14, "txp" },
+                { 0x15, "kms" },
+                { 0x16, "rpd" },
+                { 0x17, "fcx" },
+                { 0x18, "mtst" },
+                { 0x19, "mdpb" },
+                { 0x1A, "mdpe" },
+                { 0x1B, "dcd" },
+                { 0x1C, "ypk" },
+                { 0x1D, "spk" },
+                { 0x1E, "ohd" },
+                { 0x1F, "mmd" },
+                { 0x20, "vrd" },
+                { 0x21, "vrdv" },
+                { 0x22, "vrdt" },
+                { 0x23, "vcp" },
+                { 0x24, "vcpg" },
+                { 0x30, "mgm" },
+                { 0x31, "prx" },
+                { 0x32, "rlc" },
+                { 0x33, "ptcp" },
+                { 0x34, "cddl" },
+                { 0x35, "cap" },
+                { 0x36, "pcmp" },
+                { 0x37, "sep" },
+                { 0x38, "bgp" },
+                { 0x5D, "olang" },
+                { 0x5E, "la3" },
+                { 0x5F, "la2" },
+                { 0x60, "slot" },
+                { 0x61, "vram" },
+                { 0x63, "cmf" },
+                { 0x64, "eqp" },
+                { 0x65, "vlm" },
+                { 0x66, "lst" },
+                { 0x68, "png" },
+                { 0x69, "img" },
+                { 0x6A, "vib" },
+                { 0x6B, "rat" },
+                { 0x6C, "rcm" },
+                { 0x6D, "ola" },
+                { 0x6E, "row" },
+                { 0x6F, "mtra" },
+                { 0xF0, "dar" },
+                { 0xF1, "qar" },
+                { 0xF2, "cnf" },
+                { 0xFF, "psq" },
+            }.ToImmutableDictionary(),
+            [Variant.MGS4] = new Dictionary<byte, string>()
+            {
+                { 0x01, "bin" },
+                { 0x02, "gcx" },
+                { 0x03, "txn" }, // "tri"
+                { 0x04, "mdh" },
+                { 0x05, "mds" },
+                { 0x06, "lt2" }, // "lt3"
+                { 0x07, "cv2" },
+                { 0x08, "mtar" },
+                { 0x09, "mtsq" },
+                { 0x0A, "mtfa" }, // "far"
+                { 0x0B, "mtcm" },
+                { 0x0C, "geom" },
+                { 0x0D, "mdn" }, // "mdl", "mdb", "mdc"
+                { 0x0F, "nav" },
+                { 0x10, "cvd" }, // "van"
+                { 0x11, "cnp" }, // "eft"
+                { 0x12, "zon" },
+                { 0x13, "rpd" },
+                { 0x14, "abc" },
+                { 0x15, "nv2" },
+                { 0x16, "spu" },
+                { 0x17, "fcv" },
+                { 0x18, "phs" },
+                { 0x19, "eqpp" },
+                { 0x1A, "phpr" },
+                { 0x1B, "phes" },
+                { 0x1C, "sds" },
+                { 0x1D, "vab" },
+                { 0x1E, "ssp" },
+                { 0x1F, "rvb" },
+                { 0x20, "gsp" },
+                { 0x21, "dlz" }, // "dld"
+                { 0x22, "rdv" },
+                { 0x23, "octt" },
+                { 0x24, "octl" },
+                { 0x25, "vfp" },
+                { 0x26, "octs" },
+                { 0x27, "bpef" },
+                { 0x28, "sfp" },
+                { 0x29, "pdl" },
+                { 0x2A, "ptl" },
+                { 0x2B, "cpef" },
+                { 0x2C, "dlp" },
+                { 0x4F, "at3" },
+                { 0x5A, "png" },
+                { 0x5B, "pam" },
+                { 0x5C, "dbd" },
+                { 0x5D, "jpg" },
+                { 0x5E, "ico" },
+                { 0x5F, "la2" },
+                { 0x60, "slot" },
+                { 0x61, "vpo" },
+                { 0x62, "fpo" },
+                { 0x63, "cv4" },
+                { 0x64, "mcl" },
+                { 0x65, "vlm" },
+                { 0x66, "lh4" },
+                { 0x67, "csr" },
+                { 0x68, "var" },
+                { 0x69, "img" },
+                { 0x6A, "vib" },
+                { 0x6B, "rat" },
+                { 0x6C, "rcm" },
+                { 0x6D, "ola" },
+                { 0x6E, "raw" }, // "row"
+                { 0x6F, "mtra" },
+                { 0xFF, "psq" },
+            }.ToImmutableDictionary(),
         }.ToImmutableDictionary();
 
         private static readonly ImmutableDictionary<uint, string> Groups = new Dictionary<uint, string>()
@@ -94,6 +168,13 @@ namespace Codec.MGS.Archives
             [0x00000010] = "sound",
             [0x00010000] = "nocache",
         }.ToImmutableDictionary();
+
+        public enum Variant
+        {
+            Unknown = 0,
+            MGS4,
+            MGSPW,
+        }
 
         public static void Register(IServiceCollection services)
         {
@@ -113,13 +194,17 @@ namespace Codec.MGS.Archives
                 return false;
             }
 
-            source.Position = sizeof(uint);
-            var wideIndexEntries = source.ReadUInt32LittleEndian() == 0;
-            source.Position = 0;
+            var entryCountLE = source.ReadUInt32LittleEndian();
+            var entryCountBE = BinaryPrimitives.ReverseEndianness(entryCountLE);
+            var (entryCount, endianness) = entryCountBE < entryCountLE
+                ? (entryCountBE, Endianness.BigEndian)
+                : (entryCountLE, Endianness.LittleEndian);
 
-            var entryCount = wideIndexEntries
-                ? (uint)source.ReadUInt64LittleEndian()
-                : source.ReadUInt32LittleEndian();
+            var wideIndexEntries = source.ReadUInt32LittleEndian() == 0;
+            if (!wideIndexEntries)
+            {
+                source.Position -= sizeof(uint);
+            }
 
             if (entryCount == 0 || source.Length <= sizeof(uint) + (entryCount * (wideIndexEntries ? Marshal.SizeOf<DirEntryInfoWide>() : Marshal.SizeOf<DirEntryInfo>())))
             {
@@ -127,9 +212,12 @@ namespace Codec.MGS.Archives
             }
 
             var dirEntries = wideIndexEntries
-                ? source.ReadArrayLittleEndian<DirEntryInfoWide>(entryCount).Select(e => new DirEntryInfo { Id = (uint)e.Id, Offset = (uint)e.Offset }).ToArray()
-                : source.ReadArrayLittleEndian<DirEntryInfo>(entryCount);
-            var dataStart = StreamExtensions.Align(source.Position, 0x1000);
+                ? [.. source.ReadArrayWithEndianness<DirEntryInfoWide>(entryCount, endianness).Select(e => new DirEntryInfo { Id = e.Id, Offset = (uint)e.Offset })]
+                : source.ReadArrayWithEndianness<DirEntryInfo>(entryCount, endianness);
+
+            var sectorSize = DetermineSectorSize(dirEntries, source.Length);
+
+            var dataStart = StreamExtensions.Align(source.Position, sectorSize);
             for (var i = 0; i < entryCount; i++)
             {
                 var last = i == entryCount - 1;
@@ -145,6 +233,11 @@ namespace Codec.MGS.Archives
                         if (last)
                         {
                             return false;
+                        }
+
+                        if (entry.Id == 0x7F000000)
+                        {
+                            dataStart = StreamExtensions.Align(dataStart + entry.Offset, sectorSize);
                         }
 
                         break;
@@ -169,23 +262,38 @@ namespace Codec.MGS.Archives
             return false;
         }
 
+        private static Variant DetermineVariant(Endianness endianness, uint sectorSize) => (endianness, sectorSize) switch
+        {
+            (Endianness.BigEndian, 0x800) => Variant.MGS4,
+            (Endianness.LittleEndian, 0x1000) => Variant.MGSPW,
+            _ => Variant.Unknown,
+        };
+
         protected override IEnumerable<Entry> ReadIndex()
         {
             using var source = parent.File.OpenRead(parentRelativePath);
 
-            source.Position = sizeof(uint);
-            var wideIndexEntries = source.ReadUInt32LittleEndian() == 0;
-            source.Position = 0;
+            var entryCountLE = source.ReadUInt32LittleEndian();
+            var entryCountBE = BinaryPrimitives.ReverseEndianness(entryCountLE);
+            var (entryCount, endianness) = entryCountBE < entryCountLE
+                ? (entryCountBE, Endianness.BigEndian)
+                : (entryCountLE, Endianness.LittleEndian);
 
-            var entryCount = wideIndexEntries
-                ? (uint)source.ReadUInt64LittleEndian()
-                : source.ReadUInt32LittleEndian();
+            var wideIndexEntries = source.ReadUInt32LittleEndian() == 0;
+            if (!wideIndexEntries)
+            {
+                source.Position -= sizeof(uint);
+            }
 
             var dirEntries = wideIndexEntries
-                ? source.ReadArrayLittleEndian<DirEntryInfoWide>(entryCount).Select(e => new DirEntryInfo { Id = (uint)e.Id, Offset = (uint)e.Offset }).ToArray()
-                : source.ReadArrayLittleEndian<DirEntryInfo>(entryCount);
+                ? [.. source.ReadArrayWithEndianness<DirEntryInfoWide>(entryCount, endianness).Select(e => new DirEntryInfo { Id = e.Id, Offset = (uint)e.Offset })]
+                : source.ReadArrayWithEndianness<DirEntryInfo>(entryCount, endianness);
 
-            var dataStart = StreamExtensions.Align(source.Position, 0x1000);
+            var sectorSize = DetermineSectorSize(dirEntries, source.Length);
+            var variant = DetermineVariant(endianness, sectorSize);
+            var extensions = Extensions.GetValueOrDefault(variant, ImmutableDictionary<byte, string>.Empty);
+
+            var dataStart = StreamExtensions.Align(source.Position, sectorSize);
             var group = "unknown";
             for (var i = 0; i < entryCount; i++)
             {
@@ -202,7 +310,12 @@ namespace Codec.MGS.Archives
                         break;
 
                     case 0x7F:
-                        if (!Groups.TryGetValue(entry.FileName, out group))
+                        if (entry.FileName == 0)
+                        {
+                            group = "unknown";
+                            dataStart = StreamExtensions.Align(dataStart + entry.Offset, sectorSize);
+                        }
+                        else if (!Groups.TryGetValue(entry.FileName, out group))
                         {
                             group = entry.FileName.ToString("x6", CultureInfo.InvariantCulture);
                         }
@@ -210,7 +323,7 @@ namespace Codec.MGS.Archives
                         break;
 
                     default:
-                        if (!Extensions.TryGetValue(entry.Extension, out var ext))
+                        if (!extensions.TryGetValue(entry.Extension, out var ext))
                         {
                             ext = entry.Extension.ToString("x2", CultureInfo.InvariantCulture);
                         }
@@ -219,6 +332,24 @@ namespace Codec.MGS.Archives
                         break;
                 }
             }
+        }
+
+        private static uint DetermineSectorSize(DirEntryInfo[] dirEntries, long length)
+        {
+            uint[] sections = [.. dirEntries.Where(e => e.Id == 0x7F000000).Select(e => e.Offset)];
+            var sectionsSum = sections.Sum(x => x);
+            for (var bit = 11; bit <= 12; bit++)
+            {
+                var align = (uint)(1 << bit);
+                var paddingSum = Enumerable.Range(0, sections.Length).Sum(i => i == sections.Length - 1 ? align : StreamExtensions.GetPadding(sections[i], align));
+                var sum = sectionsSum + paddingSum;
+                if (sum == length)
+                {
+                    return align;
+                }
+            }
+
+            return 0x800;
         }
 
         protected override Stream Open(Entry entry, FileStreamOptions parentOptions)
@@ -233,7 +364,20 @@ namespace Codec.MGS.Archives
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct DirEntryInfo
+        public struct DirHeader
+        {
+            public uint EntryCount;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct DirHeaderWide
+        {
+            public uint EntryCount;
+            public uint Padding;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct DirEntryInfo
         {
             public uint Id;
             public uint Offset;
@@ -244,9 +388,10 @@ namespace Codec.MGS.Archives
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct DirEntryInfoWide
+        public struct DirEntryInfoWide
         {
-            public ulong Id;
+            public uint Id;
+            public uint PaddingA;
             public ulong Offset;
         }
     }
