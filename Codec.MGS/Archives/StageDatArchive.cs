@@ -49,7 +49,7 @@ namespace Codec.MGS.Archives
             source.Position = 10;
             var b0 = source.ReadByte();
             var b1 = source.ReadByte();
-            return b0 == 0xCC && b1 == 0xCC ? DirArchive.Variant.TTS : DirArchive.Variant.MGS2;
+            return b0 == 0xCC && b1 == 0xCC ? DirArchive.Variant.MGSTTS : DirArchive.Variant.MGS2;
         }
 
         protected override string GetEntryName(Entry entry) =>
@@ -68,7 +68,7 @@ namespace Codec.MGS.Archives
                 header = decoded.ReadLittleEndian<Header>();
                 folders = decoded.ReadArrayLittleEndian<FolderEntry>(header.FolderCount);
             }
-            else if (variant == DirArchive.Variant.TTS)
+            else if (variant == DirArchive.Variant.MGSTTS)
             {
                 header = source.ReadBigEndian<Header>();
                 folders = source.ReadArrayBigEndian<FolderEntry>(header.FolderCount);
@@ -91,7 +91,7 @@ namespace Codec.MGS.Archives
                     var fileCount = decoded.ReadUInt32LittleEndian();
                     files = decoded.ReadArrayLittleEndian<DirArchive.DirEntryInfo>(fileCount);
                 }
-                else if (variant == DirArchive.Variant.TTS)
+                else if (variant == DirArchive.Variant.MGSTTS)
                 {
                     var fileCount = source.ReadUInt32BigEndian();
                     files = source.ReadArrayBigEndian<DirArchive.DirEntryInfo>(fileCount);

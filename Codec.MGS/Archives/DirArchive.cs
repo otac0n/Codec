@@ -179,7 +179,7 @@ namespace Codec.MGS.Archives
                 { 0x6F, "mtra" },
                 { 0xFF, "psq" },
             }.ToImmutableDictionary(),
-            [Variant.TTS] = new Dictionary<byte, string>()
+            [Variant.MGSTTS] = new Dictionary<byte, string>()
             {
                 [0x0A] = "kmy",
                 [0x13] = "tpl",
@@ -202,7 +202,7 @@ namespace Codec.MGS.Archives
         {
             Unknown = 0,
             MGS2,
-            TTS,
+            MGSTTS,
             MGS4,
             MGSPW,
         }
@@ -388,7 +388,7 @@ namespace Codec.MGS.Archives
             {
                 (Endianness.LittleEndian, false, 0x800) => Variant.MGS2,
                 (Endianness.BigEndian, true, 0x800) => Variant.MGS4,
-                (Endianness.BigEndian, false, 0x800) => Variant.TTS,
+                (Endianness.BigEndian, false, 0x800) => Variant.MGSTTS,
                 (Endianness.LittleEndian, true, 0x1000) => Variant.MGSPW,
                 _ => Variant.Unknown,
             };
@@ -432,7 +432,7 @@ namespace Codec.MGS.Archives
                             section = new CachingSeekableStream(section);
                             return new OffsetStreamSpan(section, entry.Offset, entry.Length, Ownership.Dispose);
                         }
-                        else if (this.variant == Variant.TTS)
+                        else if (this.variant == Variant.MGSTTS)
                         {
                             Stream section = new OffsetStreamSpan(source, entry.Section.Offset, entry.Section.EncodedLength, Ownership.Dispose);
                             section = new ZLibStream(section, CompressionMode.Decompress);
