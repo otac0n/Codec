@@ -35,10 +35,10 @@
             using var slotDat = this.fileSystem.File.OpenRead(this.filePath);
             header = slotDat.ReadBigEndian<SlotHeader>();
 
-            slotDat.Seek(SectorSize, SeekOrigin.Begin);
             var entries = new List<Entry>();
             for (var i = 0; i < header.PageCount; i++)
             {
+                slotDat.Align(SectorSize);
                 var start = slotDat.Position;
                 var cnf = slotDat.ReadBigEndian<DirArchive.DirHeaderWide>();
 
