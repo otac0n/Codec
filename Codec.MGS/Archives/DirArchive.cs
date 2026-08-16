@@ -13,13 +13,14 @@ namespace Codec.MGS.Archives
     using System.Linq;
     using System.Runtime.InteropServices;
     using Codec.Archives;
+    using Codec.MGS.Services;
     using Codec.MGS.Streams;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (string FileName, (long Offset, long Length, long EncodedLength) Section, long Offset, long Length);
     using Section = (long Offset, long Length, long EncodedLength);
 
-    public class DirArchive(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
+    public class DirArchive(string fullPath, string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
     {
         private static readonly ImmutableDictionary<Variant, ImmutableDictionary<byte, string>> Extensions = new Dictionary<Variant, ImmutableDictionary<byte, string>>()
         {
@@ -212,7 +213,7 @@ namespace Codec.MGS.Archives
             services.AddFileSystem(
                 "*.dir",
                 static (serviceProvider, fullPath, parentRelativePath, parent, parentPath) => Validate(parentRelativePath, parent),
-                static (fullPath, parentRelativePath, parent, parentPath) => new DirArchive(parentRelativePath, parent));
+                static (fullPath, parentRelativePath, parent, parentPath) => new DirArchive(fullPath, parentRelativePath, parent));
         }
 
         protected override string GetEntryName(Entry entry) => entry.FileName;
@@ -280,17 +281,29 @@ namespace Codec.MGS.Archives
             var entries = new List<Entry>();
             WalkEntries(dirEntries, alignment, ref dataPtr, (group, entry, section, length) =>
             {
+                var variantString = this.variant.ToString().ToLowerInvariant();
+
                 if (!Groups.TryGetValue(group, out var groupName))
                 {
                     groupName = group.ToString("x6", CultureInfo.InvariantCulture);
                 }
 
-                if (!extensions.TryGetValue(entry.Extension, out var ext))
+                var archiveName = parent.Path.GetFileNameWithoutExtension(fullPath);
+                var parentFolder = parent.Path.GetFileNameWithoutExtension(parent.Path.GetDirectoryName(fullPath));
+
+                if (variantString == "mgstts" ||
+                    !(JoyDictService.TryGetOriginalFileName(variantString, "stage.dat", null, archiveName, entry.FileName, entry.Extension, out var fileName) ||
+                    JoyDictService.TryGetOriginalFileName(variantString, "stage.dat", null, parentFolder, entry.FileName, entry.Extension, out fileName)))
                 {
-                    ext = entry.Extension.ToString("x2", CultureInfo.InvariantCulture);
+                    if (!extensions.TryGetValue(entry.Extension, out var ext))
+                    {
+                        ext = entry.Extension.ToString("x2", CultureInfo.InvariantCulture);
+                    }
+
+                    fileName = $"{entry.FileName:x6}.{ext}";
                 }
 
-                entries.Add(($"{groupName}/{entry.FileName:x6}.{ext}", section, entry.Offset, length));
+                entries.Add(($"{groupName}/{fileName}", section, entry.Offset, length));
             });
 
             return entries;

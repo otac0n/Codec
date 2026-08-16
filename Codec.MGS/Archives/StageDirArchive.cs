@@ -56,8 +56,8 @@ namespace Codec.MGS.Archives
 
         protected override string GetEntryName(Entry entry)
         {
-            if (!(JoyDictService.TryGetOriginalFileName("mgs1", "stage.dir", null, entry.Folder, $"{entry.Id:x4}.{(char)entry.Ext}", out var filename) ||
-                JoyDictService.TryGetOriginalFileName("mgs1", "stage.dar", null, entry.Folder, $"{entry.Id:x4}.{(char)entry.Ext}", out filename)))
+            if (!(JoyDictService.TryGetOriginalFileName("mgs1", "stage.dir", null, entry.Folder, entry.Id, entry.Ext, out var filename) ||
+                JoyDictService.TryGetOriginalFileName("mgs1", "stage.dar", null, entry.Folder, entry.Id, entry.Ext, out filename)))
             {
                 filename = $"{entry.Id:x4}.{Extensions[entry.Ext]}";
             }

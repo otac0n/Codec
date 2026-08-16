@@ -19,6 +19,24 @@ namespace Codec.MGS.Services
 
         private static readonly IReadOnlyDictionary<string, string> Empty = new Dictionary<string, string>();
 
+        public static bool TryGetOriginalFileName(string game, string container, string? version, string folder, uint hashedFilename, byte extension, out string result)
+        {
+            game = game.ToLowerInvariant();
+            return TryGetOriginalFileName(
+                game,
+                container,
+                version,
+                folder,
+                game switch
+                {
+                    "mgs1" => $"{hashedFilename:x4}.{(char)extension}",
+                    "mgs2" => $"{hashedFilename:x8}.{(char)('a' + extension)}",
+                    "mgstts" => $"{hashedFilename:x8}.{(char)('a' + extension)}",
+                    _ => $"{hashedFilename:x8}.{extension:x2}",
+                },
+                out result);
+        }
+
         /// <summary>
         /// Attempts to retrieve the original filename for a given game, container, and <see cref="StringCode">hashed</see> filename.
         /// </summary>
@@ -85,6 +103,19 @@ namespace Codec.MGS.Services
                 }
             }
 
+            if (version != null)
+            {
+                if (TryLookup($"Codec.MGS.Resources.JoyDict.{game}.{container}.{version}.tbl", filename, out result))
+                {
+                    return true;
+                }
+            }
+
+            if (TryLookup($"Codec.MGS.Resources.JoyDict.{game}.{container}.common.tbl", filename, out result))
+            {
+                return true;
+            }
+
             result = filename;
             return false;
         }
@@ -136,7 +167,7 @@ namespace Codec.MGS.Services
 
             if (dictionary.TryGetValue(filename, out result!))
             {
-                return true;
+                return !string.IsNullOrEmpty(result);
             }
 
             result = filename;
@@ -171,8 +202,10 @@ namespace Codec.MGS.Services
 
                 var key = line[..separator].Trim().ToLowerInvariant();
                 var value = line[(separator + 1)..].Trim();
-
-                dictionary[key] = value;
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    dictionary[key] = value;
+                }
             }
 
             return dictionary;
