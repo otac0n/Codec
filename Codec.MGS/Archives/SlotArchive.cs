@@ -42,18 +42,8 @@
                 var start = slotDat.Position;
                 var cnf = slotDat.ReadBigEndian<DirArchive.DirHeaderWide>();
 
-                var size = Marshal.SizeOf<DirArchive.DirHeaderWide>() + Marshal.SizeOf<DirArchive.DirEntryInfoWide>() * cnf.EntryCount;
-                size = StreamExtensions.Align(size, SectorSize);
-
                 var tags = slotDat.ReadArrayBigEndian<DirArchive.DirEntryInfoWide>(cnf.EntryCount);
-                for (var j = 0; j < cnf.EntryCount; j++)
-                {
-                    var tag = tags[j];
-                    if (tag.Id == 0x7F000000)
-                    {
-                        size += StreamExtensions.Align((long)tag.Offset, SectorSize);
-                    }
-                }
+                var size = DirArchive.GetFileSize(tags, SectorSize);
 
                 entries.Add(($"{i}.dir", start, size));
 

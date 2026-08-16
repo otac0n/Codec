@@ -9,17 +9,39 @@ namespace Codec.MGS.Archives
     using System.Globalization;
     using System.IO;
     using System.IO.Abstractions;
+    using System.IO.Compression;
     using System.Linq;
     using System.Runtime.InteropServices;
     using Codec.Archives;
+    using Codec.MGS.Streams;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
-    using Entry = (string FileName, long Offset, long Length);
+    using Entry = (string FileName, (long Offset, long Length, long EncodedLength) Section, long Offset, long Length);
+    using Section = (long Offset, long Length, long EncodedLength);
 
     public class DirArchive(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
     {
         private static readonly ImmutableDictionary<Variant, ImmutableDictionary<byte, string>> Extensions = new Dictionary<Variant, ImmutableDictionary<byte, string>>()
         {
+            [Variant.MGS2] = new Dictionary<byte, string>()
+            {
+                { 0x01, "bin" },
+                { 0x02, "cv2" },
+                { 0x04, "evm" },
+                { 0x05, "far" },
+                { 0x06, "gcx" },
+                { 0x07, "hzx" },
+                { 0x0A, "kms" },
+                { 0x0B, "lt2" },
+                { 0x0C, "mar" },
+                { 0x0E, "o2d" },
+                { 0x11, "row" },
+                { 0x12, "sar" },
+                { 0x13, "tri" },
+                { 0x15, "var" },
+                { 0x19, "zms" },
+                { 0x7D, "face" },
+            }.ToImmutableDictionary(),
             [Variant.MGSPW] = new Dictionary<byte, string>()
             {
                 { 0x01, "bin" },
@@ -157,9 +179,14 @@ namespace Codec.MGS.Archives
                 { 0x6F, "mtra" },
                 { 0xFF, "psq" },
             }.ToImmutableDictionary(),
+            [Variant.TTS] = new Dictionary<byte, string>()
+            {
+                [0x0A] = "kmy",
+                [0x13] = "tpl",
+            }.ToImmutableDictionary(),
         }.ToImmutableDictionary();
 
-        private static readonly ImmutableDictionary<uint, string> Groups = new Dictionary<uint, string>()
+        internal static readonly ImmutableDictionary<uint, string> Groups = new Dictionary<uint, string>()
         {
             [0x00000002] = "cache",
             [0x00000003] = "resident",
@@ -169,9 +196,13 @@ namespace Codec.MGS.Archives
             [0x00010000] = "nocache",
         }.ToImmutableDictionary();
 
+        private Variant variant;
+
         public enum Variant
         {
             Unknown = 0,
+            MGS2,
+            TTS,
             MGS4,
             MGSPW,
         }
@@ -215,59 +246,10 @@ namespace Codec.MGS.Archives
                 ? [.. source.ReadArrayWithEndianness<DirEntryInfoWide>(entryCount, endianness).Select(e => new DirEntryInfo { Id = e.Id, Offset = (uint)e.Offset })]
                 : source.ReadArrayWithEndianness<DirEntryInfo>(entryCount, endianness);
 
-            var sectorSize = DetermineSectorSize(dirEntries, source.Length);
-
-            var dataStart = StreamExtensions.Align(source.Position, sectorSize);
-            for (var i = 0; i < entryCount; i++)
-            {
-                var last = i == entryCount - 1;
-                var entry = dirEntries[i];
-                switch (entry.Extension)
-                {
-                    case 0x00:
-                        return last;
-
-                    case 0x7D:
-                    case 0x7E:
-                    case 0x7F:
-                        if (last)
-                        {
-                            return false;
-                        }
-
-                        if (entry.Id == 0x7F000000)
-                        {
-                            dataStart = StreamExtensions.Align(dataStart + entry.Offset, sectorSize);
-                        }
-
-                        break;
-
-                    default:
-                        if (last)
-                        {
-                            return false;
-                        }
-
-                        var start = dataStart + entry.Offset;
-                        var end = dataStart + dirEntries[i + 1].Offset;
-                        if (end < start || start >= source.Length || end > source.Length)
-                        {
-                            return false;
-                        }
-
-                        break;
-                }
-            }
-
-            return false;
+            var dataPtr = source.Position;
+            DetermineSectorSize(dirEntries, source.Length, out var alignment);
+            return WalkEntries(dirEntries, alignment, ref dataPtr, validate: true);
         }
-
-        private static Variant DetermineVariant(Endianness endianness, uint sectorSize) => (endianness, sectorSize) switch
-        {
-            (Endianness.BigEndian, 0x800) => Variant.MGS4,
-            (Endianness.LittleEndian, 0x1000) => Variant.MGSPW,
-            _ => Variant.Unknown,
-        };
 
         protected override IEnumerable<Entry> ReadIndex()
         {
@@ -289,74 +271,182 @@ namespace Codec.MGS.Archives
                 ? [.. source.ReadArrayWithEndianness<DirEntryInfoWide>(entryCount, endianness).Select(e => new DirEntryInfo { Id = e.Id, Offset = (uint)e.Offset })]
                 : source.ReadArrayWithEndianness<DirEntryInfo>(entryCount, endianness);
 
-            var sectorSize = DetermineSectorSize(dirEntries, source.Length);
-            var variant = DetermineVariant(endianness, sectorSize);
-            var extensions = Extensions.GetValueOrDefault(variant, ImmutableDictionary<byte, string>.Empty);
+            DetermineSectorSize(dirEntries, source.Length, out var alignment);
+            this.variant = DetermineVariant(endianness, wideIndexEntries, alignment);
+            var extensions = Extensions.GetValueOrDefault(this.variant, ImmutableDictionary<byte, string>.Empty);
 
-            var dataStart = StreamExtensions.Align(source.Position, sectorSize);
-            var group = "unknown";
+            var dataPtr = source.Position;
+
+            var entries = new List<Entry>();
+            WalkEntries(dirEntries, alignment, ref dataPtr, (group, entry, section, length) =>
+            {
+                if (!Groups.TryGetValue(group, out var groupName))
+                {
+                    groupName = group.ToString("x6", CultureInfo.InvariantCulture);
+                }
+
+                if (!extensions.TryGetValue(entry.Extension, out var ext))
+                {
+                    ext = entry.Extension.ToString("x2", CultureInfo.InvariantCulture);
+                }
+
+                entries.Add(($"{groupName}/{entry.FileName:x6}.{ext}", section, entry.Offset, length));
+            });
+
+            return entries;
+        }
+
+        public static long GetFileSize(DirEntryInfo[] dirEntries, long alignment)
+        {
+            long dataPtr = Marshal.SizeOf<DirHeader>() + Marshal.SizeOf<DirEntryInfo>() * dirEntries.Length;
+            WalkEntries(dirEntries, alignment, ref dataPtr);
+            return dataPtr;
+        }
+
+        public static long GetFileSize(DirEntryInfoWide[] dirEntries, long alignment)
+        {
+            long dataPtr = Marshal.SizeOf<DirHeaderWide>() + Marshal.SizeOf<DirEntryInfoWide>() * dirEntries.Length;
+            WalkEntries([.. dirEntries.Select(e => new DirEntryInfo { Id = e.Id, Offset = (uint)e.Offset })], alignment, ref dataPtr);
+            return dataPtr;
+        }
+
+        public static bool WalkEntries(DirEntryInfo[] dirEntries, long alignment, ref long dataPtr, Action<uint, DirEntryInfo, Section, long>? handleFile = null, bool validate = false)
+        {
+            var group = 0U;
+            var sectionSize = 0U;
+            uint? compressedSize = null;
+            var entryCount = dirEntries.Length;
             for (var i = 0; i < entryCount; i++)
             {
                 var entry = dirEntries[i];
+
+                if (validate && i == entryCount - 1)
+                {
+                    return entry.Id == 0;
+                }
+
                 switch (entry.Extension)
                 {
                     case 0x00:
-                        yield break;
+                        if (entry.FileName == 0)
+                        {
+                            if (validate)
+                            {
+                                return entry.Offset == 0;
+                            }
+
+                            break;
+                        }
+
+                        goto default;
 
                     case 0x7D:
                         break;
 
                     case 0x7E:
+                        compressedSize = entry.FileName;
                         break;
 
                     case 0x7F:
-                        if (entry.FileName == 0)
+                        if (entry.FileName != 0)
                         {
-                            group = "unknown";
-                            dataStart = StreamExtensions.Align(dataStart + entry.Offset, sectorSize);
+                            dataPtr = StreamExtensions.Align(dataPtr, alignment);
+                            sectionSize = entry.Offset;
+                            group = entry.FileName;
                         }
-                        else if (!Groups.TryGetValue(entry.FileName, out group))
+                        else
                         {
-                            group = entry.FileName.ToString("x6", CultureInfo.InvariantCulture);
+                            dataPtr += compressedSize ?? entry.Offset;
+                            compressedSize = null;
+                            sectionSize = 0;
+                            group = 0;
                         }
 
                         break;
 
                     default:
-                        if (!extensions.TryGetValue(entry.Extension, out var ext))
+                        if (validate)
                         {
-                            ext = entry.Extension.ToString("x2", CultureInfo.InvariantCulture);
+                            var start = entry.Offset;
+                            var end = dirEntries[i + 1].Offset;
+                            if (end < start || start >= sectionSize || end > sectionSize)
+                            {
+                                return false;
+                            }
                         }
 
-                        yield return ($"{group}/{entry.FileName:x6}.{ext}", dataStart + entry.Offset, dirEntries[i + 1].Offset - entry.Offset);
+                        handleFile?.Invoke(group, entry, (dataPtr, sectionSize, compressedSize ?? sectionSize), dirEntries[i + 1].Offset - entry.Offset);
                         break;
                 }
             }
+
+            return !validate;
         }
 
-        private static uint DetermineSectorSize(DirEntryInfo[] dirEntries, long length)
+        private static Variant DetermineVariant(Endianness endianness, bool wideIndexEntries, uint sectorSize) =>
+            (endianness, wideIndexEntries, sectorSize) switch
+            {
+                (Endianness.LittleEndian, false, 0x800) => Variant.MGS2,
+                (Endianness.BigEndian, true, 0x800) => Variant.MGS4,
+                (Endianness.BigEndian, false, 0x800) => Variant.TTS,
+                (Endianness.LittleEndian, true, 0x1000) => Variant.MGSPW,
+                _ => Variant.Unknown,
+            };
+
+        private static bool DetermineSectorSize(DirEntryInfo[] dirEntries, long length, out uint alignment)
         {
-            uint[] sections = [.. dirEntries.Where(e => e.Id == 0x7F000000).Select(e => e.Offset)];
-            var sectionsSum = sections.Sum(x => x);
             for (var bit = 11; bit <= 12; bit++)
             {
-                var align = (uint)(1 << bit);
-                var paddingSum = Enumerable.Range(0, sections.Length).Sum(i => i == sections.Length - 1 ? align : StreamExtensions.GetPadding(sections[i], align));
-                var sum = sectionsSum + paddingSum;
+                alignment = (uint)(1 << bit);
+                var sum = GetFileSize(dirEntries, alignment);
                 if (sum == length)
                 {
-                    return align;
+                    return true;
                 }
             }
 
-            return 0x800;
+            alignment = 0x800;
+            return false;
         }
 
         protected override Stream Open(Entry entry, FileStreamOptions parentOptions)
         {
             return CreateStreamWrapper(
                 parentOptions,
-                options => new OffsetStreamSpan(parent.File.Open(parentRelativePath, options), entry.Offset, entry.Length, Ownership.Dispose),
+                options =>
+                {
+                    var source = parent.File.Open(parentRelativePath, options);
+                    if (entry.Section.Length != entry.Section.EncodedLength)
+                    {
+                        if (this.variant == Variant.MGS2)
+                        {
+                            source.Position = entry.Section.Offset;
+                            var key = source.ReadUInt16LittleEndian() ^ 0x9385;
+                            var keyB = unchecked((uint)(key * 0x0116));
+                            var keyA = (uint)(((key ^ 0x6576) << 0x10) | key);
+                            Stream section = new OffsetStreamSpan(source, entry.Section.Offset, entry.Section.EncodedLength, Ownership.Dispose);
+                            section = new DecodingStream(keyA, keyB, section, Ownership.Dispose);
+                            section = new CachingSeekableStream(section);
+                            section.Write([0x78, 0x9C]);
+                            section = new DeflateStream(section, CompressionMode.Decompress);
+                            section = new CachingSeekableStream(section);
+                            return new OffsetStreamSpan(section, entry.Offset, entry.Length, Ownership.Dispose);
+                        }
+                        else if (this.variant == Variant.TTS)
+                        {
+                            Stream section = new OffsetStreamSpan(source, entry.Section.Offset, entry.Section.EncodedLength, Ownership.Dispose);
+                            section = new ZLibStream(section, CompressionMode.Decompress);
+                            section = new CachingSeekableStream(section, entry.Section.Length);
+                            return new OffsetStreamSpan(section, entry.Offset, entry.Length, Ownership.Dispose);
+                        }
+
+                        throw new NotSupportedException();
+                    }
+                    else
+                    {
+                        return new OffsetStreamSpan(source, entry.Section.Offset + entry.Offset, entry.Length, Ownership.Dispose);
+                    }
+                },
                 updated =>
                 {
                     throw new NotImplementedException();
