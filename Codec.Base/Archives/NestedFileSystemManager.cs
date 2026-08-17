@@ -293,6 +293,30 @@
             return PathExtensions.GetRelativePath(parent.Path, parentFolder, newPath);
         }
 
+        public bool IsPathUnder(string possibleChildPath, string parentPath)
+        {
+            var parentParts = PathExtensions.Split(parentPath);
+            var childParts = PathExtensions.Split(possibleChildPath);
+            if (childParts.Length < parentParts.Length)
+            {
+                // TODO: Perhaps this function should normalize via `CombinePaths(parent, possibleChildPath)`? Add test coverage to determine.
+                return false;
+            }
+
+            // TODO: Per-segment case sensitivity.
+            var compare = StringComparison.OrdinalIgnoreCase;
+
+            for (var i = 0; i < parentParts.Length; i++)
+            {
+                if (string.Compare(parentParts[i], childParts[i], compare) is not 0)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         public class PathComparer : IComparer<string?>, IEqualityComparer<string?>
         {
             public bool Equals(string? x, string? y) => this.Compare(x, y) == 0;
