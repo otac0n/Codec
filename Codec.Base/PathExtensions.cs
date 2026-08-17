@@ -42,7 +42,7 @@ namespace Codec
             return prefix.TrimEnd(Separators) + separator + suffix.TrimStart(Separators);
         }
 
-        public static string GetRelativePath(this IPath path, char separator, string relativeTo, string destination)
+        public static string GetRelativePath(this IPath path, string relativeTo, string destination)
         {
             ArgumentException.ThrowIfNullOrEmpty(relativeTo, nameof(relativeTo));
             ArgumentException.ThrowIfNullOrEmpty(destination, nameof(destination));
@@ -80,7 +80,7 @@ namespace Codec
                     }
                     else
                     {
-                        sb.Append(separator);
+                        sb.Append(path.DirectorySeparatorChar);
                     }
                 }
             }

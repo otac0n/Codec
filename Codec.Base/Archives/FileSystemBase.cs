@@ -819,7 +819,7 @@
             public string GetRandomFileName() => throw new NotImplementedException();
 
             /// <inheritdoc/>
-            public string GetRelativePath(string relativeTo, string path) => this.GetRelativePath(this.DirectorySeparatorChar, relativeTo, path);
+            public string GetRelativePath(string relativeTo, string path) => PathExtensions.GetRelativePath(this, relativeTo, path);
 
             /// <inheritdoc/>
             public string GetTempFileName() => throw new NotImplementedException();
