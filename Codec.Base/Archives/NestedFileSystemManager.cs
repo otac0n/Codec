@@ -263,6 +263,36 @@
             return false;
         }
 
+        public string GetFullPath(string path, string basePath)
+        {
+            if (!this.TryFindParentFileSystem(basePath, out var _, out var parent, out _))
+            {
+                throw new InvalidOperationException();
+            }
+
+            return PathExtensions.GetFullPath(parent.Path, path, basePath);
+        }
+
+        public string CombinePaths(string parentFolder, string filePath)
+        {
+            if (!this.TryFindParentFileSystem(parentFolder, out var _, out var parent, out _))
+            {
+                throw new InvalidOperationException();
+            }
+
+            return parent.Path.Combine(parentFolder, filePath);
+        }
+
+        public string GetRelativePath(string parentFolder, string newPath)
+        {
+            if (!this.TryFindParentFileSystem(parentFolder, out var _, out var parent, out _))
+            {
+                throw new InvalidOperationException();
+            }
+
+            return PathExtensions.GetRelativePath(parent.Path, parentFolder, newPath);
+        }
+
         public class PathComparer : IComparer<string?>, IEqualityComparer<string?>
         {
             public bool Equals(string? x, string? y) => this.Compare(x, y) == 0;
