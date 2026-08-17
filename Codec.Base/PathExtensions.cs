@@ -100,6 +100,8 @@ namespace Codec
             return aSpan.Equals(bSpan, comparison);
         }
 
+        private static bool IsDirectorySeparator(char c) => Separators.IndexOf(c) != -1;
+
         public static string[] Split(string path) => path.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
 
         public static bool IsPathRooted(ReadOnlySpan<char> path) => System.IO.Path.IsPathRooted(path);
@@ -259,6 +261,6 @@ namespace Codec
             return true;
         }
 
-        public static bool EndsWithSlash(string? path) => path != null && path.Length > 0 && path.LastIndexOfAny(Separators) == path.Length - 1;
+        public static bool EndsWithSlash(string? path) => path != null && path.Length > 0 && IsDirectorySeparator(path[^1]);
     }
 }
