@@ -196,6 +196,26 @@ namespace Codec
             return System.IO.Path.ChangeExtension(path, extension);
         }
 
+        public static string GetFullPath(this IPath provider, string path, string basePath)
+        {
+            if (!IsPathRooted(basePath))
+            {
+                throw new ArgumentOutOfRangeException(nameof(basePath));
+            }
+
+            if (IsPathRooted(path))
+            {
+                return RemoveRelativeSegments(path);
+            }
+
+            if (string.IsNullOrEmpty(path))
+            {
+                return basePath;
+            }
+
+            return RemoveRelativeSegments(provider.Combine(basePath, path));
+        }
+
         public static IEnumerable<string> SplitPath(string path)
         {
             if (string.IsNullOrEmpty(path))
@@ -227,6 +247,64 @@ namespace Codec
 
                 ix = sep + 1;
             }
+        }
+
+        internal static string RemoveRelativeSegments(string path)
+        {
+            // Based loosely on: https://github.com/dotnet/dotnet/blob/main/src/runtime/src/libraries/Common/src/System/IO/PathInternal.cs#L111
+            var sb = new StringBuilder(path.Length);
+
+            for (var i = 0; i < path.Length; i++)
+            {
+                var c = path[i];
+
+                if (IsDirectorySeparator(c) && i + 1 < path.Length)
+                {
+                    // Keep the first separator, as it is most likely attached to the parent filesystem.
+                    // (parent/\child -> parent/child)
+                    if (IsDirectorySeparator(path[i + 1]))
+                    {
+                        continue;
+                    }
+
+                    // (parent/.\child -> parent/child)
+                    if ((i + 2 == path.Length || IsDirectorySeparator(path[i + 2])) && path[i + 1] == '.')
+                    {
+                        i++;
+                        continue;
+                    }
+
+                    // Skip this character and the next two if it's referring to the parent directory,
+                    // e.g. "parent/child\..\grandchild" => "parent/grandchild"
+                    if (i + 2 < path.Length &&
+                        (i + 3 == path.Length || IsDirectorySeparator(path[i + 3])) &&
+                        path[i + 1] == '.' && path[i + 2] == '.')
+                    {
+                        // TODO: Rewrite so that we keep the first slash whenever possible.
+                        // Unwind back to the last slash (and if there isn't one, clear out everything).
+                        for (var s = sb.Length - 1; s >= 0; s--)
+                        {
+                            if (IsDirectorySeparator(sb[s]))
+                            {
+                                sb.Length = (i + 3 >= path.Length && s == 0) ? s + 1 : s; // to avoid removing the complete "\tmp\" segment in cases like \\?\C:\tmp\..\, C:\tmp\..
+                                break;
+                            }
+                        }
+
+                        i += 2;
+                        continue;
+                    }
+                }
+
+                sb.Append(c);
+            }
+
+            if (sb.Length == path.Length)
+            {
+                return path;
+            }
+
+            return sb.ToString();
         }
 
         public static Regex GlobToRegex(string searchPattern, bool ignoreCase = true) =>
