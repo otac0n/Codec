@@ -35,6 +35,7 @@
             this.entryList = new ListView();
             this.entryContextMenu = new ContextMenuStrip(this.components);
             this.previewToolStripMenuItem = new ToolStripMenuItem();
+            this.exportToolStripMenuItem = new ToolStripMenuItem();
             this.saveAsToolStripMenuItem = new ToolStripMenuItem();
             this.replaceToolStripMenuItem = new ToolStripMenuItem();
             this.copyPathToolStripMenuItem = new ToolStripMenuItem();
@@ -44,12 +45,12 @@
             this.forwardButton = new ToolStripButton();
             this.goUpButton = new ToolStripButton();
             this.toolStripSeparator1 = new ToolStripSeparator();
+            this.viewErrorsButton = new ToolStripButton();
+            this.toolStripSeparator2 = new ToolStripSeparator();
             this.saveButton = new ToolStripButton();
             this.viewDrowDown = new ToolStripDropDownButton();
             this.listToolStripMenuItem = new ToolStripMenuItem();
             this.imagePreviewToolStripMenuItem = new ToolStripMenuItem();
-            this.toolStripSeparator2 = new ToolStripSeparator();
-            this.viewErrorsButton = new ToolStripButton();
             this.lowerStatusStrip = new StatusStrip();
             this.saveSelectedDialog = new SaveFileDialog();
             this.saveToFolderDialog = new FolderBrowserDialog();
@@ -121,9 +122,9 @@
             // entryContextMenu
             // 
             this.entryContextMenu.ImageScalingSize = new Size(24, 24);
-            this.entryContextMenu.Items.AddRange(new ToolStripItem[] { this.previewToolStripMenuItem, this.saveAsToolStripMenuItem, this.replaceToolStripMenuItem, this.copyPathToolStripMenuItem });
+            this.entryContextMenu.Items.AddRange(new ToolStripItem[] { this.previewToolStripMenuItem, this.exportToolStripMenuItem, this.saveAsToolStripMenuItem, this.replaceToolStripMenuItem, this.copyPathToolStripMenuItem });
             this.entryContextMenu.Name = "entryContextMenu";
-            this.entryContextMenu.Size = new Size(174, 132);
+            this.entryContextMenu.Size = new Size(174, 164);
             this.entryContextMenu.Closed += this.EntryContextMenu_Closed;
             // 
             // previewToolStripMenuItem
@@ -133,6 +134,14 @@
             this.previewToolStripMenuItem.Size = new Size(173, 32);
             this.previewToolStripMenuItem.Text = "Preview...";
             this.previewToolStripMenuItem.Click += this.PreviewMenuItem_Click;
+            // 
+            // exportToolStripMenuItem
+            // 
+            this.exportToolStripMenuItem.Image = Properties.Resources.FontAwesome_FileExportSolid_20x20;
+            this.exportToolStripMenuItem.Name = "exportToolStripMenuItem";
+            this.exportToolStripMenuItem.Size = new Size(173, 32);
+            this.exportToolStripMenuItem.Text = "Export...";
+            this.exportToolStripMenuItem.Click += this.ExportButton_Click;
             // 
             // saveAsToolStripMenuItem
             // 
@@ -209,6 +218,24 @@
             this.toolStripSeparator1.Name = "toolStripSeparator1";
             this.toolStripSeparator1.Size = new Size(6, 33);
             // 
+            // viewErrorsButton
+            // 
+            this.viewErrorsButton.Checked = true;
+            this.viewErrorsButton.CheckOnClick = true;
+            this.viewErrorsButton.CheckState = CheckState.Checked;
+            this.viewErrorsButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            this.viewErrorsButton.Image = Properties.Resources.FontAwesome_TriangleExclamationSolid_20x20;
+            this.viewErrorsButton.ImageTransparentColor = Color.Magenta;
+            this.viewErrorsButton.Name = "viewErrorsButton";
+            this.viewErrorsButton.Size = new Size(34, 28);
+            this.viewErrorsButton.Text = "View Errors";
+            this.viewErrorsButton.CheckedChanged += this.ViewErrorsButton_CheckedChanged;
+            // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new Size(6, 33);
+            // 
             // saveButton
             // 
             this.saveButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
@@ -245,24 +272,6 @@
             this.imagePreviewToolStripMenuItem.Size = new Size(229, 34);
             this.imagePreviewToolStripMenuItem.Text = "Image Preview";
             this.imagePreviewToolStripMenuItem.Click += this.ImagePreviewToolStripMenuItem_Click;
-            // 
-            // toolStripSeparator2
-            // 
-            this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new Size(6, 33);
-            // 
-            // viewErrorsButton
-            // 
-            this.viewErrorsButton.Checked = true;
-            this.viewErrorsButton.CheckOnClick = true;
-            this.viewErrorsButton.CheckState = CheckState.Checked;
-            this.viewErrorsButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
-            this.viewErrorsButton.Image = Properties.Resources.FontAwesome_TriangleExclamationSolid_20x20;
-            this.viewErrorsButton.ImageTransparentColor = Color.Magenta;
-            this.viewErrorsButton.Name = "viewErrorsButton";
-            this.viewErrorsButton.Size = new Size(34, 28);
-            this.viewErrorsButton.Text = "View Errors";
-            this.viewErrorsButton.CheckedChanged += this.ViewErrorsButton_CheckedChanged;
             // 
             // lowerStatusStrip
             // 
@@ -364,5 +373,6 @@
         private ColumnHeader locationColumnHeader;
         private ToolStripButton viewErrorsButton;
         private ToolStripSeparator toolStripSeparator2;
+        private ToolStripMenuItem exportToolStripMenuItem;
     }
 }

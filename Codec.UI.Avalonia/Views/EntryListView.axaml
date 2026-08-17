@@ -21,6 +21,14 @@
             Height="{Binding $parent[TemplatedControl].FontSize}"/>
         </MenuItem.Icon>
       </MenuItem>
+      <MenuItem Header="Export..." Command="{Binding ExportCommand}" CommandParameter="{Binding $parent[Window]}">
+        <MenuItem.Icon>
+          <iconPacks:PackIconFontAwesome
+              Kind="FileExportSolid"
+              Width="{Binding $parent[TemplatedControl].FontSize}"
+              Height="{Binding $parent[TemplatedControl].FontSize}"/>
+        </MenuItem.Icon>
+      </MenuItem>
       <MenuItem Header="Save As..." IsEnabled="{Binding CanSave}" Command="{Binding SaveCommand}" CommandParameter="{Binding $parent[Window]}">
         <MenuItem.Icon>
           <iconPacks:PackIconFontAwesome

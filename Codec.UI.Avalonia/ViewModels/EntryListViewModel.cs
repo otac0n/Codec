@@ -11,6 +11,7 @@
     using Codec.Services;
     using Codec.UI.Avalonia.Models;
     using Codec.UI.Avalonia.Services;
+    using Codec.UI.Avalonia.Views;
     using CommunityToolkit.Mvvm.ComponentModel;
     using CommunityToolkit.Mvvm.Input;
     using Microsoft.Extensions.Logging;
@@ -23,6 +24,8 @@
         private readonly ImageLoader imageLoader;
         private readonly ILogger<EntryListViewModel> logger;
         private CancellationTokenSource cts = new();
+
+        private Entry parentEntry;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Thumbnails))]
@@ -100,6 +103,7 @@
             this.SelectedEntries.Clear();
             this.DisposeThumbnails();
 
+            this.parentEntry = directory;
             this.Entries = [.. this.LoadEntries(directory.Path).Select(entry =>
             {
                 var name = this.fsm.GetFileName(entry.Path) is { Length: > 0 } n ? n : entry.Path;
@@ -135,6 +139,46 @@
         internal void Preview()
         {
             EntryActivated?.Invoke(this, this.ContextEntries);
+        }
+
+        [RelayCommand]
+        private async Task Export(Window owner)
+        {
+            var entries = this.ContextEntries;
+            if (entries is [])
+            {
+                if (this.parentEntry == null)
+                {
+                    return;
+                }
+                else
+                {
+                    // TODO: We need to communicate that this is actually a root folder, even if it is an archive. This may be as simple as always using `EntryType.Folder`.
+                    entries = [new(this.parentEntry, this.fsm.GetFileName(this.parentEntry.Path), this.parentEntry.CanOpen ? EntryType.Archive : EntryType.Folder)];
+                }
+            }
+
+            var config = new ExportViewModel()
+            {
+                Entries = entries,
+            };
+
+            if (await new ExportDialog(config).ShowDialog<bool?>(owner).ConfigureAwait(false) == true)
+            {
+                var exportConfig = new FileExportService.ExportConfig
+                {
+                    Destination = config.Destination,
+                    Include = config.IncludeFormat,
+                    IncludeReferences = config.IncludeReferences,
+                    AudioFormat = config.ConvertAudio ? config.AudioFormat : null,
+                    ImageFormat = config.ConvertImages ? config.ImageFormat : null,
+                    ModelFormat = config.ConvertModels ? config.ModelFormat : null,
+                    Recursive = config.Recursive,
+                    ArchiveDepth = config.RecurseArchives ? config.Depth : default(byte?),
+                };
+
+                await this.fileSaveService.ExportAsync(owner, entries, exportConfig).ConfigureAwait(false);
+            }
         }
 
         [RelayCommand(CanExecute = nameof(CanSave))]

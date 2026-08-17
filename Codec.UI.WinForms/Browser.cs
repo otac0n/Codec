@@ -31,6 +31,7 @@ namespace Codec.UI.WinForms
         private readonly List<Entry> history = [];
         private readonly List<Entry> contextEntries = [];
         private int historyIndex = -1;
+        private Entry parentEntry;
         private bool suppressUpdates;
 
         public IList<Entry> SelectedEntries =>
@@ -118,6 +119,7 @@ namespace Codec.UI.WinForms
                 this.historyIndex = this.history.Count - 1;
             }
 
+            this.parentEntry = entry;
             this.suppressUpdates = true;
             this.goUpButton.Enabled = entry.Path?.IndexOfAny(PathExtensions.Separators) > -1;
             this.backButton.Enabled = this.historyIndex > 0;
@@ -376,6 +378,23 @@ namespace Codec.UI.WinForms
         {
             var paths = string.Join(Environment.NewLine, this.SelectedEntries.Select(e => e.Path));
             Clipboard.SetText(paths);
+        }
+
+        private void ExportButton_Click(object sender, EventArgs e)
+        {
+            var selectedEntries = this.SelectedEntries;
+            if (selectedEntries is [])
+            {
+                selectedEntries = [this.parentEntry];
+            }
+
+            var entryItems = selectedEntries.Select(e => (e, this.detector.Detect(e))).ToArray();
+            var exportDialog = new ExportDialog(entryItems);
+
+            if (exportDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                this.exportService.ExportAsync(entryItems, exportDialog.GetConfiguration());
+            }
         }
 
         private async void SaveButton_Click(object sender, EventArgs e)

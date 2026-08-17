@@ -12,9 +12,139 @@ namespace Codec.Services
     using Codec.Files;
     using ImageMagick;
     using EntryItem = (Codec.Archives.Entry Entry, EntryType EntryType);
+    using ExportItem = ((Codec.Archives.Entry Entry, EntryType EntryType) EntryItem, bool TreatLikeFolder, string Destination, int Depth);
 
     public sealed class FileExportService(NestedFileSystemManager fsm, EntryTypeDetector detector)
     {
+        public async Task ExportAsync(IList<EntryItem> entryItems, ExportConfig config)
+        {
+            var treatArchivesAsFolders = config.ArchiveDepth != null;
+            var visited = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase); // TODO: Per-segment case sensitivity.
+            var queue = new Queue<ExportItem>();
+            var pattern = PathExtensions.GlobToRegex(config.Include);
+
+            string AddIfNotVisitedAndValid(EntryItem item, string outPath, bool root, int depth)
+            {
+                // TODO: For now `root` forces re-export. See `config.IncludeReferences` check below for more details.
+                if (!visited.TryGetValue(item.Entry.Path, out var destination) || root)
+                {
+                    var treatLikeFolder = item.Entry.CanEnumerateEntries && (treatArchivesAsFolders || !item.Entry.CanOpen);
+
+                    var inScopeByBreadthOrDepth =
+                        root ||
+                        (treatLikeFolder
+                            ? config.Recursive && (!item.Entry.CanOpen || depth <= config.ArchiveDepth)
+                            : pattern.IsMatch(fsm.GetFileName(item.Entry.Path)));
+
+                    if (inScopeByBreadthOrDepth)
+                    {
+                        // TODO: Empty list for selection (e.g. export parent folder) should perhaps just return `outPath`. An archive at that level counts as a zero-depth root, not an archive.
+                        destination = Path.Combine(outPath, PathExtensions.GetFileName(item.Entry.Path));
+
+                        switch (item.EntryType)
+                        {
+                            case EntryType.Audio:
+                                if (config.AudioFormat is string audioFormat)
+                                {
+                                    destination = Path.ChangeExtension(destination, audioFormat);
+                                }
+
+                                break;
+
+                            case EntryType.Image:
+                                if (config.ImageFormat is string imageFormat)
+                                {
+                                    destination = Path.ChangeExtension(destination, imageFormat);
+                                }
+
+                                break;
+
+                            case EntryType.Model:
+                                if (config.ModelFormat is string modelFormat)
+                                {
+                                    destination = Path.ChangeExtension(destination, modelFormat);
+                                }
+
+                                break;
+                        }
+
+                        if ((!item.Entry.CanOpen && !item.Entry.CanEnumerateEntries) || (item.Entry.CanOpen && !fsm.FileExists(item.Entry.Path)))
+                        {
+                            // We have a destination, but no source file.
+                            // All references can point to this path, but there will be no content. This is by design.
+                            // If you wish to find content here, fix the upstream issue.
+                        }
+                        else
+                        {
+                            queue.Enqueue((item, treatLikeFolder, destination, depth));
+                        }
+                    }
+                    else
+                    {
+                        destination = null;
+                    }
+
+                    visited[item.Entry.Path] = destination;
+                }
+
+                return destination;
+            }
+
+            foreach (var item in entryItems)
+            {
+                AddIfNotVisitedAndValid(item, config.Destination, true, 0);
+            }
+
+            while (queue.Count > 0)
+            {
+                var (item, treatLikeFolder, destination, depth) = queue.Dequeue();
+
+                if (treatLikeFolder)
+                {
+                    foreach (var subEntry in fsm.EnumerateEntries(item.Entry.Path))
+                    {
+                        var isArchive = subEntry.CanEnumerateEntries && subEntry.CanOpen;
+                        AddIfNotVisitedAndValid((subEntry, detector.Detect(subEntry)), destination, false, isArchive ? depth + 1 : depth);
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        await this.SaveToDestination(item, destination, async subItem =>
+                        {
+                            var (subEntry, _) = subItem;
+                            if (config.IncludeReferences)
+                            {
+                                // TODO: For files in-scope, we may want to reference the in-scope export.
+                                // However, due to the explicit "include external files" checkbox, for now we assume users want the files alongside.
+                                // Until there are more options, this is forced to re-export the file (and overwrite if there's a conflict).
+
+                                // TODO: We need to check if the files are aleady in the scope of the export and not relocate them if so.
+                                // For now we assume it's external and handle it as an extra file.
+                                var possibleRoots = entryItems.Where(i => fsm.IsPathUnder(subItem.Entry.Path, i.Entry.Path));
+
+                                // TODO: For files outside the scope, this assumes placing related files alongside the parent. Other options include maintianing the structure, or using a "textures" subfolder.
+                                // For now we copy it alongside the model.
+                                var dest = Path.GetDirectoryName(destination)!;
+
+                                var treatAsArchive = subEntry.CanEnumerateEntries && subEntry.CanOpen && treatArchivesAsFolders;
+                                return AddIfNotVisitedAndValid(subItem, dest, true, treatAsArchive ? depth + 1 : depth);
+                            }
+                            else
+                            {
+                                return subEntry.Path;
+                            }
+                        }).ConfigureAwait(false);
+                    }
+                    catch (IOException)
+                    {
+                        // TODO: Log and continue.
+                    }
+                }
+            }
+        }
+
         public async Task SaveSingleAsync(EntryItem item, Func<string, EntryType, string?, Task<string?>> pickSavePath)
         {
             if (!fsm.FileExists(item.Entry.Path))
@@ -216,6 +346,25 @@ namespace Codec.Services
                 Access = FileAccess.Write,
             });
             await input.CopyToAsync(output).ConfigureAwait(false);
+        }
+
+        public class ExportConfig
+        {
+            public string Destination { get; set; }
+
+            public string Include { get; set; }
+
+            public string? AudioFormat { get; set; }
+
+            public string? ImageFormat { get; set; }
+
+            public string? ModelFormat { get; set; }
+
+            public bool Recursive { get; set; }
+
+            public byte? ArchiveDepth { get; set; }
+
+            public bool IncludeReferences { get; set; }
         }
     }
 }

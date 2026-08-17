@@ -11,6 +11,12 @@
 
     public sealed class FileSaveService(FileExportService exportService)
     {
+        public async Task ExportAsync(Window owner, IList<EntryItem> entries, FileExportService.ExportConfig config = null)
+        {
+            config ??= new();
+            await exportService.ExportAsync([.. entries.Select(e => (e.Entry, e.EntryType))], config).ConfigureAwait(false);
+        }
+
         public async Task SaveSingleAsync(Window owner, EntryItem item)
         {
             await exportService.SaveSingleAsync((item.Entry, item.EntryType), async (suggestedFileName, type, supportedPatterns) =>
