@@ -13,7 +13,7 @@
     {
         public async Task SaveSingleAsync(Window owner, EntryItem item)
         {
-            await exportService.SaveSingleAsync(item.Entry, async (suggestedFileName, type, supportedPatterns) =>
+            await exportService.SaveSingleAsync((item.Entry, item.EntryType), async (suggestedFileName, type, supportedPatterns) =>
             {
                 var allFiles = new FilePickerFileType("All Files") { Patterns = ["*.*"] };
                 var options = new FilePickerSaveOptions

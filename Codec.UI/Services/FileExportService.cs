@@ -11,107 +11,137 @@ namespace Codec.Services
     using Codec.Archives;
     using Codec.Files;
     using ImageMagick;
+    using EntryItem = (Codec.Archives.Entry Entry, EntryType EntryType);
 
     public sealed class FileExportService(NestedFileSystemManager fsm, EntryTypeDetector detector)
     {
-        public async Task SaveSingleAsync(Entry entry, Func<string, EntryType, string?, Task<string?>> pickSavePath)
+        public async Task SaveSingleAsync(EntryItem item, Func<string, EntryType, string?, Task<string?>> pickSavePath)
         {
-            if (!fsm.FileExists(entry.Path))
+            if (!fsm.FileExists(item.Entry.Path))
             {
                 return;
             }
 
-            var type = detector.Detect(entry);
-            var path = await pickSavePath(fsm.GetFileName(entry.Path), type, detector[type]).ConfigureAwait(false);
+            var path = await pickSavePath(fsm.GetFileName(item.Entry.Path), item.EntryType, detector[item.EntryType]).ConfigureAwait(false);
             if (path is null)
             {
                 return;
             }
 
+            var imageMap = new Dictionary<string, string>();
+            var parentFolder = PathExtensions.GetDirectoryName(path);
+            var isConverting = !string.Equals(PathExtensions.GetExtension(item.Entry.Path), PathExtensions.GetExtension(path), StringComparison.OrdinalIgnoreCase);
+            async Task<string> SaveRelatedFileAsync(EntryItem subItem)
             {
-                using var input = fsm.OpenRead(entry.Path);
-                if (!string.Equals(Path.GetExtension(path), fsm.GetExtension(entry.Path), StringComparison.OrdinalIgnoreCase))
+                if (!imageMap.TryGetValue(subItem.Entry.Path, out var filename) && isConverting)
                 {
-                    switch (type)
+                    imageMap[subItem.Entry.Path] = filename = Path.Combine(parentFolder, PathExtensions.ChangeExtension(fsm.GetFileName(subItem.Entry.Path), ".png"));
+
+                    await this.SaveToDestination(subItem, filename, SaveRelatedFileAsync).ConfigureAwait(false);
+                }
+
+                return filename ?? subItem.Entry.Path;
+            }
+
+            await this.SaveToDestination(item, path, SaveRelatedFileAsync).ConfigureAwait(false);
+        }
+
+        public async Task SaveToDestination(EntryItem item, string destination, Func<EntryItem, Task<string>> getOtherResourceDestination)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+
+            var convertFormat = !string.Equals(Path.GetExtension(destination), fsm.GetExtension(item.Entry.Path), StringComparison.OrdinalIgnoreCase);
+
+            if (item.EntryType == EntryType.Model)
+            {
+                if (fsm.Resolve<RenderableScene>(item.Entry.Path) is { Scene: var scene })
+                {
+                    var updated = false;
+
+                    async Task UpdateTexture(bool run, Func<TextureSlot> get, Action<TextureSlot> set)
                     {
-                        case EntryType.Image:
-                            if (fsm.Resolve<MagickImage>(entry.Path) is MagickImage image)
+                        if (run)
+                        {
+                            var texture = get();
+                            var parentFolder = PathExtensions.GetDirectoryName(item.Entry.Path);
+                            var absolutePath = fsm.GetFullPath(texture.FilePath, parentFolder);
+
+                            EntryType subEntryType;
+                            EntryItem subItem =
+                                fsm.TryGetEntry(absolutePath, out var subEntry)
+                                    ? (subEntry, subEntryType = detector.Detect(subEntry))
+                                    : (subEntry = new(absolutePath, true, false), subEntryType = EntryType.Image);
+
+                            var newPath = await getOtherResourceDestination(subItem).ConfigureAwait(false);
+                            newPath = fsm.GetRelativePath(PathExtensions.GetDirectoryName(destination), newPath);
+                            if (newPath != texture.FilePath)
                             {
-                                image.Write(path);
+                                texture.FilePath = newPath;
+                                updated = true;
+                                set(texture);
+                            }
+                        }
+                    }
+
+                    foreach (var mat in scene.Materials)
+                    {
+                        await UpdateTexture(mat.HasTextureAmbient, () => mat.TextureAmbient, v => mat.TextureAmbient = v).ConfigureAwait(false);
+                        await UpdateTexture(mat.HasTextureAmbientOcclusion, () => mat.TextureAmbientOcclusion, v => mat.TextureAmbientOcclusion = v).ConfigureAwait(false);
+                        await UpdateTexture(mat.HasTextureDiffuse, () => mat.TextureDiffuse, v => mat.TextureDiffuse = v).ConfigureAwait(false);
+                        await UpdateTexture(mat.HasTextureDisplacement, () => mat.TextureDisplacement, v => mat.TextureDisplacement = v).ConfigureAwait(false);
+                        await UpdateTexture(mat.HasTextureEmissive, () => mat.TextureEmissive, v => mat.TextureEmissive = v).ConfigureAwait(false);
+                        await UpdateTexture(mat.HasTextureHeight, () => mat.TextureHeight, v => mat.TextureHeight = v).ConfigureAwait(false);
+                        await UpdateTexture(mat.HasTextureLightMap, () => mat.TextureLightMap, v => mat.TextureLightMap = v).ConfigureAwait(false);
+                        await UpdateTexture(mat.HasTextureNormal, () => mat.TextureNormal, v => mat.TextureNormal = v).ConfigureAwait(false);
+                        await UpdateTexture(mat.HasTextureOpacity, () => mat.TextureOpacity, v => mat.TextureOpacity = v).ConfigureAwait(false);
+                        await UpdateTexture(mat.HasTextureReflection, () => mat.TextureReflection, v => mat.TextureReflection = v).ConfigureAwait(false);
+                        await UpdateTexture(mat.HasTextureSpecular, () => mat.TextureSpecular, v => mat.TextureSpecular = v).ConfigureAwait(false);
+                    }
+
+                    if (convertFormat || updated)
+                    {
+                        var context = new AssimpContext();
+                        var ext = Path.GetExtension(destination).TrimStart('.').ToLowerInvariant();
+                        var formatId = context.GetSupportedExportFormats()
+                            .FirstOrDefault(f => f.FileExtension.Equals(ext, StringComparison.OrdinalIgnoreCase))
+                            ?.FormatId;
+                        if (formatId != null)
+                        {
+                            context.ExportFile(scene, destination, formatId);
+                            return;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (convertFormat)
+                {
+                    switch (item.EntryType)
+                    {
+                        case EntryType.Audio:
+                            // Not implemented.
+                            break;
+
+                        case EntryType.Image:
+                            if (fsm.Resolve<MagickImage>(item.Entry.Path) is MagickImage image)
+                            {
+                                await image.WriteAsync(destination).ConfigureAwait(false);
                                 return;
                             }
 
                             break;
 
                         case EntryType.Model:
-                            if (fsm.Resolve<RenderableScene>(entry.Path) is { Scene: var scene })
-                            {
-                                var parentFolder = Path.GetDirectoryName(path);
-                                var imageMap = new Dictionary<string, string>();
-                                void UpdateTexture(bool run, Func<TextureSlot> get, Action<TextureSlot> set)
-                                {
-                                    if (run)
-                                    {
-                                        var texture = get();
-                                        if (!imageMap.TryGetValue(texture.FilePath, out var filename))
-                                        {
-                                            var imagePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(entry.Path), texture.FilePath));
-
-                                            // TODO: Recursively determine file rename behavior.
-                                            imageMap[texture.FilePath] = filename = Path.ChangeExtension(fsm.GetFileName(texture.FilePath), ".png");
-                                            if (fsm.Resolve<MagickImage>(imagePath) is MagickImage image)
-                                            {
-                                                image.Write(Path.Combine(parentFolder, filename));
-                                            }
-
-                                            ////imageMap[texture.FilePath] = filename = fsm.GetFileName(texture.FilePath);
-                                            ////if (fsm.FileExists(imagePath))
-                                            ////{
-                                            ////    using var input = fsm.OpenRead(imagePath);
-                                            ////    using var output = File.Create(Path.Combine(parentFolder, filename));
-                                            ////    input.CopyTo(output);
-                                            ////}
-                                        }
-
-                                        texture.FilePath = filename;
-                                        set(texture);
-                                    }
-                                }
-
-                                foreach (var mat in scene.Materials)
-                                {
-                                    UpdateTexture(mat.HasTextureAmbient, () => mat.TextureAmbient, v => mat.TextureAmbient = v);
-                                    UpdateTexture(mat.HasTextureAmbientOcclusion, () => mat.TextureAmbientOcclusion, v => mat.TextureAmbientOcclusion = v);
-                                    UpdateTexture(mat.HasTextureDiffuse, () => mat.TextureDiffuse, v => mat.TextureDiffuse = v);
-                                    UpdateTexture(mat.HasTextureDisplacement, () => mat.TextureDisplacement, v => mat.TextureDisplacement = v);
-                                    UpdateTexture(mat.HasTextureEmissive, () => mat.TextureEmissive, v => mat.TextureEmissive = v);
-                                    UpdateTexture(mat.HasTextureHeight, () => mat.TextureHeight, v => mat.TextureHeight = v);
-                                    UpdateTexture(mat.HasTextureLightMap, () => mat.TextureLightMap, v => mat.TextureLightMap = v);
-                                    UpdateTexture(mat.HasTextureNormal, () => mat.TextureNormal, v => mat.TextureNormal = v);
-                                    UpdateTexture(mat.HasTextureOpacity, () => mat.TextureOpacity, v => mat.TextureOpacity = v);
-                                    UpdateTexture(mat.HasTextureReflection, () => mat.TextureReflection, v => mat.TextureReflection = v);
-                                    UpdateTexture(mat.HasTextureSpecular, () => mat.TextureSpecular, v => mat.TextureSpecular = v);
-                                }
-
-                                var context = new AssimpContext();
-                                var ext = Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
-                                var formatId = context.GetSupportedExportFormats()
-                                    .FirstOrDefault(f => f.FileExtension.Equals(ext, StringComparison.OrdinalIgnoreCase))
-                                    ?.FormatId;
-                                if (formatId != null)
-                                {
-                                    context.ExportFile(scene, path, formatId);
-                                    return;
-                                }
-                            }
-
+                            // Handled above.
                             break;
                     }
                 }
-
-                using var output = File.Create(path);
-                await input.CopyToAsync(output).ConfigureAwait(false);
             }
+
+            using var input = fsm.OpenRead(item.Entry.Path);
+            using var output = File.Create(destination);
+            await input.CopyToAsync(output).ConfigureAwait(false);
         }
 
         public async Task SaveMultipleAsync(IEnumerable<Entry> entries, Func<Task<string?>> pickFolder, Func<string, Task<bool>> confirmOverwrite)

@@ -384,7 +384,7 @@ namespace Codec.UI.WinForms
             if (selectedEntries.Count == 1)
             {
                 var entry = selectedEntries[0];
-                await this.exportService.SaveSingleAsync(entry, (suggestedFileName, type, supportedPatterns) =>
+                await this.exportService.SaveSingleAsync((entry, this.detector.Detect(entry)), (suggestedFileName, type, supportedPatterns) =>
                 {
                     this.saveSelectedDialog.Filter = supportedPatterns is string supportedTypes
                         ? $"{type} Files|{supportedTypes}|All Files|*.*"
