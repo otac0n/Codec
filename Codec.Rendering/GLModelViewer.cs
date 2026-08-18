@@ -129,10 +129,18 @@
                 [(c => c.Usages.Any(u => u == (uint)GenericDesktopPage.Y), v => (v - 0.5) * 2)],
                 v => moveVector.Y += (float)v);
             bindings.BindCurrent(
-                [(c => c.Usages.Any(u => u == (uint)GenericDesktopPage.Ry), v => (v - 0.5) * 2)],
+                [(c => c.Device.Name switch
+                {
+                    "Sony Interactive Entertainment Wireless Controller" => c.Usages.Any(u => u == (uint)GenericDesktopPage.Rz),
+                    _ => c.Usages.Any(u => u == (uint)GenericDesktopPage.Ry),
+                }, v => (v - 0.5) * 2)],
                 v => up -= v);
             bindings.BindCurrent(
-                [(c => c.Usages.Any(u => u == (uint)GenericDesktopPage.Rx), v => (v - 0.5) * 2)],
+                [(c => c.Device.Name switch
+                {
+                    "Sony Interactive Entertainment Wireless Controller" => c.Usages.Any(u => u == (uint)GenericDesktopPage.Z),
+                    _ => c.Usages.Any(u => u == (uint)GenericDesktopPage.Rx),
+                }, v => (v - 0.5) * 2)],
                 v => right -= v);
 
             bindings.BindEach(
