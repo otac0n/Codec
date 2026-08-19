@@ -30,7 +30,7 @@
         protected abstract string GetEntryName(TEntry entry);
 
         private string CanonicalizePath(string? path) =>
-            string.Join(this.Path.DirectorySeparatorChar, PathExtensions.SplitPath(path));
+            string.Join(this.Path.DirectorySeparatorChar, PathExtensions.SplitPath(path.TrimStart(PathExtensions.Separators)));
 
         private Dictionary<string, TEntry>? CreateIndex()
         {

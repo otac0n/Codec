@@ -25,27 +25,23 @@ namespace Codec.MGS.Files
             services.AddFileSystem("*.wvx", static (fullPath, parentRelativePath, parent, parentPath) => new WvxFileFileSystem(parentRelativePath, parent));
         }
 
-        public static Range PopulateWaveTable(Stream input, WaveTableEntry?[] headers, out Entry[] entries)
+        public static Range PopulateWaveTable(Stream input, out WaveTableEntry[] headers, out Entry[] entries)
         {
-            entries = ReadHeaders(input, out var tableHeader, out var waveTable);
+            entries = ReadHeaders(input, out var tableHeader, out headers);
             var baseIndex = (int)(tableHeader.BaseAddress / Marshal.SizeOf<WaveTableEntry>());
-
-            foreach (var entry in entries)
-            {
-                headers[baseIndex + entry.Index] = waveTable[entry.Index];
-            }
-
             return baseIndex..(baseIndex + entries.Length);
         }
 
-        public static Range PopulateWaveTable(Stream input, WaveTableEntry?[] headers, short[]?[] samples, Range?[] loopPoints)
+        public static Range PopulateWaveTable(Stream input, out WaveTableEntry[] headers, out short[][] samples, out Range?[] loopPoints)
         {
-            var range = PopulateWaveTable(input, headers, out var entries);
+            var range = PopulateWaveTable(input, out headers, out var entries);
+
+            samples = new short[entries.Length][];
+            loopPoints = new Range?[entries.Length];
 
             for (var i = 0; i < entries.Length; i++)
             {
                 var entry = entries[i];
-                var ix = range.Start.Value + i;
 
                 using var vag = PrependVagHeader(input, entry, Ownership.None);
                 using var vgm = VgmStreamReader.Open(vag, $"{entry.Index}.vag", config: VgmStreamConfig.PlayOnceNoLoop());
@@ -56,10 +52,10 @@ namespace Codec.MGS.Files
                 }
 
                 mem.Position = 0;
-                samples[ix] = ReadPcm16(mem);
+                samples[i] = ReadPcm16(mem);
                 if (vgm.Format.LoopStart != vgm.Format.LoopEnd)
                 {
-                    loopPoints[ix] = (int)vgm.Format.LoopStart..(int)vgm.Format.LoopEnd;
+                    loopPoints[i] = (int)vgm.Format.LoopStart..(int)vgm.Format.LoopEnd;
                 }
             }
 

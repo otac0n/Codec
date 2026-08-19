@@ -68,6 +68,13 @@
             public VolumeEnvelope? VolumeEnvelope { get; init; }
 
             /// <summary>
+            /// SF2 initialAttenuation, in centibels (0 = no attenuation). Corresponds to the PSX
+            /// driver's per-sample dec_vol, which is subtracted from the computed note volume before
+            /// playback — a fixed correction for samples that were recorded hotter/quieter than others.
+            /// </summary>
+            public float InitialAttenuationCentibels { get; init; }
+
+            /// <summary>
             /// Play the sample as though its root key were this note, without altering the sample
             /// header itself. Leave null to use the sample's own <see cref="SampleSource.OriginalKey"/>.
             /// </summary>
@@ -169,6 +176,7 @@
         /// </summary>
         internal enum SfGenerator : ushort
         {
+            InitialAttenuation = 48,
             DelayVolEnv = 33,
             AttackVolEnv = 34,
             HoldVolEnv = 35,
@@ -261,6 +269,11 @@
                         if (zone.RootKeyOverride is byte rootKey)
                         {
                             layout.InstrumentGenerators.Add(new GeneratorRecord(SfGenerator.OverridingRootKey, rootKey));
+                        }
+
+                        if (zone.InitialAttenuationCentibels != 0)
+                        {
+                            layout.InstrumentGenerators.Add(new GeneratorRecord(SfGenerator.InitialAttenuation, (ushort)Math.Clamp(Math.Round(zone.InitialAttenuationCentibels), 0, 1440)));
                         }
 
                         if (zone.VolumeEnvelope is VolumeEnvelope envelope)

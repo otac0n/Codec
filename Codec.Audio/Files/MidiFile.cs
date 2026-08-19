@@ -11,7 +11,7 @@
     public class MidiFile
     {
         private static readonly string SoundFontResource = "Codec.Resources.florestan-subset.sf2";
-        private static readonly SoundFont SoundFont = new(typeof(MidiFile).Assembly.GetManifestResourceStream(SoundFontResource)!);
+        private static readonly MeltySynth.SoundFont SoundFont = new(typeof(MidiFile).Assembly.GetManifestResourceStream(SoundFontResource)!);
 
         public static void Register(IServiceCollection services)
         {
@@ -26,8 +26,24 @@
                     return new((fullPath, parentRelativePath, parent, parentPath) =>
                     {
                         using var input = parent.File.OpenRead(parentRelativePath);
+                        var sampleFileName = parent.Path.Combine(parent.Path.GetDirectoryName(parentRelativePath), "samples.sf2");
+
+                        MeltySynth.SoundFont? soundFont = null;
+                        if (parent.File.Exists(sampleFileName))
+                        {
+                            try
+                            {
+                                using var sf = parent.File.OpenRead(sampleFileName);
+                                soundFont = new(sf);
+                            }
+                            catch
+                            {
+                                // TODO: Log sound font load failure.
+                            }
+                        }
+
                         return new AudioStream(
-                            ConvertToPCMStream(input),
+                            ConvertToPCMStream(input, soundFont),
                             fullPath);
                     });
                 }
@@ -36,7 +52,7 @@
             });
         }
 
-        public static MemoryStream ConvertToPCMStream(Stream midiStream, SoundFont soundFont = null)
+        public static MemoryStream ConvertToPCMStream(Stream midiStream, MeltySynth.SoundFont? soundFont = null)
         {
             var sampleRate = 44100;
             var settings = new SynthesizerSettings(sampleRate);
