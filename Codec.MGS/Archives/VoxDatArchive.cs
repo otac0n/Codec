@@ -86,7 +86,7 @@
 
             if (channels > 1)
             {
-                // see: https://github.com/vgmstream/vgmstream/blob/master/src/meta/vag.c#L86
+                // see: https://github.com/vgmstream/vgmstream/blob/master/src/meta/vag.c#L94
                 vag.Signature = 0x56414769; // VAGi
                 vag.Reserved1 = BinaryPrimitives.ReverseEndianness(0x1000u);
                 vag.DataSize /= channels;

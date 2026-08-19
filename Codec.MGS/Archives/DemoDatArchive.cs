@@ -104,9 +104,9 @@ namespace Codec.MGS.Archives
                 var headerStream = new MemoryStream();
                 var vag = new VagHeader
                 {
-                    // see: https://github.com/vgmstream/vgmstream/blob/master/src/meta/vag.c#L86
+                    // see: https://github.com/vgmstream/vgmstream/blob/master/src/meta/vag.c#L94
                     Signature = 0x56414769, // VAGi
-                    Reserved1 = BinaryPrimitives.ReverseEndianness(4096U),
+                    Reserved1 = BinaryPrimitives.ReverseEndianness(0x1000u),
                     Version = 0,
                     DataSize = (uint)entry.Chunks.Sum(e => e.Size) / 2,
                     SamplingFreq = 33075,
