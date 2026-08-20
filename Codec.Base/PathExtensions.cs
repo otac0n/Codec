@@ -249,7 +249,7 @@ namespace Codec
             }
         }
 
-        internal static string RemoveRelativeSegments(string path)
+        public static string RemoveRelativeSegments(string path)
         {
             // Based loosely on: https://github.com/dotnet/dotnet/blob/main/src/runtime/src/libraries/Common/src/System/IO/PathInternal.cs#L111
             var sb = new StringBuilder(path.Length);
@@ -282,13 +282,19 @@ namespace Codec
                     {
                         // TODO: Rewrite so that we keep the first slash whenever possible.
                         // Unwind back to the last slash (and if there isn't one, clear out everything).
-                        for (var s = sb.Length - 1; s >= 0; s--)
+                        int s;
+                        for (s = sb.Length - 1; s >= 0; s--)
                         {
                             if (IsDirectorySeparator(sb[s]))
                             {
                                 sb.Length = (i + 3 >= path.Length && s == 0) ? s + 1 : s; // to avoid removing the complete "\tmp\" segment in cases like \\?\C:\tmp\..\, C:\tmp\..
                                 break;
                             }
+                        }
+
+                        if (s < 0)
+                        {
+                            sb.Length = 0;
                         }
 
                         i += 2;
