@@ -9,6 +9,7 @@ namespace Codec.Services
     using System.Threading.Tasks;
     using Codec.Files;
     using NAudio.Wave;
+    using NAudio.Wave.SampleProviders;
     using VgmSharp;
 
     public sealed class AudioPlayer : IDisposable, INotifyPropertyChanged
@@ -55,7 +56,16 @@ namespace Codec.Services
 
             this.reader = new WaveFileReader(ms);
             this.waveOut = new WaveOutEvent();
-            this.waveOut.Init(this.reader);
+            if (this.reader.WaveFormat.Channels > 2)
+            {
+                var stereo = new MultiplexingSampleProvider([this.reader.ToSampleProvider()], 2);
+                this.waveOut.Init(stereo.ToWaveProvider());
+            }
+            else
+            {
+                this.waveOut.Init(this.reader);
+            }
+
             this.start = this.reader.Position;
             this.waveOut.PlaybackStopped += this.WaveOut_PlaybackStopped;
         }
