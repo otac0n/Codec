@@ -282,14 +282,9 @@
             this.lowerStatusStrip.TabIndex = 3;
             this.lowerStatusStrip.Text = "statusStrip1";
             // 
-            // saveSelectedDialog
-            // 
-            this.saveSelectedDialog.InitialDirectory = "%USERPROFILE%\\Downloads";
-            // 
             // saveToFolderDialog
             // 
-            this.saveToFolderDialog.InitialDirectory = "%USERPROFILE%\\Downloads";
-            this.saveToFolderDialog.RootFolder = Environment.SpecialFolder.MyComputer;
+            this.saveToFolderDialog.RootFolder = Environment.SpecialFolder.UserProfile;
             // 
             // openFileDialog
             // 

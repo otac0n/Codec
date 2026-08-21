@@ -60,8 +60,6 @@ namespace Codec.UI.WinForms
                 Properties.Resources.FontAwesome_FileAudioSolid_20x20,
                 Properties.Resources.FontAwesome_ShapesSolid_20x20,
             ]);
-            this.saveSelectedDialog.InitialDirectory = Environment.ExpandEnvironmentVariables(this.saveSelectedDialog.InitialDirectory);
-            this.saveToFolderDialog.InitialDirectory = Environment.ExpandEnvironmentVariables(this.saveToFolderDialog.InitialDirectory);
             this.textureDisplay = new VirtualImageList<Entry>(
                 entry => Task.FromResult(this.fsm.Resolve<MagickImage>(entry.Path)?.ToBitmap()!),
                 InterpolationMode.NearestNeighbor)
