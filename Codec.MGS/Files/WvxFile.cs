@@ -16,7 +16,7 @@ namespace Codec.MGS.Files
     using Buffer = System.Buffer;
     using Entry = (int Index, long Offset, long Length);
 
-    internal class WvxFile
+    public class WvxFile
     {
         public static readonly uint SampleRate = 11025;
 

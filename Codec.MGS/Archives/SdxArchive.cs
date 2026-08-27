@@ -5,12 +5,12 @@
     using System.IO;
     using System.IO.Abstractions;
     using System.Linq;
-    using System.Runtime.InteropServices;
     using Codec.Archives;
+    using Codec.MGS.Files;
     using Microsoft.Extensions.DependencyInjection;
     using NAudio.Utils;
     using NAudio.Wave;
-    using Entry = (string FileName, SdxArchive.NoteParameters Data, uint SpuID);
+    using Entry = (string FileName, Files.WvxFile.WaveTableEntry Data, uint SpuID);
 
     public sealed partial class SdxArchive : IndexedFileSystem<Entry>
     {
@@ -51,7 +51,7 @@
             // SE 1
             for (uint i = 0; i < (size / 0x10); i++)
             {
-                result.Add(("0" + this.Path.DirectorySeparatorChar + i.ToString() + ".wav", stream.ReadLittleEndian<NoteParameters>(), 0));
+                result.Add(("0" + this.Path.DirectorySeparatorChar + i.ToString() + ".wav", stream.ReadLittleEndian<WvxFile.WaveTableEntry>(), 0));
             }
 
             soundDatas.Add(new SpuData(stream));
@@ -66,7 +66,7 @@
             {
                 for (uint i = 0; i < (size / 0x10); i++)
                 {
-                    result.Add(("1" + this.Path.DirectorySeparatorChar + i.ToString() + ".wav", stream.ReadLittleEndian<NoteParameters>(), 1));
+                    result.Add(("1" + this.Path.DirectorySeparatorChar + i.ToString() + ".wav", stream.ReadLittleEndian<WvxFile.WaveTableEntry>(), 1));
                 }
 
                 soundDatas.Add(new SpuData(stream));
@@ -87,7 +87,7 @@
 
             var spu = soundDatas[(int)entry.SpuID];
 
-            var adpcm = spu.GetAudioData(stream, entry.Data.addrLe);
+            var adpcm = spu.GetAudioData(stream, entry.Data.Offset);
 
             var pcmSamples = DecodeSpuAdpcm(adpcm);
 
@@ -157,24 +157,6 @@
             }
 
             return samples.ToArray();
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct NoteParameters
-        {
-            public uint addrLe;
-            public byte sampleNote;
-            public byte sampleTune;
-            public byte attackMode;
-            public byte attackRate;
-            public byte decayRate;
-            public byte sustainMode;
-            public byte sustainRate;
-            public byte sustainLevel;
-            public byte releaseMode;
-            public byte releaseRate;
-            public byte pan;
-            public byte decVolume;
         }
 
         public struct SpuData
