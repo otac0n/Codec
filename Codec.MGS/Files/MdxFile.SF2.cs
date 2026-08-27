@@ -27,9 +27,16 @@
 
             foreach (var searchPath in searchPaths)
             {
-                matches.AddRange(parent.Directory.EnumerateFiles(
-                    parent.Path.GetDirectoryName(searchPath) ?? string.Empty,
-                    parent.Path.GetFileName(searchPath)));
+                try
+                {
+                    matches.AddRange(
+                        parent.Directory.EnumerateFiles(
+                            parent.Path.GetDirectoryName(searchPath) ?? string.Empty,
+                            parent.Path.GetFileName(searchPath)));
+                }
+                catch (DirectoryNotFoundException)
+                {
+                }
             }
 
             if (matches.Count == 0)
@@ -136,6 +143,7 @@
                 var indexRange = WvxFile.PopulateWaveTable(input, out var wvxSources, out _);
                 for (var i = 0; i < wvxSources.Length; i++)
                 {
+                    if (i + indexRange.Start.Value >= 256) break;
                     sources.Add((wvxSources[i], (wvx, i), checked((byte)(i + indexRange.Start.Value))));
                 }
             }
@@ -155,6 +163,7 @@
                 var indexRange = WvxFile.PopulateWaveTable(input, out var wvxSources, out var wvxStreams, out var wvxLoopPoints);
                 for (var i = 0; i < wvxSources.Length; i++)
                 {
+                    if (i + indexRange.Start.Value >= 256) break;
                     sources.Add((wvxSources[i], (wvx, i), checked((byte)(i + indexRange.Start.Value))));
                     streamAndLoopPoint.Add((wvxStreams[i], wvxLoopPoints[i]));
                 }
@@ -204,8 +213,6 @@
                 {
                     AttackTime = ConvertAdsrTime(~wav.AttackRate & 0x7F, hasStepField: true),
                     DecayTime = ConvertAdsrTime(~wav.DecayRate & 0xF, hasStepField: false, totalLevelChange: 0x8000 - ((wav.SustainLevel & 0xF) + 1) * 0x800),
-                    // NOTE: the writer scales this by *10 to get SF2 centibels (0-1000), so this
-                    // property itself needs to land in 0-100, not 0-1000.
                     SustainAttenuation = (15 - (wav.SustainLevel & 0xF)) * 100f / 15f,
                     ReleaseTime = ConvertAdsrTime(~wav.ReleaseRate & 0x1F, hasStepField: false),
                 };
@@ -261,19 +268,6 @@
             return output;
         }
 
-        /// <summary>
-        /// Converts a PSX SPU ADSR rate register value into a real duration, per the timing formula at
-        /// https://psx-spx.consoledev.net/soundprocessingunitspu/#envelope-operation-depending-on-shiftstepmodedirection.
-        /// The register packs a 5-bit Shift (0..1Fh = fast..slow) and, for Attack/Sustain only, a 2-bit
-        /// Step (0..3, magnitude 7..4); Decay/Release have no Step field — the hardware step is fixed
-        /// at magnitude 8 for those, so pass <paramref name="hasStepField"/> = false and just the Shift.
-        /// </summary>
-        /// <summary>
-        /// Converts the driver's per-sample dec_vol correction (a linear subtraction, in the same raw
-        /// 0-127-ish units as the Volume command, applied as `vol -= dec_vol` before playback) into SF2
-        /// centibel attenuation. This assumes dec_vol shares a linear-amplitude scale with Volume — an
-        /// assumption, not a confirmed curve, so worth tuning by ear if a sample still sounds off.
-        /// </summary>
         private static float ConvertDecVolAttenuation(byte decVol)
         {
             if (decVol <= 0)
@@ -297,14 +291,9 @@
 
             if (stepMagnitude <= 0)
             {
-                // All-ones rate register: hardware never steps (an intentional "hold forever" case).
                 return TimeSpan.MaxValue;
             }
 
-            // samples_per_step and steps_needed both fold into the same closed form regardless of
-            // whether Shift is in the "sub-sample" range (<=11, steps every sample) or the "slow"
-            // range (>11, multiple samples between steps) — see the linked formula's CounterIncrement
-            // and AdsrStep derivations.
             var totalSamples = (double)totalLevelChange / stepMagnitude * Math.Pow(2, shift - 11);
             return TimeSpan.FromSeconds(totalSamples / 44100.0);
         }
