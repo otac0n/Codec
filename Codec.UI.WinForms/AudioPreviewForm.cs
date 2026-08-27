@@ -33,7 +33,7 @@
                 }
                 this.stop.Enabled = this.audioPlayer.Playing || this.audioPlayer.CurrentTime.TotalSeconds > 0;
                 this.progress.Value = (int)Math.Clamp((this.audioPlayer.CurrentTime.TotalSeconds / this.audioPlayer.TotalTime.TotalSeconds * this.progress.Maximum) + 1, 0, this.progress.Maximum);
-                this.progress.Value--;
+                this.progress.Value = Math.Clamp(this.progress.Value - 1, this.progress.Minimum, this.progress.Maximum);
             });
         }
 
