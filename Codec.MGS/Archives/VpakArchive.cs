@@ -14,7 +14,7 @@ namespace Codec.MGS.Archives
     using DiscUtils.Streams;
     using K4os.Compression.LZ4;
     using Microsoft.Extensions.DependencyInjection;
-    using Entry = (string FileName, bool Compressed, long DecompressedLength, (long Offset, long Length)[] Chunks);
+    using Entry = (string FileName, long Offset, long CompressedLength, long DecompressedLength, int ChunkDecompressedSize, long[] ChunksOffsets);
 
     public class VpakArchive(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<Entry>
     {
@@ -51,11 +51,16 @@ namespace Codec.MGS.Archives
                 var decompressedLength = source.ReadInt64LittleEndian();
                 var compressedLength = source.ReadInt64LittleEndian();
                 var offset = source.ReadInt64LittleEndian();
-                source.Position += sizeof(uint);
+                var chunkDecompressedSize = (int)source.ReadUInt32LittleEndian();
                 var count = source.ReadUInt32LittleEndian();
                 var chunks = source.ReadArrayLittleEndian<long>(count);
 
-                entries.Add((Encoding.ASCII.GetString(fileName), compressedLength != 0, decompressedLength, chunks.Select((c, i) => (offset + c, i >= count - 1 ? compressedLength : chunks[i + 1] - c)).ToArray()));
+                if (chunkDecompressedSize == 0)
+                {
+                    chunkDecompressedSize = (int)decompressedLength;
+                }
+
+                entries.Add((Encoding.ASCII.GetString(fileName), offset, compressedLength, decompressedLength, chunkDecompressedSize, chunks));
             }
 
             return entries;
@@ -68,25 +73,27 @@ namespace Codec.MGS.Archives
                 options =>
                 {
                     var source = parent.File.Open(parentRelativePath, options);
-                    if (!entry.Compressed)
+                    if (entry.CompressedLength == 0)
                     {
-                        var chunk = entry.Chunks.Single();
-                        return new OffsetStreamSpan(source, chunk.Offset, chunk.Length, Ownership.Dispose);
+                        return new OffsetStreamSpan(source, entry.Offset, entry.DecompressedLength, Ownership.Dispose);
                     }
 
-                    var compressedSize = entry.Chunks.Sum(c => c.Length);
-                    var compressed = new byte[compressedSize];
-                    var baseOffset = entry.Chunks[0].Offset;
-                    source.Position = baseOffset;
+                    var compressed = new byte[entry.CompressedLength];
+                    source.Position = entry.Offset;
                     source.ReadExactly(compressed);
 
                     var target = new byte[entry.DecompressedLength];
 
                     var targetOffset = 0;
-                    foreach (var (offset, length) in entry.Chunks)
+                    var chunks = entry.ChunksOffsets.Length;
+                    for (var i = 0; i < chunks; i++)
                     {
-                        var start = offset - baseOffset;
-                        var decoded = LZ4Codec.Decode(compressed.AsSpan()[(int)start..(int)(start + length)], target.AsSpan()[targetOffset..]);
+                        var start = entry.ChunksOffsets[i];
+                        var end = i >= chunks - 1 ? entry.CompressedLength : entry.ChunksOffsets[i + 1];
+                        var length = end - start;
+                        var targetLength = (int)Math.Min(entry.ChunkDecompressedSize, entry.DecompressedLength - targetOffset);
+                        var decoded = LZ4Codec.Decode(compressed.AsSpan()[(int)start..(int)(start + length)], target.AsSpan()[targetOffset..(targetOffset + targetLength)]);
+
                         if (decoded < 0)
                         {
                             throw new InvalidDataException();
