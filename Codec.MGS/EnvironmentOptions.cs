@@ -37,7 +37,7 @@ namespace Codec
             services.AddSingleton(options);
         }
 
-        [GeneratedRegex(@"""path""\s+""(?<escaped_path>([^\""]|\[\""])+)""[^{}]+""apps""[\r\n\s]+{[^}]+""(?<found_app_id>21316[345]0)""\s+""\d+""")]
+        [GeneratedRegex(@"""path""\s+""(?<escaped_path>([^\""]|\[\""])+)""[^{}]+""apps""[\r\n\s]+{[^}]+""(?<found_app_id>21316[345]0)""\s+""\d+""")] // TODO: |24926[67]0
         private static partial Regex GetPathFinderRegex();
 
         [GeneratedRegex(@"\\(.)")]
