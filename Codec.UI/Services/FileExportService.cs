@@ -137,7 +137,7 @@ namespace Codec.Services
                             }
                         }).ConfigureAwait(false);
                     }
-                    catch (IOException)
+                    catch (Exception)
                     {
                         // TODO: Log and continue.
                     }
