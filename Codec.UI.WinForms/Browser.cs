@@ -397,36 +397,43 @@ namespace Codec.UI.WinForms
 
         private async void SaveButton_Click(object sender, EventArgs e)
         {
-            var selectedEntries = this.SelectedEntries;
-            if (selectedEntries.Count == 1)
+            try
             {
-                var entry = selectedEntries[0];
-                await this.exportService.SaveSingleAsync((entry, this.detector.Detect(entry)), (suggestedFileName, type, supportedPatterns) =>
+                var selectedEntries = this.SelectedEntries;
+                if (selectedEntries.Count == 1)
                 {
-                    this.saveSelectedDialog.Filter = supportedPatterns is string supportedTypes
-                        ? $"{type} Files|{supportedTypes}|All Files|*.*"
-                        : "All Files|*.*";
+                    var entry = selectedEntries[0];
+                    await this.exportService.SaveSingleAsync((entry, this.detector.Detect(entry)), (suggestedFileName, type, supportedPatterns) =>
+                    {
+                        this.saveSelectedDialog.Filter = supportedPatterns is string supportedTypes
+                            ? $"{type} Files|{supportedTypes}|All Files|*.*"
+                            : "All Files|*.*";
 
-                    this.saveSelectedDialog.FileName = suggestedFileName;
-                    var result = this.saveSelectedDialog.ShowDialog();
-                    return Task.FromResult(result == DialogResult.OK ? this.saveSelectedDialog.FileName : null);
-                });
+                        this.saveSelectedDialog.FileName = suggestedFileName;
+                        var result = this.saveSelectedDialog.ShowDialog();
+                        return Task.FromResult(result == DialogResult.OK ? this.saveSelectedDialog.FileName : null);
+                    }).ConfigureAwait(false);
+                }
+                else if (selectedEntries.Count >= 0)
+                {
+                    await this.exportService.SaveMultipleAsync(
+                        selectedEntries,
+                        () =>
+                        {
+                            this.saveToFolderDialog.SelectedPath = string.Empty;
+                            var result = this.saveToFolderDialog.ShowDialog();
+                            return Task.FromResult(result == DialogResult.OK ? this.saveToFolderDialog.SelectedPath : null);
+                        },
+                        path =>
+                        {
+                            var overwriteResult = MessageBox.Show($"The destination path \"{path}\" already contians files with the same name. Do you want to overwrite?", "Confirm Overwrite", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                            return Task.FromResult(overwriteResult == DialogResult.Yes);
+                        }).ConfigureAwait(false);
+                }
             }
-            else if (selectedEntries.Count >= 0)
+            catch (Exception ex)
             {
-                await this.exportService.SaveMultipleAsync(
-                    selectedEntries,
-                    () =>
-                    {
-                        this.saveToFolderDialog.SelectedPath = string.Empty;
-                        var result = this.saveToFolderDialog.ShowDialog();
-                        return Task.FromResult(result == DialogResult.OK ? this.saveToFolderDialog.SelectedPath : null);
-                    },
-                    path =>
-                    {
-                        var overwriteResult = MessageBox.Show($"The destination path \"{path}\" already contians files with the same name. Do you want to overwrite?", "Confirm Overwrite", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                        return Task.FromResult(overwriteResult == DialogResult.Yes);
-                    });
+                this.logger.SaveFailed(ex);
             }
         }
 

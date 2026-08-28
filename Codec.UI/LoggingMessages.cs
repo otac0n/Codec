@@ -12,5 +12,8 @@ namespace Codec.UI
 
         [LoggerMessage(Level = LogLevel.Error, Message = "Could not enumerate entries under '{Path}'")]
         public static partial void CouldNotEnumerateEntries(this ILogger logger, Exception ex, string path);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Save failed.")]
+        public static partial void SaveFailed(this ILogger logger, Exception ex);
     }
 }
