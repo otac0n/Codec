@@ -20,7 +20,16 @@ namespace Codec.MGS.Archives
     {
         public static void Register(IServiceCollection services)
         {
-            services.AddFileSystem("*.pak", static (fullPath, parentRelativePath, parent, parentPath) => new VpakArchive(parentRelativePath, parent));
+            services.AddFileSystem(
+                "*.pak",
+                static (a, fullPath, parentRelativePath, parent, parentPath) =>
+                {
+                    Span<byte> signature = stackalloc byte[4];
+                    using var file = parent.File.OpenRead(parentRelativePath);
+                    file.ReadExactly(signature);
+                    return Encoding.ASCII.GetString(signature) == "VPAK";
+                },
+                static (fullPath, parentRelativePath, parent, parentPath) => new VpakArchive(parentRelativePath, parent));
         }
 
         protected override string GetEntryName(Entry entry) => entry.FileName;
