@@ -34,6 +34,19 @@ namespace Codec
         public static Action<T>? ResolveWriter<T>(this IServiceProvider services, string path, string subPath, IFileSystem fs, string fsPath) =>
             services.ResolveWriter(services.GetServices<FileHandlerResolver<T>>(), path, subPath, fs, fsPath);
 
+        private static T? Try<T>(FileReader<T> read, string path, string subPath, IFileSystem fs, string fsPath)
+        {
+            try
+            {
+                return read(path, subPath, fs, fsPath);
+            }
+            catch
+            {
+                // TODO: Log warnings or throw aggregate exception for error?
+                return default;
+            }
+        }
+
         private static FileHandler<T>? Try<T>(FileHandlerResolver<T> filter, IServiceProvider services, string path, string subPath, IFileSystem fs, string fsPath)
         {
             try
@@ -54,7 +67,7 @@ namespace Codec
                where filter != null
                let resolver = Try(filter, services, path, subPath, fs, fsPath)
                where resolver is not null
-               let resolved = resolver.Read(path, subPath, fs, fsPath)
+               let resolved = Try(resolver.Read, path, subPath, fs, fsPath)
                where resolved is not null
                select resolved).FirstOrDefault();
 
