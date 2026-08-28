@@ -20,6 +20,7 @@ Support for the following formats is implemented:
     - .dir Archives (MGS1, MGS2, TTS, MGS4)
     - .qar Archives (MGS2, TTS, MGS3, MGA2, MGO, MGO+, MGS PW, MGS4)
     - .slot Archives (MGS4)
+    - .pak Archives (MGS4)
     - _zar Archives (MGA2, MGO, MGO+)
     - BRF.DAT Archive (MGS1)
     - DEMO.DAT Archive (MGS1)
@@ -70,6 +71,16 @@ Running on Linux
 sudo apt install -y libassimp-dev libmagickwand-dev mesa-utils
 sudo apt-get install -y dotnet-runtime-9.0
 chmod +x Codec.UI.Avalonia
+```
+
+Building
+--------
+
+Release:
+
+```bash
+dotnet publish -c Release -r win-x64
+dotnet publish -c Release -r linux-x64
 ```
 
 Usage
