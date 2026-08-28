@@ -48,6 +48,7 @@ namespace Codec.MGS
             SdtArchive.Register(services);
             SdxArchive.Register(services);
             VoxDatArchive.Register(services);
+            VpakArchive.Register(services);
             ZarArchive.Register(services);
 
             services.AddSingleton<FileSystemResolver>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
