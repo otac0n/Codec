@@ -45,12 +45,12 @@ namespace Codec
                 if (filter == null)
                 {
                     return (servicProvider, fullPath, parentRelativePath, parent, parentPath) =>
-                        glob.IsMatch(parent.Path.GetFileName(parentRelativePath)) ? factory : null;
+                        glob.IsMatch(parent.Path.GetFileName(parentRelativePath)) && parent.File.Exists(parentRelativePath) ? factory : null;
                 }
                 else
                 {
                     return (servicProvider, fullPath, parentRelativePath, parent, parentPath) =>
-                        glob.IsMatch(parent.Path.GetFileName(parentRelativePath)) && filter(servicProvider, fullPath, parentRelativePath, parent, parentPath) ? factory : null;
+                        glob.IsMatch(parent.Path.GetFileName(parentRelativePath)) && parent.File.Exists(parentRelativePath) && filter(servicProvider, fullPath, parentRelativePath, parent, parentPath) ? factory : null;
                 }
             }
 
