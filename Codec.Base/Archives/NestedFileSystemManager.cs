@@ -98,8 +98,9 @@
                 {
                     enumerator = this.EnumerateEntries(stack.Pop()).GetEnumerator();
                 }
-                catch (IOException)
+                catch
                 {
+                    // TODO: Log the error.
                     continue;
                 }
 
@@ -112,8 +113,9 @@
                             break;
                         }
                     }
-                    catch (IOException)
+                    catch
                     {
+                        // TODO: Log the error.
                         break;
                     }
 
