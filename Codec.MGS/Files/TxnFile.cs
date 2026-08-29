@@ -23,18 +23,18 @@ namespace Codec.MGS.Files
             {
                 if (string.Equals(parent.Path.GetExtension(parentRelativePath), ".txn", StringComparison.OrdinalIgnoreCase))
                 {
-                    return (fullPath, parentRelativePath, parent, parentPath) => new TxnFileFileSystem(parentRelativePath, parent, parentPath, serviceProvider.GetRequiredService<NestedFileSystemManager>());
+                    return (fullPath, parentRelativePath, parent, parentPath) => new TxnFileFileSystem(fullPath, serviceProvider.GetRequiredService<NestedFileSystemManager>());
                 }
 
                 return null;
             });
         }
 
-        private class TxnFileFileSystem(string path, IFileSystem parent, string parentPath, NestedFileSystemManager fsm) : IndexedFileSystem<uint>
+        private class TxnFileFileSystem(string fullPath, NestedFileSystemManager fsm) : IndexedFileSystem<uint>
         {
             protected override IEnumerable<uint> ReadIndex()
             {
-                using var stream = parent.File.OpenRead(path);
+                using var stream = fsm.OpenRead(fullPath);
                 var header = stream.ReadBigEndian<TxnHeader>();
                 stream.Position = header.TextureOffset;
                 var textureDefinitions = stream.ReadArrayBigEndian<TxnTexture>((int)header.TextureCount);
@@ -60,7 +60,7 @@ namespace Codec.MGS.Files
             {
                 FileBase.EnsureReadOnly(parentOptions, "Writing to sub images in .txn files is not supported.");
 
-                var stream = parent.File.Open(path, parentOptions);
+                var stream = fsm.Open(fullPath, parentOptions);
                 var header = stream.ReadBigEndian<TxnHeader>();
                 stream.Position = header.TextureOffset;
                 var textureDefinitions = stream.ReadArrayBigEndian<TxnTexture>((int)header.TextureCount);
@@ -79,21 +79,21 @@ namespace Codec.MGS.Files
                 if (external)
                 {
                     stream.Dispose();
-                    var folderName = parent.Path.GetDirectoryName(path) ?? string.Empty;
+                    var folderName = PathExtensions.GetDirectoryName(fullPath) ?? string.Empty;
                     var searchPaths = new List<string>
                     {
-                        parent.Path.Combine(parentPath, folderName),
+                        folderName,
                     };
 
                     if (!string.IsNullOrEmpty(folderName))
                     {
-                        folderName = parent.Path.GetDirectoryName(folderName) ?? string.Empty;
-                        searchPaths.Add(parent.Path.Combine(parentPath, folderName));
+                        folderName = PathExtensions.GetDirectoryName(folderName) ?? string.Empty;
+                        searchPaths.Add(folderName);
                     }
 
                     var targetName = $"{texture.FileId:x8}_{ix}.data";
 
-                    var found = searchPaths.Select(searchPath => fsm.EnumerateFiles(searchPath, targetName, recursive: true).FirstOrDefault()).FirstOrDefault(f => f is not null);
+                    var found = searchPaths.SelectMany(searchPath => fsm.EnumerateFiles(searchPath, targetName, recursive: true)).FirstOrDefault(f => f is not null);
                     if (found is not { CanOpen: true })
                     {
                         throw new FileNotFoundException($"External texture file '{targetName}' not found.");
