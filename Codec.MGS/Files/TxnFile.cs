@@ -91,7 +91,7 @@ namespace Codec.MGS.Files
                         searchPaths.Add(parent.Path.Combine(parentPath, folderName));
                     }
 
-                    var targetName = $"{texture.FileId:x6}_{ix}.bin";
+                    var targetName = $"{texture.FileId:x8}_{ix}.data";
 
                     var found = searchPaths.Select(searchPath => fsm.EnumerateFiles(searchPath, targetName, recursive: true).FirstOrDefault()).FirstOrDefault(f => f is not null);
                     if (found is not { CanOpen: true })

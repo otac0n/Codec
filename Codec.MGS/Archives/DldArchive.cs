@@ -39,7 +39,7 @@ namespace Codec.MGS.Archives
         }
 
         protected override string GetEntryName(Entry entry) =>
-            $"{entry.Id:x6}_{entry.Index}.bin";
+            $"{entry.Id:x8}_{entry.Index}.data";
 
         protected override Stream Open(Entry entry, FileStreamOptions parentOptions)
         {
