@@ -10,6 +10,7 @@ namespace Codec
     using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
+    using System.Text;
 
     public static class StreamExtensions
     {
@@ -50,6 +51,23 @@ namespace Codec
             }
 
             return true;
+        }
+
+        public static string ReadNullString(this Stream stream)
+        {
+            var value = new StringBuilder();
+            int c;
+            while ((c = stream.ReadByte()) != -1)
+            {
+                if (c == 0)
+                {
+                    break;
+                }
+
+                value.Append((char)c);
+            }
+
+            return value.ToString();
         }
 
         public static short ReadInt16BigEndian(this Stream s)

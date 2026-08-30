@@ -152,29 +152,12 @@
             var folderId = (uint)stream.Position;
             for (var i = 0; i < fileCount; i++)
             {
-                var fileName = ReadString(stream);
+                var fileName = stream.ReadNullString();
                 stream.Align(0x004);
                 var fileSize = stream.ReadUInt32LittleEndian() + 1;
                 yield return new(folderId.ToString("x8", CultureInfo.InvariantCulture), fileName, stream.Position, fileSize);
                 stream.Seek(fileSize, SeekOrigin.Current);
             }
-        }
-
-        private static string ReadString(Stream stream)
-        {
-            var value = new StringBuilder();
-            int c;
-            while ((c = stream.ReadByte()) != -1)
-            {
-                if (c == 0)
-                {
-                    break;
-                }
-
-                value.Append((char)c);
-            }
-
-            return value.ToString();
         }
     }
 }
