@@ -18,7 +18,6 @@
             var rootCommand = new RootCommand();
 
             M2.ArchiveOptions.Attach(rootCommand);
-            EnvironmentOptions.Attach(rootCommand);
 
             var browseCommand = new Command("browse", "Browse Files");
             browseCommand.AddAlias("browser");

@@ -71,7 +71,12 @@ namespace Codec.UI.WinForms
             this.splitContainer.Panel2.Controls.Add(this.textureDisplay);
 
             this.fileTree.Nodes.Add(new TreeNode("root", 0, 0, [this.CreateExpanderDummy()]) { Tag = this.fsm.RootEntry });
-            this.Navigate(Path.Combine(serviceProvider.GetRequiredService<EnvironmentOptions>().SteamApps, WellKnownPaths.AllDataBin, WellKnownPaths.CD1Path, WellKnownPaths.StageDirPath));
+
+            var startPath = WellKnownPaths.StartPaths.FirstOrDefault(Directory.Exists);
+            if (startPath != null)
+            {
+                this.Navigate(startPath);
+            }
         }
 
         private void Provider_EntryLogged(object? sender, NotifyingLoggerProvider.LogEntry e)

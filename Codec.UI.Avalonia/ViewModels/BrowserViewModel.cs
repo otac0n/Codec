@@ -14,6 +14,7 @@
     using CommunityToolkit.Mvvm.ComponentModel;
     using CommunityToolkit.Mvvm.Input;
     using Microsoft.Extensions.Logging;
+    using System.Linq;
 
     public partial class BrowserViewModel : ObservableObject
     {
@@ -55,18 +56,13 @@
             NestedFileSystemManager fsm,
             FileTreeViewModel fileTreeViewModel,
             ImageLoader imageLoader,
-            EntryListViewModel entryListViewModel,
-            EnvironmentOptions env)
+            EntryListViewModel entryListViewModel)
         {
             this.serviceProvider = serviceProvider;
             this.logger = logger;
             this.fsm = fsm;
             this.imageLoader = imageLoader;
-            this.currentPath = Path.Combine(
-                env.SteamApps,
-                WellKnownPaths.AllDataBin,
-                WellKnownPaths.CD1Path,
-                WellKnownPaths.StageDirPath);
+            this.currentPath = WellKnownPaths.StartPaths.FirstOrDefault(Directory.Exists) ?? string.Empty;
             this.Tree = fileTreeViewModel;
             this.List = entryListViewModel;
 

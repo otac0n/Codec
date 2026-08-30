@@ -18,7 +18,6 @@ namespace Codec.UI
         {
             var rootCommand = new RootCommand();
             M2.ArchiveOptions.Attach(rootCommand);
-            EnvironmentOptions.Attach(rootCommand);
             var emptyContext = new InvocationContext(rootCommand.Parse([]));
             var services = new ServiceCollection();
             Register(emptyContext, services);
@@ -62,7 +61,6 @@ namespace Codec.UI
             Rendering.ServiceRegistration.Register(services);
             M2.ServiceRegistration.Register(services);
             MGS.ServiceRegistration.Register(services);
-            EnvironmentOptions.Bind(context, services);
             M2.ArchiveOptions.Bind(context, services);
             services.AddTransient<FileExportService>();
         }
