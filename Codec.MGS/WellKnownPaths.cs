@@ -19,6 +19,9 @@ namespace Codec.MGS
         public static readonly string FaceDatPath = @"MGS\FACE.DAT";
         public static readonly string AllDataBin = Path.Combine("MGS1", "windata", "alldata.bin");
 
+        public static readonly string PCTextures = "PC_TXN_UP";
+        public static readonly string PackedTextures = Path.Combine("paks", "TextureData.pak");
+
         private static readonly string HomePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         public static readonly string SteamPathMacOS = Path.Combine(HomePath, "Library", "Application Support", "Steam");
         public static readonly string SteamPathLinuxNative = Path.Combine(HomePath, ".steam", "steam");

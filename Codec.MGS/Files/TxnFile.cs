@@ -63,6 +63,31 @@ namespace Codec.MGS.Files
             return searchPaths.SelectMany(searchPath => fsm.EnumerateFiles(searchPath, targetName, recursive: true));
         }
 
+        private static string? FindTextureDataPath(string fullPath, NestedFileSystemManager fsm)
+        {
+            var searchPath = fullPath;
+
+            while (true)
+            {
+                var name = PathExtensions.GetFileName(searchPath);
+                var folder = PathExtensions.GetDirectoryName(searchPath);
+                if ((name == WellKnownPaths.PCTextures && !folder.Contains(WellKnownPaths.PCTextures)) || string.IsNullOrEmpty(folder))
+                {
+                    break;
+                }
+
+                var testPath = fsm.CombinePaths(folder, WellKnownPaths.PackedTextures);
+                if (fsm.FileExists(testPath))
+                {
+                    return testPath;
+                }
+
+                searchPath = folder;
+            }
+
+            return null;
+        }
+
         private class TxnFileFileSystem(string fullPath, NestedFileSystemManager fsm) : IndexedFileSystem<int>
         {
             protected override IEnumerable<int> ReadIndex()
@@ -79,7 +104,7 @@ namespace Codec.MGS.Files
                 foreach (var tx in textures)
                 {
                     entries.Add((int)tx.Id);
-                    if (!(tx.UOffset != 0 || tx.VOffset != 0 || tx.UScale != 1 || tx.VScale != 1))
+                    if (tx.UOffset == 0 && tx.VOffset == 0 && tx.UScale == 1 && tx.VScale == 1)
                     {
                         entries.Remove(~GetImageIndex(header, tx));
                     }
@@ -124,28 +149,39 @@ namespace Codec.MGS.Files
                 var image = images[ix];
 
                 Stream dataStream;
-                var external = (image.Flags & 0xF0) == 0xF0;
-                if (external)
+                if ((header.Flags & 0x400) == 0x400)
                 {
-                    stream.Dispose();
+                    stream.Position += ix * 0x100;
+                    var path = stream.ReadNullString();
+                    var textureData = FindTextureDataPath(fullPath, fsm);
 
-                    var found = FindRelatedFiles(fullPath, fsm, (texture ?? textures[0]).FileId, ix).FirstOrDefault(f => f is not null);
-                    if (found is not { CanOpen: true })
-                    {
-                        throw new FileNotFoundException($"External texture file not found.");
-                    }
-
-                    dataStream = fsm.OpenRead(found.Path);
+                    dataStream = fsm.OpenRead(fsm.CombinePaths(textureData, path));
                 }
                 else
                 {
-                    var dataOffset = image.Offset;
-                    var dataLength = stream.Length - dataOffset; // TODO: Not the whole rest of the file.
-                    dataStream = new OffsetStreamSpan(stream, dataOffset, dataLength, Ownership.Dispose);
+                    var external = (image.Flags & 0xF0) == 0xF0;
+                    if (external)
+                    {
+                        stream.Dispose();
+
+                        var found = FindRelatedFiles(fullPath, fsm, (texture ?? textures[0]).FileId, ix).FirstOrDefault(f => f is not null);
+                        if (found is not { CanOpen: true })
+                        {
+                            throw new FileNotFoundException($"External texture file not found.");
+                        }
+
+                        dataStream = fsm.OpenRead(found.Path);
+                    }
+                    else
+                    {
+                        var dataOffset = image.Offset;
+                        var dataLength = stream.Length - dataOffset; // TODO: Not the whole rest of the file.
+                        dataStream = new OffsetStreamSpan(stream, dataOffset, dataLength, Ownership.Dispose);
+                    }
                 }
 
                 var dds = BuildDdsStream(image, dataStream);
-                if (texture is TxnTexture tx && (tx.UOffset != 0 || tx.VOffset != 0 || tx.UScale != 1 || tx.VScale != 1))
+                if (texture is TxnTexture tx && !(tx.UOffset == 0 && tx.VOffset == 0 && tx.UScale == 1 && tx.VScale == 1))
                 {
                     var ms = new MemoryStream();
                     using (dds)
