@@ -14,46 +14,27 @@
 
             services.AddSingleton<FileHandlerResolver<MagickImage>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>
             {
-                var readSettings = new MagickReadSettings();
-                MagickImageInfo? fileInfo = null;
-                try
+                return new((fullPath, parentRelativePath, parent, parentPath) =>
                 {
+                    var readSettings = new MagickReadSettings();
                     using var input = parent.File.OpenRead(parentRelativePath);
-                    fileInfo = new MagickImageInfo(input, readSettings);
-                }
-                catch (MagickDelegateErrorException)
-                {
-                }
-                catch (MagickMissingDelegateErrorException)
-                {
-                    if (Enum.TryParse<MagickFormat>(PathExtensions.GetExtension(parentRelativePath)?.TrimStart('.'), true, out var detectedFormat))
-                    {
-                        readSettings.Format = detectedFormat;
 
-                        try
+                    try
+                    {
+                        return new MagickImage(input, readSettings);
+                    }
+                    catch (MagickMissingDelegateErrorException)
+                    {
+                        if (Enum.TryParse<MagickFormat>(PathExtensions.GetExtension(parentRelativePath)?.TrimStart('.'), true, out var detectedFormat))
                         {
-                            using var input = parent.File.OpenRead(parentRelativePath);
-                            fileInfo = new MagickImageInfo(input, readSettings);
-                        }
-                        catch (MagickDelegateErrorException)
-                        {
-                        }
-                        catch (MagickMissingDelegateErrorException)
-                        {
+                            readSettings.Format = detectedFormat;
+                            input.Position = 0;
+                            return new MagickImage(input, readSettings);
                         }
                     }
-                }
 
-                if (fileInfo != null)
-                {
-                    return new((fullPath, parentRelativePath, parent, parentPath) =>
-                    {
-                        using var input = parent.File.OpenRead(parentRelativePath);
-                        return new MagickImage(input, readSettings);
-                    });
-                }
-
-                return null;
+                    return null;
+                });
             });
         }
     }
