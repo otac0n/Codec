@@ -198,7 +198,7 @@ namespace Codec.MGS.Files
                             var mipHeight = (int)mip.Height;
 
                             var scaleX = (double)mipWidth / image.Width;
-                            var scaleY = (double)mipHeight / image.Width;
+                            var scaleY = (double)mipHeight / image.Height;
 
                             var mipX = (int)Math.Round(x * scaleX);
                             var mipY = (int)Math.Round(y * scaleY);
