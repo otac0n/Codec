@@ -383,7 +383,7 @@ namespace Codec.UI.WinForms
             Clipboard.SetText(paths);
         }
 
-        private void ExportButton_Click(object sender, EventArgs e)
+        private async void ExportButton_Click(object sender, EventArgs e)
         {
             var selectedEntries = this.SelectedEntries;
             if (selectedEntries is [])
@@ -396,7 +396,14 @@ namespace Codec.UI.WinForms
 
             if (exportDialog.ShowDialog(this) == DialogResult.OK)
             {
-                this.exportService.ExportAsync(entryItems, exportDialog.GetConfiguration());
+                using var progressView = new ProgressForm();
+                var progressHandler = new Progress<FileExportService.ProgressReport>(progress =>
+                {
+                    progressView.Progress = progress.Discovered == 0 ? 0 : (float)(progress.Completed + progress.Faulted) / progress.Discovered;
+                    progressView.ProgressText = progress.Faulted == 0 ? $"Completed: {progress.Completed}" : $"Completed: {progress.Completed}, Failed: {progress.Faulted}";
+                });
+                progressView.Show(this);
+                await this.exportService.ExportAsync(entryItems, exportDialog.GetConfiguration(), progressView.Cancel, progressHandler).ConfigureAwait(true);
             }
         }
 

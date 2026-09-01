@@ -163,7 +163,7 @@
                 Entries = entries,
             };
 
-            if (await new ExportDialog(config).ShowDialog<bool?>(owner).ConfigureAwait(false) == true)
+            if (await new ExportDialog(config).ShowDialog<bool?>(owner).ConfigureAwait(true) == true)
             {
                 var exportConfig = new FileExportService.ExportConfig
                 {
@@ -177,7 +177,26 @@
                     ArchiveDepth = config.RecurseArchives ? config.Depth : default(byte?),
                 };
 
-                await this.fileSaveService.ExportAsync(owner, entries, exportConfig).ConfigureAwait(false);
+                using var progressViewModel = new ProgressViewModel();
+                var progressView = new ProgressWindow
+                {
+                    DataContext = progressViewModel,
+                };
+
+                try
+                {
+                    var progressHandler = new Progress<FileExportService.ProgressReport>(progress =>
+                    {
+                        progressViewModel.Progress = progress.Discovered == 0 ? 0 : (float)(progress.Completed + progress.Faulted) / progress.Discovered;
+                        progressViewModel.ProgressText = progress.Faulted == 0 ? $"Completed: {progress.Completed}" : $"Completed: {progress.Completed}, Failed: {progress.Faulted}";
+                    });
+                    progressView.Show(owner);
+                    await this.fileSaveService.ExportAsync(owner, entries, exportConfig, progressViewModel.Cancel, progressHandler).ConfigureAwait(true);
+                }
+                finally
+                {
+                    progressView.Close();
+                }
             }
         }
 

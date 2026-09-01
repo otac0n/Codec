@@ -4,23 +4,32 @@ namespace Codec.Services
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Assimp;
     using Codec.Archives;
     using Codec.Files;
     using ImageMagick;
     using EntryItem = (Codec.Archives.Entry Entry, EntryType EntryType);
-    using ExportItem = ((Codec.Archives.Entry Entry, EntryType EntryType) EntryItem, bool TreatLikeFolder, string Destination, int Depth);
+    using ExportItem = ((Codec.Archives.Entry Entry, EntryType EntryType) EntryItem, string Destination, int Depth);
 
     public sealed class FileExportService(NestedFileSystemManager fsm, EntryTypeDetector detector)
     {
-        public async Task ExportAsync(IList<EntryItem> entryItems, ExportConfig config)
+        public record struct ProgressReport(int Discovered, int Completed, int Skipped, int Faulted);
+
+        public async Task ExportAsync(IList<EntryItem> entryItems, ExportConfig config, CancellationToken cancel, IProgress<ProgressReport>? progress = null)
         {
+            ProgressReport counts = default;
+            TimeSpan lastProgressReport = default;
+            var sw = Stopwatch.StartNew();
+
             var treatArchivesAsFolders = config.ArchiveDepth != null;
             var visited = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase); // TODO: Per-segment case sensitivity.
-            var queue = new Queue<ExportItem>();
+            var folderQueue = new Queue<ExportItem>();
+            var fileQueue = new Queue<ExportItem>();
             var pattern = PathExtensions.GlobToRegex(config.Include);
 
             string AddIfNotVisitedAndValid(EntryItem item, string outPath, bool root, int depth)
@@ -73,10 +82,19 @@ namespace Codec.Services
                             // We have a destination, but no source file.
                             // All references can point to this path, but there will be no content. This is by design.
                             // If you wish to find content here, fix the upstream issue.
+                            counts.Skipped++;
                         }
                         else
                         {
-                            queue.Enqueue((item, treatLikeFolder, destination, depth));
+                            if (treatLikeFolder)
+                            {
+                                folderQueue.Enqueue((item, destination, depth));
+                            }
+                            else
+                            {
+                                counts.Discovered++;
+                                fileQueue.Enqueue((item, destination, depth));
+                            }
                         }
                     }
                     else
@@ -95,11 +113,18 @@ namespace Codec.Services
                 AddIfNotVisitedAndValid(item, config.Destination, true, 0);
             }
 
-            while (queue.Count > 0)
+            while (fileQueue.Count > 0 || folderQueue.Count > 0)
             {
-                var (item, treatLikeFolder, destination, depth) = queue.Dequeue();
+                if (cancel.IsCancellationRequested)
+                {
+                    return;
+                }
 
-                if (treatLikeFolder)
+                var treatLikeAFolder = folderQueue.Count > 0;
+                var (item, destination, depth) = treatLikeAFolder
+                    ? folderQueue.Dequeue()
+                    : fileQueue.Dequeue();
+                if (treatLikeAFolder)
                 {
                     foreach (var subEntry in fsm.EnumerateEntries(item.Entry.Path))
                     {
@@ -136,13 +161,22 @@ namespace Codec.Services
                                 return subEntry.Path;
                             }
                         }).ConfigureAwait(false);
+                        counts.Completed++;
                     }
                     catch (Exception)
                     {
-                        // TODO: Log and continue.
+                        // TODO: Log a moderate number of failures, but not thousands and thousands.
+                        counts.Faulted++;
                     }
                 }
+
+                if (sw.Elapsed - lastProgressReport > TimeSpan.FromSeconds(0.5))
+                {
+                    progress?.Report(counts);
+                }
             }
+
+            progress?.Report(counts);
         }
 
         public async Task SaveSingleAsync(EntryItem item, Func<string, EntryType, string?, Task<string?>> pickSavePath)

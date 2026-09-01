@@ -1,7 +1,9 @@
 ﻿namespace Codec.UI.Avalonia.Services
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using global::Avalonia.Controls;
     using global::Avalonia.Platform.Storage;
@@ -11,10 +13,10 @@
 
     public sealed class FileSaveService(FileExportService exportService)
     {
-        public async Task ExportAsync(Window owner, IList<EntryItem> entries, FileExportService.ExportConfig config = null)
+        public async Task ExportAsync(Window owner, IList<EntryItem> entries, FileExportService.ExportConfig config = null, CancellationToken cancel = default, IProgress<FileExportService.ProgressReport>? progress = null)
         {
             config ??= new();
-            await exportService.ExportAsync([.. entries.Select(e => (e.Entry, e.EntryType))], config).ConfigureAwait(false);
+            await exportService.ExportAsync([.. entries.Select(e => (e.Entry, e.EntryType))], config, cancel, progress).ConfigureAwait(false);
         }
 
         public async Task SaveSingleAsync(Window owner, EntryItem item)
