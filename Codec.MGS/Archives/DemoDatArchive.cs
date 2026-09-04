@@ -10,6 +10,7 @@ namespace Codec.MGS.Archives
     using System.Linq;
     using Codec.Archives;
     using Codec.Audio;
+    using Codec.Streams;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
     using Chunk = (long Offset, long Size);

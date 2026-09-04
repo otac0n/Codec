@@ -5,9 +5,9 @@ namespace Codec.MGS.Files
     using System;
     using System.IO;
     using System.Runtime.InteropServices;
-    using Codec.Archives;
     using Codec.Imaging;
     using Codec.Services;
+    using Codec.Streams;
     using DiscUtils.Streams;
     using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;

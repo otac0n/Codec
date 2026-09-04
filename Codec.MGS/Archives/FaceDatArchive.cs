@@ -12,6 +12,7 @@ namespace Codec.MGS.Archives
     using Codec.Archives;
     using Codec.Imaging;
     using Codec.Services;
+    using Codec.Streams;
     using DiscUtils.Streams;
     using ImageMagick;
     using Microsoft.Extensions.DependencyInjection;

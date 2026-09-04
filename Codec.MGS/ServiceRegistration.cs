@@ -6,6 +6,7 @@ namespace Codec.MGS
     using Codec.Archives;
     using Codec.MGS.Archives;
     using Codec.MGS.Files;
+    using Codec.Streams;
     using DiscUtils.Iso9660;
     using Microsoft.Extensions.DependencyInjection;
 

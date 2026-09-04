@@ -8,6 +8,7 @@ namespace Codec.M2
     using System.IO.Abstractions;
     using System.Linq;
     using Codec.Archives;
+    using Codec.Streams;
     using DiscUtils.Streams;
     using GMWare.M2.Models;
     using Microsoft.Extensions.DependencyInjection;

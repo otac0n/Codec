@@ -6,6 +6,7 @@
     using System.IO.Abstractions;
     using System.Linq;
     using System.Text.RegularExpressions;
+    using Codec.Streams;
     using CueSharp;
     using DiscUtils.Iso9660;
     using DiscUtils.Streams;

@@ -6,6 +6,7 @@
     using System.IO.Abstractions;
     using System.Runtime.InteropServices;
     using Codec.Archives;
+    using Codec.Streams;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (string Path, long Offset, long Length);

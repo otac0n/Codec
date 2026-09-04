@@ -8,6 +8,7 @@
     using System.Runtime.InteropServices;
     using System.Text;
     using Codec.Archives;
+    using Codec.Streams;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (int Index, SdtArchive.SDTStream Stream, SdtArchive.SDTChunk[] Chunks);

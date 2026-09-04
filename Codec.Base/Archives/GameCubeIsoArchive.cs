@@ -10,6 +10,7 @@ namespace Codec.Archives
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Codec.Streams;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
 

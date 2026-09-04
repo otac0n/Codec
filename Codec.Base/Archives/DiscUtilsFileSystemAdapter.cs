@@ -5,6 +5,7 @@
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.IO.Abstractions;
+    using Codec.Streams;
 
     public partial class DiscUtilsFileSystemAdapter : FileSystemBase
     {

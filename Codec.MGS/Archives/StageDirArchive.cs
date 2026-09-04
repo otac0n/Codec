@@ -11,6 +11,7 @@ namespace Codec.MGS.Archives
     using System.Text;
     using Codec.Archives;
     using Codec.MGS.Services;
+    using Codec.Streams;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (string Folder, byte Group, ushort Id, byte Ext, long Offset, long Length);

@@ -9,6 +9,7 @@
     using Codec;
     using Codec.Archives;
     using Codec.MGS.Streams;
+    using Codec.Streams;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (string Path, long Offset, long Length);

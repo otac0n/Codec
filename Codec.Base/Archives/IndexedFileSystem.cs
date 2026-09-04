@@ -6,6 +6,7 @@
     using System.IO;
     using System.IO.Abstractions;
     using System.Linq;
+    using Codec.Streams;
 
     public abstract class IndexedFileSystem<TEntry> : FileSystemBase
         where TEntry : notnull

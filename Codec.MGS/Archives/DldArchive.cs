@@ -10,6 +10,7 @@ namespace Codec.MGS.Archives
     using System.Runtime.InteropServices;
     using Codec;
     using Codec.Archives;
+    using Codec.Streams;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (uint Id, uint Index, (long Offset, uint Length)[] Chunks);

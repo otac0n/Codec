@@ -4,6 +4,7 @@
     using System.IO;
     using System.IO.Abstractions;
     using System.IO.Compression;
+    using Codec.Streams;
     using Microsoft.Extensions.DependencyInjection;
 
     public class ZipArchiveFileSystem(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<ZipArchiveEntry>

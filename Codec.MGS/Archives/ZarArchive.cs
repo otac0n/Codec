@@ -5,6 +5,7 @@
     using System.IO.Abstractions;
     using System.IO.Compression;
     using Codec.Archives;
+    using Codec.Streams;
     using Microsoft.Extensions.DependencyInjection;
 
     public class ZarArchive(string parentRelativePath, IFileSystem parent) : IndexedFileSystem<string>

@@ -6,11 +6,11 @@ namespace Codec.MGS.Archives
     using System.Collections.Generic;
     using System.IO;
     using System.IO.Abstractions;
-    using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Text;
     using Codec.Archives;
+    using Codec.Streams;
     using DiscUtils.Streams;
     using K4os.Compression.LZ4;
     using Microsoft.Extensions.DependencyInjection;

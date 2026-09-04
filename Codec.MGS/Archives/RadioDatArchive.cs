@@ -11,6 +11,7 @@ namespace Codec.MGS.Archives
     using Codec;
     using Codec.Archives;
     using Codec.MGS.Files;
+    using Codec.Streams;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (int Group, int Index, string Name, long Offset, long Size);

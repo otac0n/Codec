@@ -10,6 +10,7 @@ namespace Codec.MGS.Archives
     using System.Runtime.InteropServices;
     using System.Text;
     using Codec.Archives;
+    using Codec.Streams;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (string FileName, long Offset, long Length);

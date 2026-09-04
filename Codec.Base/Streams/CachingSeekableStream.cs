@@ -1,4 +1,4 @@
-﻿namespace Codec.Archives
+﻿namespace Codec.Streams
 {
     using System;
     using System.Collections.Generic;

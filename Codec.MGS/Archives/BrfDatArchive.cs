@@ -4,9 +4,9 @@
     using System.Globalization;
     using System.IO;
     using System.IO.Abstractions;
-    using System.Text;
     using Codec.Archives;
     using Codec.Imaging;
+    using Codec.Streams;
     using DiscUtils.Streams;
     using Microsoft.Extensions.DependencyInjection;
     using Entry = (string FolderName, string FileName, long Offset, long Length);
