@@ -12,11 +12,13 @@ namespace Codec.Services
     using Assimp;
     using Codec.Archives;
     using Codec.Files;
+    using Codec.UI;
     using ImageMagick;
+    using Microsoft.Extensions.Logging;
     using EntryItem = (Codec.Archives.Entry Entry, EntryType EntryType);
     using ExportItem = ((Codec.Archives.Entry Entry, EntryType EntryType) EntryItem, string Destination, int Depth);
 
-    public sealed class FileExportService(NestedFileSystemManager fsm, EntryTypeDetector detector)
+    public sealed class FileExportService(NestedFileSystemManager fsm, EntryTypeDetector detector, ILogger<FileExportService>? logger = null)
     {
         public record struct ProgressReport(int Discovered, int Completed, int Skipped, int Faulted);
 
@@ -163,9 +165,13 @@ namespace Codec.Services
                         }).ConfigureAwait(false);
                         counts.Completed++;
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        // TODO: Log a moderate number of failures, but not thousands and thousands.
+                        if (counts.Faulted < 100)
+                        {
+                            logger?.ExportFailed(ex, item.Entry.Path);
+                        }
+
                         counts.Faulted++;
                     }
                 }
@@ -326,6 +332,7 @@ namespace Codec.Services
                 }
             }
 
+            // TODO: Gather aggregate exceptions.
             foreach (var (source, target) in targetFiles)
             {
                 using var input = fsm.OpenRead(source);
@@ -336,50 +343,57 @@ namespace Codec.Services
 
         public async Task ReplaceSingleAsync(Entry entry, Func<string, EntryType, string?, Task<string?>> pickReplacement)
         {
-            var type = detector.Detect(entry);
-            var path = await pickReplacement(fsm.GetFileName(entry.Path), type, detector[type]).ConfigureAwait(false);
-            if (path is null)
+            try
             {
-                return;
-            }
-
-            if (!string.Equals(Path.GetExtension(path), fsm.GetExtension(entry.Path), StringComparison.OrdinalIgnoreCase))
-            {
-                switch (detector.Detect(entry))
+                var type = detector.Detect(entry);
+                var path = await pickReplacement(fsm.GetFileName(entry.Path), type, detector[type]).ConfigureAwait(false);
+                if (path is null)
                 {
-                    case EntryType.Image:
-                        if (fsm.Resolve<MagickImage>(path) is MagickImage image)
-                        {
-                            if (fsm.ResolveWriter<MagickImage>(entry.Path) is Action<MagickImage> writer)
-                            {
-                                writer(image);
-                                return;
-                            }
-                        }
-
-                        break;
-
-                    case EntryType.Audio:
-                        {
-                        }
-
-                        break;
-
-                    case EntryType.Model:
-                        {
-                        }
-
-                        break;
+                    return;
                 }
-            }
 
-            using var input = File.OpenRead(path);
-            using var output = fsm.Open(entry.Path, new()
+                if (!string.Equals(Path.GetExtension(path), fsm.GetExtension(entry.Path), StringComparison.OrdinalIgnoreCase))
+                {
+                    switch (detector.Detect(entry))
+                    {
+                        case EntryType.Image:
+                            if (fsm.Resolve<MagickImage>(path) is MagickImage image)
+                            {
+                                if (fsm.ResolveWriter<MagickImage>(entry.Path) is Action<MagickImage> writer)
+                                {
+                                    writer(image);
+                                    return;
+                                }
+                            }
+
+                            break;
+
+                        case EntryType.Audio:
+                            {
+                            }
+
+                            break;
+
+                        case EntryType.Model:
+                            {
+                            }
+
+                            break;
+                    }
+                }
+
+                using var input = File.OpenRead(path);
+                using var output = fsm.Open(entry.Path, new()
+                {
+                    Mode = FileMode.Open,
+                    Access = FileAccess.Write,
+                });
+                await input.CopyToAsync(output).ConfigureAwait(false);
+            }
+            catch (Exception ex)
             {
-                Mode = FileMode.Open,
-                Access = FileAccess.Write,
-            });
-            await input.CopyToAsync(output).ConfigureAwait(false);
+                logger?.ReplaceFailed(ex, entry.Path);
+            }
         }
 
         public class ExportConfig

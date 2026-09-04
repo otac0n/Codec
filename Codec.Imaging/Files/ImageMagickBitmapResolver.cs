@@ -10,6 +10,7 @@
     {
         public static void Register(IServiceCollection services)
         {
+            // TODO: ImageMagick is a bit crazy about this, saying it can handle all .txt files, etc.
             services.AddSingleton(new EntryTypeMatcher(EntryType.Image, string.Join(";", MagickNET.SupportedFormats.Where(f => f.SupportsReading).Select(f => $"*.{f.Format.ToString().ToLowerInvariant()}"))));
 
             services.AddSingleton<FileHandlerResolver<MagickImage>>((serviceProvider, fullPath, parentRelativePath, parent, parentPath) =>

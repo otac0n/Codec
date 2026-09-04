@@ -15,5 +15,11 @@ namespace Codec.UI
 
         [LoggerMessage(Level = LogLevel.Error, Message = "Save failed.")]
         public static partial void SaveFailed(this ILogger logger, Exception ex);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Export '{Path}' failed")]
+        public static partial void ExportFailed(this ILogger logger, Exception ex, string path);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Failed to replace '{Path}'")]
+        public static partial void ReplaceFailed(this ILogger logger, Exception ex, string path);
     }
 }
