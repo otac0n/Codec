@@ -245,7 +245,7 @@
 
                 case FileMode.Create:
                 case FileMode.Truncate:
-                    stream = new MemoryStream((int)parentOptions.PreallocationSize);
+                    stream = new SpoolingStream(parentOptions.PreallocationSize);
                     stream = new DisposingStream(stream, onClose);
                     break;
 
