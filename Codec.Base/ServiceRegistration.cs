@@ -28,55 +28,55 @@ namespace Codec
             SetupHelper.SetupComplete();
         }
 
-        public static T? Resolve<T>(this IServiceProvider services, string path, string subPath, IFileSystem fs, string fsPath) =>
-            services.Resolve(services.GetServices<FileHandlerResolver<T>>(), path, subPath, fs, fsPath);
+        public static T? Resolve<T>(this IServiceProvider services, string path, string subPath, IFileSystem fs, string fsPath, ILogger? logger = null) =>
+            services.Resolve(services.GetServices<FileHandlerResolver<T>>(), path, subPath, fs, fsPath, logger);
 
-        public static Action<T>? ResolveWriter<T>(this IServiceProvider services, string path, string subPath, IFileSystem fs, string fsPath) =>
-            services.ResolveWriter(services.GetServices<FileHandlerResolver<T>>(), path, subPath, fs, fsPath);
+        public static Action<T>? ResolveWriter<T>(this IServiceProvider services, string path, string subPath, IFileSystem fs, string fsPath, ILogger? logger = null) =>
+            services.ResolveWriter(services.GetServices<FileHandlerResolver<T>>(), path, subPath, fs, fsPath, logger);
 
-        private static T? Try<T>(FileReader<T> read, string path, string subPath, IFileSystem fs, string fsPath)
+        private static T? Try<T>(FileReader<T> read, string path, string subPath, IFileSystem fs, string fsPath, ILogger? logger)
         {
             try
             {
                 return read(path, subPath, fs, fsPath);
             }
-            catch
+            catch (Exception ex)
             {
-                // TODO: Log warnings or throw aggregate exception for error?
+                logger?.LogWarning(ex, "Skipping handler due to exception.");
                 return default;
             }
         }
 
-        private static FileHandler<T>? Try<T>(FileHandlerResolver<T> filter, IServiceProvider services, string path, string subPath, IFileSystem fs, string fsPath)
+        private static FileHandler<T>? Try<T>(FileHandlerResolver<T> filter, IServiceProvider services, string path, string subPath, IFileSystem fs, string fsPath, ILogger? logger)
         {
             try
             {
                 return filter(services, path, subPath, fs, fsPath);
             }
-            catch
+            catch (Exception ex)
             {
-                // TODO: Log warnings or throw aggregate exception for error?
+                logger?.LogWarning(ex, "Skipping handler due to exception.");
                 return null;
             }
         }
 
-        public static T? Resolve<T>(this IServiceProvider services, IEnumerable<FileHandlerResolver<T>> resolvers, string path, string subPath, IFileSystem fs, string fsPath) =>
+        public static T? Resolve<T>(this IServiceProvider services, IEnumerable<FileHandlerResolver<T>> resolvers, string path, string subPath, IFileSystem fs, string fsPath, ILogger? logger = null) =>
             !fs.File.Exists(subPath)
             ? default
             : (from filter in resolvers
                where filter != null
-               let resolver = Try(filter, services, path, subPath, fs, fsPath)
+               let resolver = Try(filter, services, path, subPath, fs, fsPath, logger)
                where resolver is not null
-               let resolved = Try(resolver.Read, path, subPath, fs, fsPath)
+               let resolved = Try(resolver.Read, path, subPath, fs, fsPath, logger)
                where resolved is not null
                select resolved).FirstOrDefault();
 
-        public static Action<T>? ResolveWriter<T>(this IServiceProvider services, IEnumerable<FileHandlerResolver<T>> resolvers, string path, string subPath, IFileSystem fs, string fsPath) =>
+        public static Action<T>? ResolveWriter<T>(this IServiceProvider services, IEnumerable<FileHandlerResolver<T>> resolvers, string path, string subPath, IFileSystem fs, string fsPath, ILogger? logger = null) =>
             !fs.File.Exists(subPath)
             ? default
             : (from filter in resolvers
                where filter != null
-               let resolver = Try(filter, services, path, subPath, fs, fsPath)
+               let resolver = Try(filter, services, path, subPath, fs, fsPath, logger)
                where resolver is not null && resolver.CanWrite
                let write = resolver.Write
                select new Action<T>(image => write(image, path, subPath, fs, fsPath))).FirstOrDefault();

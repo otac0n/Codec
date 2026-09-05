@@ -196,7 +196,7 @@
                 return default;
             }
 
-            return this.serviceProvider.Resolve<T>(path, parentRelativePath, parent, parentPath);
+            return this.serviceProvider.Resolve<T>(path, parentRelativePath, parent, parentPath, this.logger);
         }
 
         public Action<T>? ResolveWriter<T>(string path)
@@ -206,7 +206,7 @@
                 return default;
             }
 
-            return this.serviceProvider.ResolveWriter<T>(path, parentRelativePath, parent, parentPath);
+            return this.serviceProvider.ResolveWriter<T>(path, parentRelativePath, parent, parentPath, this.logger);
         }
 
         private IEnumerable<Entry> EnumerateEntries(string path)
