@@ -291,19 +291,6 @@
                 }
             }
 
-            public static FileStreamOptions GetParentOptions(FileStreamOptions options)
-            {
-                return new FileStreamOptions()
-                {
-                    Access = options.Access,
-                    Mode = FileMode.Open,
-                    Share = FileShare.ReadWrite,
-                    BufferSize = options.BufferSize,
-                    PreallocationSize = options.PreallocationSize,
-                    Options = options.Options & (FileOptions.Asynchronous | FileOptions.WriteThrough),
-                };
-            }
-
             /// <inheritdoc/>
             public virtual IFileSystem FileSystem => this.parent;
 

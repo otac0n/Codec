@@ -155,10 +155,9 @@
                     if (parent.Index.TryGetValue(canonicalPath, out var entry))
                     {
                         var @lock = this.locks.Acquire(entry, options.Access, options.Share);
-                        var parentOptions = GetParentOptions(options);
                         return new StreamWrapper(
                             new DisposingStream(
-                                parent.Open(entry, parentOptions),
+                                parent.Open(entry, GetSharedOptions(options)),
                                 @lock),
                             canonicalPath,
                             (options.Options & FileOptions.Asynchronous) == FileOptions.Asynchronous);
@@ -166,6 +165,19 @@
                 }
 
                 throw new FileNotFoundException($"File '{path}' not found in archive.");
+            }
+
+            public static FileStreamOptions GetSharedOptions(FileStreamOptions options)
+            {
+                return new FileStreamOptions()
+                {
+                    Access = options.Access,
+                    Mode = options.Mode,
+                    Share = FileShare.ReadWrite,
+                    BufferSize = options.BufferSize,
+                    PreallocationSize = options.PreallocationSize,
+                    Options = options.Options,
+                };
             }
         }
 

@@ -383,11 +383,7 @@ namespace Codec.Services
                 }
 
                 using var input = File.OpenRead(path);
-                using var output = fsm.Open(entry.Path, new()
-                {
-                    Mode = FileMode.Open,
-                    Access = FileAccess.Write,
-                });
+                using var output = fsm.Open(entry.Path, FileMode.Truncate, FileAccess.Write);
                 await input.CopyToAsync(output).ConfigureAwait(false);
             }
             catch (Exception ex)
