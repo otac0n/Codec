@@ -173,7 +173,7 @@
                 {
                     case EntryType.Audio:
                         {
-                            var audioStream = this.fsm.Resolve<AudioStream>(item.Entry.Path) ?? (AudioStream)this.fsm.OpenRead(item.Entry.Path);
+                            var audioStream = this.fsm.Resolve<AudioStream>(item.Entry.Path) ?? new AudioStream(this.fsm.OpenRead(item.Entry.Path), item.Entry.Path);
                             this.AudioPreviewRequested?.Invoke(this, new(audioStream, item.Entry.Path, this.fsm));
                         }
                         break;

@@ -33,18 +33,9 @@ namespace Codec.Services
             var ms = new MemoryStream();
             try
             {
-                if (!TryDecodeWithVgmstream(stream, ms))
-                {
-                    if (stream.Stream.CanSeek)
-                    {
-                        stream.Stream.Position = 0;
-                    }
-
-                    using var reader = new StreamMediaFoundationReader(stream);
-                    WaveFileWriter.WriteWavFileToStream(ms, reader);
-                }
-
-                ms.Seek(0, SeekOrigin.Begin);
+                using var reader = new StreamMediaFoundationReader(stream);
+                WaveFileWriter.WriteWavFileToStream(ms, reader);
+                ms.Position = 0;
             }
             finally
             {
@@ -68,33 +59,6 @@ namespace Codec.Services
 
             this.start = this.reader.Position;
             this.waveOut.PlaybackStopped += this.WaveOut_PlaybackStopped;
-        }
-
-        private static bool TryDecodeWithVgmstream(AudioStream stream, MemoryStream destination)
-        {
-            if (string.IsNullOrEmpty(stream.FileName) || !stream.Stream.CanSeek)
-            {
-                return false;
-            }
-
-            try
-            {
-                using var vgm = VgmStreamReader.Open(
-                    stream.Stream,
-                    stream.FileName,
-                    config: VgmStreamConfig.PlayOnceNoLoop());
-
-                vgm.DecodeTo(destination);
-                return true;
-            }
-            catch (VgmStreamException)
-            {
-                return false;
-            }
-            catch (Exception ex) when (ex is DllNotFoundException or BadImageFormatException or EntryPointNotFoundException)
-            {
-                return false;
-            }
         }
 
         public Task<bool> PlayAsync()

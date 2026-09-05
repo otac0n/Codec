@@ -280,7 +280,7 @@ namespace Codec.UI.WinForms
                             break;
                         case EntryType.Audio:
                             {
-                                var audioStream = this.fsm.Resolve<AudioStream>(entry.Path) ?? (AudioStream)this.fsm.OpenRead(entry.Path);
+                                var audioStream = this.fsm.Resolve<AudioStream>(entry.Path) ?? new AudioStream(this.fsm.OpenRead(entry.Path), entry.Path);
                                 var childForm = new AudioPreviewForm(audioStream)
                                 {
                                     Text = this.fsm.GetFileName(entry.Path),
