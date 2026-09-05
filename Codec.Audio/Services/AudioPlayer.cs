@@ -4,18 +4,17 @@ namespace Codec.Services
 {
     using System;
     using System.ComponentModel;
-    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
     using Codec.Files;
     using NAudio.Wave;
     using NAudio.Wave.SampleProviders;
-    using VgmSharp;
 
     public sealed class AudioPlayer : IDisposable, INotifyPropertyChanged
     {
         private readonly long start;
         private WaveOutEvent? waveOut;
+        private AudioStream stream;
         private WaveStream? reader;
         private Timer? timer;
         private TaskCompletionSource<bool>? tcs;
@@ -28,24 +27,10 @@ namespace Codec.Services
 
         public bool Playing => this.waveOut?.PlaybackState == PlaybackState.Playing;
 
-        public AudioPlayer(AudioStream stream, bool ownsStream = true)
+        public AudioPlayer(AudioStream stream)
         {
-            var ms = new MemoryStream();
-            try
-            {
-                using var reader = new StreamMediaFoundationReader(stream);
-                WaveFileWriter.WriteWavFileToStream(ms, reader);
-                ms.Position = 0;
-            }
-            finally
-            {
-                if (ownsStream)
-                {
-                    stream.Stream.Dispose();
-                }
-            }
-
-            this.reader = new WaveFileReader(ms);
+            this.stream = stream;
+            this.reader = new WaveFileReader(stream);
             this.waveOut = new WaveOutEvent();
             if (this.reader.WaveFormat.Channels > 2)
             {
@@ -102,6 +87,7 @@ namespace Codec.Services
             this.waveOut = null;
             this.reader?.Dispose();
             this.reader = null;
+            this.stream.Stream.Dispose();
         }
 
         private void FinalTick(bool stoppedNormally)

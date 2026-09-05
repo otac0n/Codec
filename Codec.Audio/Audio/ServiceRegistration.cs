@@ -12,8 +12,8 @@ namespace Codec.Audio
         {
             MidiFile.Register(services);
             CdaFile.Register(services);
-            services.AddSingleton(new EntryTypeMatcher(EntryType.Audio, "*.mp3;*.wav"));
             services.AddSingleton(new EntryTypeMatcher(EntryType.Video, "*.avi;*.mov;*.mp4;*.mkv;*.webm"));
+            MediaFoundationAudioResolver.Register(services);
             VgmStreamAudioResolver.Register(services);
         }
     }
