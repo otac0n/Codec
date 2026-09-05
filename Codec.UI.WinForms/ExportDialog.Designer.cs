@@ -204,7 +204,6 @@
             // 
             this.convertAudioCheckBox.AutoSize = true;
             this.tableLayoutPanel1.SetColumnSpan(this.convertAudioCheckBox, 2);
-            this.convertAudioCheckBox.Enabled = false;
             this.convertAudioCheckBox.Location = new Point(170, 365);
             this.convertAudioCheckBox.Name = "convertAudioCheckBox";
             this.convertAudioCheckBox.Size = new Size(153, 29);
@@ -306,6 +305,7 @@
             // 
             // audioFormat
             // 
+            this.audioFormat.Enabled = false;
             this.audioFormat.Dock = DockStyle.Fill;
             this.audioFormat.Location = new Point(249, 400);
             this.audioFormat.Name = "audioFormat";

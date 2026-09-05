@@ -257,6 +257,20 @@ namespace Codec.UI.WinForms
                 {
                     switch (this.detector.Detect(entry))
                     {
+                        case EntryType.Audio:
+                            {
+                                if (this.fsm.Resolve<AudioStream>(entry.Path) is AudioStream audioStream)
+                                {
+                                    var childForm = new AudioPreviewForm(audioStream)
+                                    {
+                                        Text = this.fsm.GetFileName(entry.Path),
+                                    };
+                                    this.ShowChild(childForm);
+                                }
+                            }
+
+                            break;
+
                         case EntryType.Image:
                             {
                                 if (this.fsm.Resolve<MagickImage>(entry.Path) is MagickImage image)
@@ -277,17 +291,9 @@ namespace Codec.UI.WinForms
                                     this.ShowChild(childForm);
                                 }
                             }
+
                             break;
-                        case EntryType.Audio:
-                            {
-                                var audioStream = this.fsm.Resolve<AudioStream>(entry.Path) ?? new AudioStream(this.fsm.OpenRead(entry.Path), entry.Path);
-                                var childForm = new AudioPreviewForm(audioStream)
-                                {
-                                    Text = this.fsm.GetFileName(entry.Path),
-                                };
-                                this.ShowChild(childForm);
-                            }
-                            break;
+
                         case EntryType.Model:
                             {
                                 if (this.fsm.Resolve<RenderableScene>(entry.Path) is RenderableScene scene)
@@ -305,6 +311,7 @@ namespace Codec.UI.WinForms
                                     this.ShowChild(childForm);
                                 }
                             }
+
                             break;
                     }
                 }

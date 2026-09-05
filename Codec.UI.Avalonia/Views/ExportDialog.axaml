@@ -126,8 +126,7 @@
                 </MultiBinding>
             </Control.IsVisible>
         </TextBox>
-        <!-- We don't currently support converting audio. -->
-        <CheckBox Grid.Column="1" Grid.ColumnSpan="2" Grid.Row="10" Content="Convert Audio" VerticalAlignment="Center" IsChecked="{Binding ConvertAudio}" IsEnabled="false">
+        <CheckBox Grid.Column="1" Grid.ColumnSpan="2" Grid.Row="10" Content="Convert Audio" VerticalAlignment="Center" IsChecked="{Binding ConvertAudio}">
             <Control.IsVisible>
                 <Binding Path="AnyAudio" />
             </Control.IsVisible>
@@ -140,7 +139,8 @@
                 </MultiBinding>
             </Control.IsVisible>
         </TextBlock>
-        <TextBox Grid.Column="2" Grid.Row="11" VerticalAlignment="Center" IsVisible="{Binding ConvertAudio}" Text="{Binding AudioFormat}">
+        <!-- We only support converting to WAV. -->
+        <TextBox Grid.Column="2" Grid.Row="11" VerticalAlignment="Center" IsVisible="{Binding ConvertAudio}" Text="{Binding AudioFormat}" IsEnabled="false">
             <Control.IsVisible>
                 <MultiBinding Converter="{x:Static BoolConverters.And}">
                     <Binding Path="AnyAudio" />

@@ -220,7 +220,8 @@ namespace Codec.Services
         {
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
 
-            var convertFormat = !string.Equals(Path.GetExtension(destination), fsm.GetExtension(item.Entry.Path), StringComparison.OrdinalIgnoreCase);
+            var ext = Path.GetExtension(destination);
+            var convertFormat = !string.Equals(ext, fsm.GetExtension(item.Entry.Path), StringComparison.OrdinalIgnoreCase);
 
             if (item.EntryType == EntryType.Model)
             {
@@ -271,9 +272,9 @@ namespace Codec.Services
                     if (convertFormat || updated)
                     {
                         var context = new AssimpContext();
-                        var ext = Path.GetExtension(destination).TrimStart('.').ToLowerInvariant();
+                        var e = ext.TrimStart('.');
                         var formatId = context.GetSupportedExportFormats()
-                            .FirstOrDefault(f => f.FileExtension.Equals(ext, StringComparison.OrdinalIgnoreCase))
+                            .FirstOrDefault(f => f.FileExtension.Equals(e, StringComparison.OrdinalIgnoreCase))
                             ?.FormatId;
                         if (formatId != null)
                         {
@@ -290,7 +291,13 @@ namespace Codec.Services
                     switch (item.EntryType)
                     {
                         case EntryType.Audio:
-                            // Not implemented.
+                            if (string.Equals(ext, ".wav", StringComparison.OrdinalIgnoreCase) && fsm.Resolve<AudioStream>(item.Entry.Path) is AudioStream audioStream)
+                            {
+                                using var output = File.Create(destination);
+                                await audioStream.Stream.CopyToAsync(output).ConfigureAwait(false);
+                                return;
+                            }
+
                             break;
 
                         case EntryType.Image:
@@ -309,9 +316,11 @@ namespace Codec.Services
                 }
             }
 
-            using var input = fsm.OpenRead(item.Entry.Path);
-            using var output = File.Create(destination);
-            await input.CopyToAsync(output).ConfigureAwait(false);
+            {
+                using var input = fsm.OpenRead(item.Entry.Path);
+                using var output = File.Create(destination);
+                await input.CopyToAsync(output).ConfigureAwait(false);
+            }
         }
 
         public async Task SaveMultipleAsync(IEnumerable<Entry> entries, Func<Task<string?>> pickFolder, Func<string, Task<bool>> confirmOverwrite)

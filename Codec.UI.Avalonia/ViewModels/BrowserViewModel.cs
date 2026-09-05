@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
+    using System.Linq;
     using global::Avalonia.Media.Imaging;
     using Codec.Archives;
     using Codec.Files;
@@ -14,7 +15,6 @@
     using CommunityToolkit.Mvvm.ComponentModel;
     using CommunityToolkit.Mvvm.Input;
     using Microsoft.Extensions.Logging;
-    using System.Linq;
 
     public partial class BrowserViewModel : ObservableObject
     {
@@ -173,10 +173,14 @@
                 {
                     case EntryType.Audio:
                         {
-                            var audioStream = this.fsm.Resolve<AudioStream>(item.Entry.Path) ?? new AudioStream(this.fsm.OpenRead(item.Entry.Path), item.Entry.Path);
-                            this.AudioPreviewRequested?.Invoke(this, new(audioStream, item.Entry.Path, this.fsm));
+                            if (this.fsm.Resolve<AudioStream>(item.Entry.Path) is AudioStream audioStream)
+                            {
+                                this.AudioPreviewRequested?.Invoke(this, new(audioStream, item.Entry.Path, this.fsm));
+                            }
                         }
+
                         break;
+
                     case EntryType.Image:
                         {
                             var bmp = await this.imageLoader.LoadAsync(item.Entry).ConfigureAwait(true);
@@ -185,7 +189,9 @@
                                 this.ImagePreviewRequested?.Invoke(this, new(bmp, item.Entry.Path, this.fsm));
                             }
                         }
+
                         break;
+
                     case EntryType.Model:
                         {
                             if (this.fsm.Resolve<RenderableScene>(item.Entry.Path) is RenderableScene model)
@@ -193,6 +199,7 @@
                                 this.ModelPreviewRequested?.Invoke(this, new(model, item.Entry.Path, this.fsm));
                             }
                         }
+
                         break;
                 }
             }
