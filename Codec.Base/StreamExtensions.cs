@@ -53,6 +53,24 @@ namespace Codec
             return true;
         }
 
+        public static void ZeroPadToAlignment(this Stream stream, long alignment)
+        {
+            var padding = GetPadding(stream.Position, alignment);
+            if (padding == 0)
+            {
+                return;
+            }
+
+            Span<byte> zeros = stackalloc byte[(int)Math.Min(padding, 4096)];
+            zeros.Clear();
+            while (padding > 0)
+            {
+                var chunkLength = (int)Math.Min(padding, zeros.Length);
+                stream.Write(zeros[..chunkLength]);
+                padding -= chunkLength;
+            }
+        }
+
         public static string ReadNullString(this Stream stream)
         {
             var value = new StringBuilder();
