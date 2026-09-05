@@ -20,7 +20,7 @@ Support for the following formats is implemented:
     - .dir Archives (MGS1, MGS2, TTS, MGS4)
     - .qar Archives (MGS2, TTS, MGS3, MGA2, MGO, MGO+, MGS PW, MGS4)
     - .slot Archives (MGS4)
-    - .pak Archives (MGS4)
+    - .pak Archives (MGS4) [read & write]
     - _zar Archives (MGA2, MGO, MGO+)
     - BRF.DAT Archive (MGS1)
     - DEMO.DAT Archive (MGS1)
@@ -35,7 +35,7 @@ Support for the following formats is implemented:
     - All Basic Image Formats (PNG, JPEG, BMP, etc.)
     - All Basic 3D Formats (FBX, OBJ, STL, STEP, etc.)
     - WAV, MP3, and MIDI Audio Files
-    - All VGMStream Formats (VAG, etc.)
+    - All VGMStream Formats (VAG, OGG Vorbis, etc.)
     - CD Audio Tracks
     - .pcx Image Files
   - Metal Gear Specific
@@ -121,6 +121,7 @@ OpenSource Info
 | [HIDDevices](https://github.com/DevDecoder/HIDDevices) | [Apache 2.0](https://github.com/DevDecoder/HIDDevices/blob/master/LICENSE.txt) | Device handling |
 | [Assimp](https://github.com/Saalvage/AssimpNetter) | [MIT + BSD-3-Clause](https://github.com/Saalvage/AssimpNetter/blob/master/License.txt) | 3D object loading and saving |
 | [Magick.NET](https://github.com/dlemstra/Magick.NET) | [Apache 2.0](https://github.com/dlemstra/Magick.NET/blob/main/License.txt) | Image loading and saving |
+| [VgmSharp](https://github.com/otac0n/VgmSharp/) | [ISC](https://github.com/otac0n/VgmSharp/blob/master/license.md) | Audio loading |
 | [NAudio](https://github.com/naudio/naudio) | [MIT](https://github.com/naudio/naudio/blob/main/LICENSE) | Audio loading and playing |
 | [System.IO.Abstractions](https://github.com/TestableIO/System.IO.Abstractions) | [MIT](https://github.com/TestableIO/System.IO.Abstractions/blob/main/LICENSE) | Nested filesystems |
 | [CueSharp](https://www.nuget.org/packages/CueSharp) | [BSD-2-Clause](https://www.nuget.org/packages/CueSharp/1.0.1/License) | CUE format |
