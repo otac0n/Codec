@@ -97,6 +97,7 @@
                         3 => TextureType.Metalness,
                         4 => TextureType.Reflection,
                         5 => TextureType.Emissive,
+                        _ => TextureType.Unknown,
                     };
 
                     if (material.Texture[tx] < textures.Length)
