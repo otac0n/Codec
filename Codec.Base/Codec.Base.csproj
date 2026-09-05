@@ -17,6 +17,7 @@
   <ItemGroup>
     <PackageReference Include="CueSharp" Version="1.0.1" />
     <PackageReference Include="DiscUtils" Version="0.16.13" />
+    <PackageReference Include="Intervals" Version="1.2.0-alpha0021" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.8" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
