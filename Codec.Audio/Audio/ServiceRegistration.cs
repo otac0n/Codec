@@ -15,6 +15,7 @@ namespace Codec.Audio
             services.AddSingleton(new EntryTypeMatcher(EntryType.Video, "*.avi;*.mov;*.mp4;*.mkv;*.webm"));
             MediaFoundationAudioResolver.Register(services);
             VgmStreamAudioResolver.Register(services);
+            FFMpegAudioResolver.Register(services);
         }
     }
 }
