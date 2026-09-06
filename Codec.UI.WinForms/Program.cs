@@ -36,6 +36,7 @@ namespace Codec.UI.WinForms
 
                 using var host = builder.Build();
                 ApplicationConfiguration.Initialize();
+                Application.SetColorMode(SystemColorMode.System);
                 Application.Run(host.Services.GetRequiredService<Browser>());
             }
 
