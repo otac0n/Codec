@@ -69,6 +69,7 @@
             // 
             // pathBox
             // 
+            this.pathBox.BorderStyle = BorderStyle.FixedSingle;
             this.pathBox.Dock = DockStyle.Top;
             this.pathBox.Location = new Point(0, 33);
             this.pathBox.Name = "pathBox";
