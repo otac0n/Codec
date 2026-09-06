@@ -305,7 +305,6 @@
             // 
             // audioFormat
             // 
-            this.audioFormat.Enabled = false;
             this.audioFormat.Dock = DockStyle.Fill;
             this.audioFormat.Location = new Point(249, 400);
             this.audioFormat.Name = "audioFormat";

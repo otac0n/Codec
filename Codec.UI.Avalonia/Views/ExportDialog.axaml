@@ -139,8 +139,7 @@
                 </MultiBinding>
             </Control.IsVisible>
         </TextBlock>
-        <!-- We only support converting to WAV. -->
-        <TextBox Grid.Column="2" Grid.Row="11" VerticalAlignment="Center" IsVisible="{Binding ConvertAudio}" Text="{Binding AudioFormat}" IsEnabled="false">
+        <TextBox Grid.Column="2" Grid.Row="11" VerticalAlignment="Center" IsVisible="{Binding ConvertAudio}" Text="{Binding AudioFormat}">
             <Control.IsVisible>
                 <MultiBinding Converter="{x:Static BoolConverters.And}">
                     <Binding Path="AnyAudio" />

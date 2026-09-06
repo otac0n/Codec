@@ -11,6 +11,7 @@ namespace Codec.Services
     using System.Threading.Tasks;
     using Assimp;
     using Codec.Archives;
+    using Codec.Audio;
     using Codec.Files;
     using Codec.UI;
     using ImageMagick;
@@ -291,11 +292,19 @@ namespace Codec.Services
                     switch (item.EntryType)
                     {
                         case EntryType.Audio:
-                            if (string.Equals(ext, ".wav", StringComparison.OrdinalIgnoreCase) && fsm.Resolve<AudioStream>(item.Entry.Path) is AudioStream audioStream)
+                            if (fsm.Resolve<AudioStream>(item.Entry.Path) is AudioStream audioStream)
                             {
-                                using var output = File.Create(destination);
-                                await audioStream.Stream.CopyToAsync(output).ConfigureAwait(false);
-                                return;
+                                if (string.Equals(ext, ".wav", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    using var output = File.Create(destination);
+                                    await audioStream.Stream.CopyToAsync(output).ConfigureAwait(false);
+                                    return;
+                                }
+                                else if (FFMpegAudioEncoder.CanEncode(ext))
+                                {
+                                    await FFMpegAudioEncoder.EncodeAsync(audioStream.Stream, destination, logger).ConfigureAwait(false);
+                                    return;
+                                }
                             }
 
                             break;

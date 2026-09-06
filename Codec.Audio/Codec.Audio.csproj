@@ -12,6 +12,7 @@
     <PackageProjectUrl>https://github.com/otac0n/Codec</PackageProjectUrl>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="FFMpegCore" Version="5.4.0" />
     <PackageReference Include="Melanchall.DryWetMidi" Version="8.0.3" />
     <PackageReference Include="MeltySynth" Version="2.4.1" />
     <PackageReference Include="NAudio" Version="2.3.0" />
