@@ -63,7 +63,7 @@
       <DataGrid.Columns>
         <DataGridTextColumn Header="Severity" Binding="{Binding Severity}" Width="120" />
         <DataGridTextColumn Header="Text" Binding="{Binding Text}" Width="600" />
-        <DataGridTextColumn Header="Location" Binding="{Binding Location}" Width="200" />
+        <DataGridTextColumn Header="Details" Binding="{Binding Details}" Width="200" />
       </DataGrid.Columns>
     </DataGrid>
     <Grid ColumnDefinitions="1*,4,2*">

@@ -58,7 +58,7 @@
             this.errorListView = new ListView();
             this.severityColumnHeader = new ColumnHeader();
             this.textColumnHeader = new ColumnHeader();
-            this.locationColumnHeader = new ColumnHeader();
+            this.detailsColumnHeader = new ColumnHeader();
             ((System.ComponentModel.ISupportInitialize)this.splitContainer).BeginInit();
             this.splitContainer.Panel1.SuspendLayout();
             this.splitContainer.Panel2.SuspendLayout();
@@ -293,7 +293,7 @@
             // 
             // errorListView
             // 
-            this.errorListView.Columns.AddRange(new ColumnHeader[] { this.severityColumnHeader, this.textColumnHeader, this.locationColumnHeader });
+            this.errorListView.Columns.AddRange(new ColumnHeader[] { this.severityColumnHeader, this.textColumnHeader, this.detailsColumnHeader });
             this.errorListView.Dock = DockStyle.Bottom;
             this.errorListView.Location = new Point(0, 620);
             this.errorListView.Name = "errorListView";
@@ -312,10 +312,10 @@
             this.textColumnHeader.Text = "Text";
             this.textColumnHeader.Width = 600;
             // 
-            // locationColumnHeader
+            // detailsColumnHeader
             // 
-            this.locationColumnHeader.Text = "Location";
-            this.locationColumnHeader.Width = 200;
+            this.detailsColumnHeader.Text = "Details";
+            this.detailsColumnHeader.Width = 800;
             // 
             // Browser
             // 
@@ -366,7 +366,7 @@
         private ListView errorListView;
         private ColumnHeader severityColumnHeader;
         private ColumnHeader textColumnHeader;
-        private ColumnHeader locationColumnHeader;
+        private ColumnHeader detailsColumnHeader;
         private ToolStripButton viewErrorsButton;
         private ToolStripSeparator toolStripSeparator2;
         private ToolStripMenuItem exportToolStripMenuItem;

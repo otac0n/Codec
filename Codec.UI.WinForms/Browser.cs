@@ -81,7 +81,7 @@ namespace Codec.UI.WinForms
 
         private void Provider_EntryLogged(object? sender, NotifyingLoggerProvider.LogEntry e)
         {
-            this.InvokeIfRequired(() => this.errorListView.Items.Add(new ListViewItem([e.Severity.ToString(), e.Text, e.Location])));
+            this.InvokeIfRequired(() => this.errorListView.Items.Add(new ListViewItem([e.Severity.ToString(), e.Text, e.Details])));
         }
 
         private void TextureDisplay_Click(object? sender, MouseEventArgs e)

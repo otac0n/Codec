@@ -29,10 +29,10 @@
 
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
             {
-                this.onLog(new LogEntry(logLevel, formatter(state, exception), exception?.StackTrace ?? string.Empty));
+                this.onLog(new LogEntry(logLevel, formatter(state, exception), exception?.ToString() ?? string.Empty));
             }
         }
 
-        public readonly record struct LogEntry(LogLevel Severity, string Text, string Location);
+        public readonly record struct LogEntry(LogLevel Severity, string Text, string Details);
     }
 }
