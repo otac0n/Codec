@@ -10,7 +10,6 @@ namespace Codec.MGS.Archives
     using System.IO;
     using System.IO.Abstractions;
     using System.IO.Compression;
-    using System.Linq;
     using System.Runtime.InteropServices;
     using Codec.Archives;
     using Codec.MGS.Services;
@@ -227,6 +226,11 @@ namespace Codec.MGS.Archives
                 return false;
             }
 
+            return ProcessArchive(source, validate: true);
+        }
+
+        private static bool ProcessArchive(FileSystemStream source, Action<Endianness, bool, uint>? setup = null, Action<uint, DirEntryInfo, Section, long>? handleFile = null, Action<uint, DirEntryInfoWide, Section, long>? handleFileWide = null, bool validate = false)
+        {
             var entryCountLE = source.ReadUInt32LittleEndian();
             var entryCountBE = BinaryPrimitives.ReverseEndianness(entryCountLE);
             var (entryCount, endianness) = entryCountBE < entryCountLE
@@ -239,48 +243,42 @@ namespace Codec.MGS.Archives
                 source.Position -= sizeof(uint);
             }
 
-            if (entryCount == 0 || source.Length <= sizeof(uint) + (entryCount * (wideIndexEntries ? Marshal.SizeOf<DirEntryInfoWide>() : Marshal.SizeOf<DirEntryInfo>())))
+            if (entryCount == 0)
             {
                 return false;
             }
 
-            var dirEntries = wideIndexEntries
-                ? [.. source.ReadArrayWithEndianness<DirEntryInfoWide>(entryCount, endianness).Select(e => new DirEntryInfo { Id = e.Id, Offset = (uint)e.Offset })]
-                : source.ReadArrayWithEndianness<DirEntryInfo>(entryCount, endianness);
+            bool ContinueWithKnonWidth<THeader, TIndex>(Action<uint, TIndex, Section, long>? handleFile)
+                where THeader : struct
+                where TIndex : struct, IDirEntryInfo
+            {
+                if (validate && source.Length <= Marshal.SizeOf<THeader>() + (entryCount * Marshal.SizeOf<TIndex>()))
+                {
+                    return false;
+                }
 
-            var dataPtr = source.Position;
-            DetermineSectorSize(dirEntries, source.Length, out var alignment);
-            return WalkEntries(dirEntries, alignment, ref dataPtr, validate: true);
+                var dirEntries = source.ReadArrayWithEndianness<TIndex>(entryCount, endianness);
+                var dataPtr = source.Position;
+                DetermineSectorSize<THeader, TIndex>(dirEntries, source.Length, out var alignment);
+                setup?.Invoke(endianness, wideIndexEntries, alignment);
+                return WalkEntries<TIndex>(dirEntries, alignment, ref dataPtr, handleFile, validate);
+            }
+
+            return wideIndexEntries
+                ? ContinueWithKnonWidth<DirHeaderWide, DirEntryInfoWide>(handleFileWide)
+                : ContinueWithKnonWidth<DirHeader, DirEntryInfo>(handleFile);
         }
 
         protected override IEnumerable<Entry> ReadIndex()
         {
             using var source = parent.File.OpenRead(parentRelativePath);
 
-            var entryCountLE = source.ReadUInt32LittleEndian();
-            var entryCountBE = BinaryPrimitives.ReverseEndianness(entryCountLE);
-            var (entryCount, endianness) = entryCountBE < entryCountLE
-                ? (entryCountBE, Endianness.BigEndian)
-                : (entryCountLE, Endianness.LittleEndian);
-
-            var wideIndexEntries = source.ReadUInt32LittleEndian() == 0;
-            if (!wideIndexEntries)
-            {
-                source.Position -= sizeof(uint);
-            }
-
-            var dirEntries = wideIndexEntries
-                ? [.. source.ReadArrayWithEndianness<DirEntryInfoWide>(entryCount, endianness).Select(e => new DirEntryInfo { Id = e.Id, Offset = (uint)e.Offset })]
-                : source.ReadArrayWithEndianness<DirEntryInfo>(entryCount, endianness);
-
-            DetermineSectorSize(dirEntries, source.Length, out var alignment);
-            this.variant = DetermineVariant(endianness, wideIndexEntries, alignment);
-            var extensions = Extensions.GetValueOrDefault(this.variant, ImmutableDictionary<byte, string>.Empty);
-
-            var dataPtr = source.Position;
+            var extensions = ImmutableDictionary<byte, string>.Empty;
 
             var entries = new List<Entry>();
-            WalkEntries(dirEntries, alignment, ref dataPtr, (group, entry, section, length) =>
+
+            void Process<TIndex>(uint group, TIndex entry, Section section, long length)
+                where TIndex : IDirEntryInfo
             {
                 var variantString = this.variant.ToString().ToLowerInvariant();
 
@@ -305,26 +303,32 @@ namespace Codec.MGS.Archives
                 }
 
                 entries.Add(($"{groupName}/{fileName}", section, entry.Offset, length));
-            });
+            }
+
+            ProcessArchive(
+                source,
+                (endianness, wideIndexEntries, sectorSize) =>
+                {
+                    this.variant = DetermineVariant(endianness, wideIndexEntries, sectorSize);
+                    extensions = Extensions.GetValueOrDefault(this.variant, extensions);
+                },
+                Process,
+                Process);
 
             return entries;
         }
 
-        public static long GetFileSize(DirEntryInfo[] dirEntries, long alignment)
+        public static long GetFileSize<THeader, TIndex>(TIndex[] dirEntries, long alignment)
+            where THeader : struct
+            where TIndex : struct, IDirEntryInfo
         {
-            long dataPtr = Marshal.SizeOf<DirHeader>() + Marshal.SizeOf<DirEntryInfo>() * dirEntries.Length;
+            long dataPtr = Marshal.SizeOf<THeader>() + Marshal.SizeOf<TIndex>() * dirEntries.Length;
             WalkEntries(dirEntries, alignment, ref dataPtr);
             return dataPtr;
         }
 
-        public static long GetFileSize(DirEntryInfoWide[] dirEntries, long alignment)
-        {
-            long dataPtr = Marshal.SizeOf<DirHeaderWide>() + Marshal.SizeOf<DirEntryInfoWide>() * dirEntries.Length;
-            WalkEntries([.. dirEntries.Select(e => new DirEntryInfo { Id = e.Id, Offset = (uint)e.Offset })], alignment, ref dataPtr);
-            return dataPtr;
-        }
-
-        public static bool WalkEntries(DirEntryInfo[] dirEntries, long alignment, ref long dataPtr, Action<uint, DirEntryInfo, Section, long>? handleFile = null, bool validate = false)
+        public static bool WalkEntries<TIndex>(TIndex[] dirEntries, long alignment, ref long dataPtr, Action<uint, TIndex, Section, long>? handleFile = null, bool validate = false)
+            where TIndex : struct, IDirEntryInfo
         {
             var group = 0U;
             var sectionSize = 0U;
@@ -365,7 +369,7 @@ namespace Codec.MGS.Archives
                         if (entry.FileName != 0)
                         {
                             dataPtr = StreamExtensions.Align(dataPtr, alignment);
-                            sectionSize = entry.Offset;
+                            sectionSize = (uint)entry.Offset;
                             group = entry.FileName;
                         }
                         else
@@ -407,12 +411,14 @@ namespace Codec.MGS.Archives
                 _ => Variant.Unknown,
             };
 
-        private static bool DetermineSectorSize(DirEntryInfo[] dirEntries, long length, out uint alignment)
+        private static bool DetermineSectorSize<THeader, TIndex>(TIndex[] dirEntries, long length, out uint alignment)
+            where THeader : struct
+            where TIndex : struct, IDirEntryInfo
         {
             for (var bit = 11; bit <= 12; bit++)
             {
                 alignment = (uint)(1 << bit);
-                var sum = GetFileSize(dirEntries, alignment);
+                var sum = GetFileSize<THeader, TIndex>(dirEntries, alignment);
                 if (sum == length)
                 {
                     return true;
@@ -480,23 +486,53 @@ namespace Codec.MGS.Archives
             public uint Padding;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct DirEntryInfo
+        public interface IDirEntryInfo
         {
-            public uint Id;
-            public uint Offset;
+            public uint Id { get; }
 
-            public readonly uint FileName => this.Id & 0xFFFFFF;
+            public long Offset { get; set; }
 
-            public readonly byte Extension => (byte)((this.Id >> 24) & 0xFF);
+            public uint FileName { get; }
+
+            public byte Extension { get; }
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct DirEntryInfoWide
+        public struct DirEntryInfo : IDirEntryInfo
         {
-            public uint Id;
-            public uint PaddingA;
-            public ulong Offset;
+            public uint Id { get; set; }
+
+            public uint Offset { get; set; }
+
+            public uint FileName => this.Id & 0xFFFFFF;
+
+            public byte Extension => (byte)((this.Id >> 24) & 0xFF);
+
+            long IDirEntryInfo.Offset
+            {
+                readonly get => this.Offset;
+                set => this.Offset = (uint)value;
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct DirEntryInfoWide : IDirEntryInfo
+        {
+            public uint Id { get; set; }
+
+            public uint PaddingA { get; set; }
+
+            public ulong Offset { get; set; }
+
+            public uint FileName => this.Id & 0xFFFFFF;
+
+            public byte Extension => (byte)((this.Id >> 24) & 0xFF);
+
+            long IDirEntryInfo.Offset
+            {
+                readonly get => (long)this.Offset;
+                set => this.Offset = (ulong)value;
+            }
         }
     }
 }

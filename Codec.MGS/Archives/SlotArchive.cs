@@ -44,7 +44,7 @@
                 var cnf = slotDat.ReadBigEndian<DirArchive.DirHeaderWide>();
 
                 var tags = slotDat.ReadArrayBigEndian<DirArchive.DirEntryInfoWide>(cnf.EntryCount);
-                var size = DirArchive.GetFileSize(tags, SectorSize);
+                var size = DirArchive.GetFileSize<DirArchive.DirHeaderWide, DirArchive.DirEntryInfoWide>(tags, SectorSize);
 
                 entries.Add(($"{i}.dir", start, size));
 

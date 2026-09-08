@@ -98,7 +98,7 @@ namespace Codec.MGS.Archives
                     files = source.ReadArrayBigEndian<DirArchive.DirEntryInfo>(fileCount);
                 }
 
-                var folderSize = DirArchive.GetFileSize(files, SectorSize);
+                var folderSize = DirArchive.GetFileSize<DirArchive.DirHeader, DirArchive.DirEntryInfo>(files, SectorSize);
 
                 entries.Add(($"{folderName}.dir", folder.Offset * SectorSize, folderSize));
             }
