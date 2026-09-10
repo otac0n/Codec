@@ -1,4 +1,6 @@
-﻿namespace Codec.MGS
+﻿// Copyright © John Gietzen. All Rights Reserved. This source is subject to the MIT license. Please see license.md for more information.
+
+namespace Codec.MGS
 {
     using System.Globalization;
     using System.IO;
@@ -30,6 +32,11 @@
 
             return h;
         }
+
+        public static uint Combine32(uint folderStrcode, uint fileStrcode) =>
+            folderStrcode == 0
+                ? fileStrcode
+                : (~((folderStrcode >> 4) ^ (folderStrcode << 4) ^ 0x10EA)) ^ fileStrcode;
 
         public static ulong GetStrCode16(string filename)
         {
