@@ -27,6 +27,7 @@ Support for the following formats is implemented:
     - FACE.DAT Archive (MGS1) [read & write]
     - RADIO.DAT Archive (MGS1)
     - SLOT.DAT Archive (MGS PW)
+    - STAGEDAT.PDT Archive (MGS PW)
     - STAGE.DAT Archive (MGS2 & TTS)
     - STAGE.DIR Archive (MGS1 & MGSVR)
     - VOX.DAT Archive (MGS1 & MGSVR)

@@ -40,6 +40,7 @@ namespace Codec.MGS
             DemoDatArchive.Register(services);
             DlzArchive.Register(services);
             FaceDatArchive.Register(services);
+            StageDatPdtArchive.Register(services);
             QarArchive.Register(services);
             RadioDatArchive.Register(services);
             StageDatArchive.Register(services);
