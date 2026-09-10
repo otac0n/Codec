@@ -59,7 +59,7 @@
                     var decoded = new DecodingStream(iv, salt, section, Ownership.Dispose);
                     var header = decoded.ReadLittleEndian<SlotCompressedHeader>();
                     var compressed = new OffsetStreamSpan(decoded, decoded.Position, decoded.Length - decoded.Position, Ownership.Dispose);
-                    var decompressed = new ZLibStream(decoded, CompressionMode.Decompress);
+                    var decompressed = new ZLibStream(compressed, CompressionMode.Decompress);
                     return new CachingSeekableStream(decompressed, header.DecompressedSize);
                 },
                 updated =>

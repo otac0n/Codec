@@ -40,7 +40,13 @@ namespace Codec.MGS.Streams
         public override long Position
         {
             get => this.position;
-            set => throw new NotSupportedException("DecodingStream is forward-only.");
+            set
+            {
+                if (value != this.position)
+                {
+                    throw new NotSupportedException("DecodingStream is forward-only.");
+                }
+            }
         }
 
         public static uint MakeKey(uint iv) =>
@@ -128,14 +134,19 @@ namespace Codec.MGS.Streams
             this.KeyAccumulator = unchecked((this.KeyAccumulator * Key) + this.Salt);
         }
 
-        public override long Seek(long offset, SeekOrigin origin)
-            => throw new NotSupportedException("DecodingStream is forward-only.");
+        public override long Seek(long offset, SeekOrigin origin) =>
+            this.Position = offset + origin switch
+            {
+                SeekOrigin.Begin => 0,
+                SeekOrigin.Current => this.Position,
+                SeekOrigin.End => this.Length,
+            };
 
-        public override void SetLength(long value)
-            => throw new NotSupportedException("DecodingStream is read-only.");
+        public override void SetLength(long value) =>
+            throw new NotSupportedException("DecodingStream is read-only.");
 
-        public override void Write(byte[] buffer, int offset, int count)
-            => throw new NotSupportedException("DecodingStream is read-only.");
+        public override void Write(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException("DecodingStream is read-only.");
 
         protected override void Dispose(bool disposing)
         {
