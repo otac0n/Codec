@@ -740,13 +740,13 @@
             public string Combine(string path1, string path2) => this.CombineWithSeparator(this.DirectorySeparatorChar, path1, path2);
 
             /// <inheritdoc/>
-            public string Combine(string path1, string path2, string path3) => throw new NotImplementedException();
+            public string Combine(string path1, string path2, string path3) => this.CombineWithSeparator(this.DirectorySeparatorChar, path1, path2, path3);
 
             /// <inheritdoc/>
-            public string Combine(string path1, string path2, string path3, string path4) => throw new NotImplementedException();
+            public string Combine(string path1, string path2, string path3, string path4) => this.CombineWithSeparator(this.DirectorySeparatorChar, path1, path2, path3, path4);
 
             /// <inheritdoc/>
-            public string Combine(params string[] paths) => throw new NotImplementedException();
+            public string Combine(params string[] paths) => this.CombineWithSeparator(this.DirectorySeparatorChar, paths);
 
             /// <inheritdoc/>
             public bool EndsInDirectorySeparator(ReadOnlySpan<char> path) => throw new NotImplementedException();

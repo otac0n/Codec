@@ -27,7 +27,7 @@ namespace Codec
             return path.Combine(prefix.TrimEnd(Separators), suffix.TrimStart(Separators));
         }
 
-        public static string CombineWithSeparator(this IPath path, char separator, string prefix, string suffix)
+        public static string? CombineWithSeparator(this IPath path, char separator, string? prefix, string? suffix)
         {
             if (string.IsNullOrEmpty(prefix) || path.IsPathRooted(suffix))
             {
@@ -40,6 +40,25 @@ namespace Codec
             }
 
             return prefix.TrimEnd(Separators) + separator + suffix.TrimStart(Separators);
+        }
+
+        public static string? CombineWithSeparator(this IPath path, char separator, params string?[] parts)
+        {
+            var accumulator = default(string);
+            for (var i = 0; i < parts.Length; i++)
+            {
+                var part = parts[i];
+                if (string.IsNullOrEmpty(accumulator) || path.IsPathRooted(part))
+                {
+                    accumulator = part;
+                }
+                else if (!string.IsNullOrEmpty(part))
+                {
+                    accumulator = accumulator.TrimEnd(Separators) + separator + part.TrimStart(Separators);
+                }
+            }
+
+            return accumulator;
         }
 
         public static string GetRelativePath(this IPath path, string relativeTo, string destination)
