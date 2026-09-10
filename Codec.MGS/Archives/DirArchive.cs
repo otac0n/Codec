@@ -441,11 +441,10 @@ namespace Codec.MGS.Archives
                         if (this.variant == Variant.MGS2)
                         {
                             source.Position = entry.Section.Offset;
-                            var key = source.ReadUInt16LittleEndian() ^ 0x9385;
-                            var keyB = unchecked((uint)(key * 0x0116));
-                            var keyA = (uint)(((key ^ 0x6576) << 0x10) | key);
+                            var keyA = source.ReadUInt16LittleEndian();
+                            var (iv, salt) = DecodingStream.MakeKey(keyA, 0x9385U, 0x0116U);
                             Stream section = new OffsetStreamSpan(source, entry.Section.Offset, entry.Section.EncodedLength, Ownership.Dispose);
-                            section = new DecodingStream(keyA, keyB, section, Ownership.Dispose);
+                            section = new DecodingStream(iv, salt, section, Ownership.Dispose);
                             section = new CachingSeekableStream(section);
                             section.Write([0x78, 0x9C]);
                             section = new DeflateStream(section, CompressionMode.Decompress);

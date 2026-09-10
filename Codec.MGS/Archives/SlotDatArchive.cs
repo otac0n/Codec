@@ -55,10 +55,8 @@
                 options =>
                 {
                     var section = new OffsetStreamSpan(parent.File.Open(parentRelativePath, options), entry.Offset, entry.Length, Ownership.Dispose);
-                    var pageKey = this.keyHeader.SaltA ^ this.keyHeader.SaltB;
-                    var key = MakeKey(pageKey);
-                    var pageKeyB = MakeKey(pageKey, this.keyHeader.SaltC);
-                    var decoded = new DecodingStream(key, pageKeyB, section, Ownership.Dispose);
+                    var (iv, salt) = DecodingStream.MakeKey(this.keyHeader.SaltA, this.keyHeader.SaltB, this.keyHeader.SaltC);
+                    var decoded = new DecodingStream(iv, salt, section, Ownership.Dispose);
                     var header = decoded.ReadLittleEndian<SlotCompressedHeader>();
                     var compressed = new OffsetStreamSpan(decoded, decoded.Position, decoded.Length - decoded.Position, Ownership.Dispose);
                     var decompressed = new ZLibStream(decoded, CompressionMode.Decompress);
@@ -69,12 +67,6 @@
                     throw new NotImplementedException();
                 });
         }
-
-        private static uint MakeKey(uint iv) =>
-            ((iv ^ 0x00006576) << 0x10) | iv;
-
-        private static uint MakeKey(uint key, uint iv) =>
-            key * iv;
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct SlotHeader

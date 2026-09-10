@@ -43,6 +43,20 @@ namespace Codec.MGS.Streams
             set => throw new NotSupportedException("DecodingStream is forward-only.");
         }
 
+        public static uint MakeKey(uint iv) =>
+            ((iv ^ 0x00006576) << 0x10) | iv;
+
+        public static uint MakeKey(uint key, uint iv) =>
+            key * iv;
+
+        public static (uint IV, uint Salt) MakeKey(uint materialA, uint materialB, uint materialC)
+        {
+            var pageKey = materialA ^ materialB;
+            var iv = MakeKey(pageKey);
+            var salt = MakeKey(pageKey, materialC);
+            return (iv, salt);
+        }
+
         public override void Flush() { }
 
         public override int Read(byte[] buffer, int offset, int count)
