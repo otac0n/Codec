@@ -54,7 +54,7 @@ namespace Codec.MGS
             try
             {
                 var library = File.ReadAllText(Path.Combine(defaultPath, "libraryfolders.vdf"));
-                var match = Regex.Match(library, @"""path""\s+""(?<escaped_path>([^\""]|\[\""])+)""[^{}]+""apps""[\r\n\s]+{[^}]+""(?<found_app_id>" + appId +  @")""\s+""\d+""");
+                var match = Regex.Match(library, @"""path""\s+""(?<escaped_path>([^\""]|\[\""])+)""[^{}]+""apps""[\r\n\s]+{[^}]+""(?<found_app_id>" + appId + @")""\s+""\d+""");
                 if (match.Success)
                 {
                     return Path.Combine(GetEscapeRegex().Replace(match.Groups["escaped_path"].Value, "$1"), "steamapps", "common");

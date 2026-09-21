@@ -62,7 +62,7 @@
             this.logger = logger;
             this.fsm = fsm;
             this.imageLoader = imageLoader;
-            this.currentPath = WellKnownPaths.StartPaths.FirstOrDefault(Directory.Exists) ?? string.Empty;
+            this.currentPath = WellKnownPaths.StartPaths.FirstOrDefault(this.fsm.DirectoryExists) ?? string.Empty;
             this.Tree = fileTreeViewModel;
             this.List = entryListViewModel;
 

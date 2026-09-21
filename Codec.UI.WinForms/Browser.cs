@@ -72,7 +72,7 @@ namespace Codec.UI.WinForms
 
             this.fileTree.Nodes.Add(new TreeNode("root", 0, 0, [this.CreateExpanderDummy()]) { Tag = this.fsm.RootEntry });
 
-            var startPath = WellKnownPaths.StartPaths.FirstOrDefault(Directory.Exists);
+            var startPath = WellKnownPaths.StartPaths.FirstOrDefault(this.fsm.DirectoryExists);
             if (startPath != null)
             {
                 this.Navigate(startPath);

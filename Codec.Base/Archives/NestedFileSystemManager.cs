@@ -149,6 +149,11 @@
             return this.TryFindParentFileSystem(path, out var parentRelativePath, out var parent, out _) && parent.File.Exists(parentRelativePath);
         }
 
+        public bool DirectoryExists(string path)
+        {
+            return this.TryFindParentFileSystem(path, out var parentRelativePath, out var parent, out _) && parent.Directory.Exists(parentRelativePath);
+        }
+
         public FileSystemStream Open(string path, FileMode mode) => this.Open(path, mode, FileAccess.ReadWrite);
 
         public FileSystemStream Open(string path, FileMode mode, FileAccess access) => this.Open(path, mode, access, FileShare.None);
