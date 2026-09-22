@@ -442,9 +442,9 @@ namespace Codec.MGS.Archives
                         {
                             source.Position = entry.Section.Offset;
                             var keyA = source.ReadUInt16LittleEndian();
-                            var (iv, salt) = DecodingStream.MakeKey(keyA, 0x9385U, 0x0116U);
+                            var (iv, salt) = MgsKeyStream.MakeKey(keyA, 0x9385U, 0x0116U);
                             Stream section = new OffsetStreamSpan(source, entry.Section.Offset, entry.Section.EncodedLength, Ownership.Dispose);
-                            section = new DecodingStream(iv, salt, section, Ownership.Dispose);
+                            section = new XorStream(new MgsKeyStream(iv, salt), section, Ownership.Dispose, Ownership.Dispose);
                             section = new CachingSeekableStream(section);
                             section.Write([0x78, 0x9C]);
                             section = new DeflateStream(section, CompressionMode.Decompress);

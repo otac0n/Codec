@@ -65,7 +65,7 @@ namespace Codec.MGS.Archives
             var iv = source.ReadUInt32LittleEndian();
             if (variant == DirArchive.Variant.MGS2)
             {
-                using var decoded = new DecodingStream(iv, iv ^ 0xF0F0u, source);
+                using var decoded = new XorStream(new MgsKeyStream(iv, iv ^ 0xF0F0u), source, Ownership.Dispose, Ownership.None);
                 header = decoded.ReadLittleEndian<Header>();
                 folders = decoded.ReadArrayLittleEndian<FolderEntry>(header.FolderCount);
             }
@@ -88,7 +88,7 @@ namespace Codec.MGS.Archives
                 DirArchive.DirEntryInfo[] files = null!;
                 if (variant == DirArchive.Variant.MGS2)
                 {
-                    using var decoded = new DecodingStream(MakeKey(folderName, iv), MakeSalt(folderName), source);
+                    using var decoded = new XorStream(new MgsKeyStream(MakeKey(folderName, iv), MakeSalt(folderName)), source, Ownership.Dispose, Ownership.None);
                     var fileCount = decoded.ReadUInt32LittleEndian();
                     files = decoded.ReadArrayLittleEndian<DirArchive.DirEntryInfo>(fileCount);
                 }
@@ -118,7 +118,7 @@ namespace Codec.MGS.Archives
                         var iv = source.ReadUInt32LittleEndian();
                         var folderName = parent.Path.GetFileNameWithoutExtension(entry.FileName);
                         var contentStream = new OffsetStreamSpan(source, entry.Offset, entry.Length, Ownership.Dispose);
-                        var decoded = new CachingSeekableStream(new DecodingStream(MakeKey(folderName, iv), MakeSalt(folderName), contentStream));
+                        var decoded = new CachingSeekableStream(new XorStream(new MgsKeyStream(MakeKey(folderName, iv), MakeSalt(folderName)), contentStream, Ownership.Dispose, Ownership.None));
                         var fileCount = decoded.ReadUInt32LittleEndian();
                         var headerSize = sizeof(uint) + Marshal.SizeOf<DirArchive.DirEntryInfo>() * fileCount;
                         var headerStream = new OffsetStreamSpan(decoded, 0, headerSize, Ownership.Dispose);

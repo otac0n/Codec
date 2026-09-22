@@ -55,8 +55,8 @@
                 options =>
                 {
                     var section = new OffsetStreamSpan(parent.File.Open(parentRelativePath, options), entry.Offset, entry.Length, Ownership.Dispose);
-                    var (iv, salt) = DecodingStream.MakeKey(this.keyHeader.SaltA, this.keyHeader.SaltB, this.keyHeader.SaltC);
-                    var decoded = new DecodingStream(iv, salt, section, Ownership.Dispose);
+                    var (iv, salt) = MgsKeyStream.MakeKey(this.keyHeader.SaltA, this.keyHeader.SaltB, this.keyHeader.SaltC);
+                    var decoded = new XorStream(new MgsKeyStream(iv, salt), section, Ownership.Dispose, Ownership.Dispose);
                     var header = decoded.ReadLittleEndian<SlotCompressedHeader>();
                     var compressed = new OffsetStreamSpan(decoded, decoded.Position, decoded.Length - decoded.Position, Ownership.Dispose);
                     var decompressed = new ZLibStream(compressed, CompressionMode.Decompress);

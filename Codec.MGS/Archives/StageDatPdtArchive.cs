@@ -195,8 +195,8 @@
         {
             using var source = parent.File.OpenRead(parentRelativePath);
             this.keyHeader = source.ReadLittleEndian<PdtKeys>();
-            var (iv, salt) = DecodingStream.MakeKey(this.keyHeader.SaltA, this.keyHeader.SaltB, this.keyHeader.SaltC);
-            using var decoded = new DecodingStream(iv, salt, source, Ownership.None);
+            var (iv, salt) = MgsKeyStream.MakeKey(this.keyHeader.SaltA, this.keyHeader.SaltB, this.keyHeader.SaltC);
+            using var decoded = new XorStream(new MgsKeyStream(iv, salt), source, Ownership.Dispose, Ownership.None);
             var header = decoded.ReadLittleEndian<PdtHeader>();
             var table = decoded.ReadArrayLittleEndian<PdtTable>(header.PageCount);
             var lookup = decoded.ReadArrayLittleEndian<PdtLookupBST>(header.PageCount);
@@ -281,8 +281,8 @@
         private Stream ReadFile(Stream source, Entry entry, Ownership ownership)
         {
             var section = new OffsetStreamSpan(source, entry.Offset, entry.Length, ownership);
-            var (iv, salt) = DecodingStream.MakeKey(this.keyHeader.SaltA, this.keyHeader.SaltB, this.keyHeader.SaltC);
-            var decoded = new DecodingStream(iv, salt, section, Ownership.Dispose);
+            var (iv, salt) = MgsKeyStream.MakeKey(this.keyHeader.SaltA, this.keyHeader.SaltB, this.keyHeader.SaltC);
+            var decoded = new XorStream(new MgsKeyStream(iv, salt), section, Ownership.Dispose, Ownership.Dispose);
             var header = decoded.ReadLittleEndian<PdtCompressedHeader>();
             var compressed = new OffsetStreamSpan(decoded, decoded.Position, decoded.Length - decoded.Position - 1, Ownership.Dispose);
             var decompressed = new ZLibStream(compressed, CompressionMode.Decompress);
