@@ -23,7 +23,7 @@ namespace Codec.Streams
         /// <param name="first">The primary data stream. Its length, if any, determines <see cref="Length"/>.</param>
         /// <param name="second">The stream XORed against <paramref name="first"/>, e.g. a <see cref="KeyStream"/>.</param>
         /// <param name="firstOwnership">Whether to dispose <paramref name="first"/> when this stream is disposed.</param>
-        /// <param name="secondOwnership">Whether to dispose <paramref name="second"/> when this stream is disposed..</param>
+        /// <param name="secondOwnership">Whether to dispose <paramref name="second"/> when this stream is disposed.</param>
         public XorStream(Stream first, Stream second, Ownership firstOwnership, Ownership secondOwnership)
         {
             this.first = first ?? throw new ArgumentNullException(nameof(first));
@@ -38,7 +38,35 @@ namespace Codec.Streams
 
         public override bool CanWrite => false;
 
-        public override long Length => this.first.Length;
+        public override long Length
+        {
+            get
+            {
+                // Read never produces more bytes than the shorter side has to offer (see
+                // Read below), so that's the stream's true length. Either side may also be
+                // unbounded (e.g. a KeyStream, which never supports Length) -- fall back to
+                // whichever side actually knows its length when only one does.
+                var firstHasLength = this.first.CanSeek;
+                var secondHasLength = this.second.CanSeek;
+
+                if (firstHasLength && secondHasLength)
+                {
+                    return Math.Min(this.first.Length, this.second.Length);
+                }
+
+                if (firstHasLength)
+                {
+                    return this.first.Length;
+                }
+
+                if (secondHasLength)
+                {
+                    return this.second.Length;
+                }
+
+                throw new NotSupportedException("Neither underlying stream supports Length.");
+            }
+        }
 
         public override long Position
         {
